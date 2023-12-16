@@ -5,3 +5,11 @@ module shared_vars_main
     real(kind=DP) :: T, P, RO ! physical parameters in the atmosphere
     real(kind=DP) :: EPS ! line cut-off
 end module shared_vars_main
+
+module molecule_vars
+    use globals
+    implicit none
+    integer :: MOTYPE
+    integer :: NLIN
+    character(len=17) :: LINE_PATH
+end module molecule_vars
