@@ -13,12 +13,13 @@ module MESH1
     integer, parameter :: NT8 = NT7 * 2
     integer, parameter :: NT9 = NT8 * 2
     integer, parameter :: NT = NT9 * 4 + 1
-    real, parameter :: OBR25 = 250.0
+    real, parameter :: OBR25 = 250.0 ! consider moving to the line_vars module
     real, parameter :: DELTA = 10.0
     real, parameter :: STEP = 1.0
     integer, parameter :: NINT = 10
 
-    ! Arrays
+    ! Arrays likely for various grids to cover the spectral shape
+    ! consider setting double precision here !
     real :: RK(NT) ! array that likely holds calculated spectral data
     real :: RK0(NT0), RK0L(NT0), RK0P(NT0)
     real :: RK1(NT1), RK1L(NT1), RK1P(NT1)

@@ -11,6 +11,9 @@ program main
     use MESH1
     use K_HITRAN
 
+    ! REWORK FROM LEGACY CODE TIPS
+    ! use `only` with `use module`
+
     implicit none
 
     ! Parameters
