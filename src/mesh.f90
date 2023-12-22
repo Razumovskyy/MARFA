@@ -3,16 +3,16 @@ module MESH1
     
     ! Parameters
     integer, parameter :: NT0 = 10
-    integer, parameter :: NT1 = NT0 * 2
-    integer, parameter :: NT2 = NT1 * 2
-    integer, parameter :: NT3 = NT2 * 2
-    integer, parameter :: NT4 = NT3 * 2
-    integer, parameter :: NT5 = NT4 * 2
-    integer, parameter :: NT6 = NT5 * 2
-    integer, parameter :: NT7 = NT6 * 2
-    integer, parameter :: NT8 = NT7 * 2
-    integer, parameter :: NT9 = NT8 * 2
-    integer, parameter :: NT = NT9 * 4 + 1
+    integer, parameter :: NT1 = NT0 * 2 !  = 20
+    integer, parameter :: NT2 = NT1 * 2 !  = 40
+    integer, parameter :: NT3 = NT2 * 2 !  = 80
+    integer, parameter :: NT4 = NT3 * 2 !  = 160
+    integer, parameter :: NT5 = NT4 * 2 !  = 320
+    integer, parameter :: NT6 = NT5 * 2 !  = 640
+    integer, parameter :: NT7 = NT6 * 2 !  = 1280
+    integer, parameter :: NT8 = NT7 * 2 !  = 2560
+    integer, parameter :: NT9 = NT8 * 2 !  = 5120
+    integer, parameter :: NT = NT9 * 4 + 1 !  = 20481
     real, parameter :: OBR25 = 250.0 ! consider moving to the line_vars module
     real, parameter :: DELTA = 10.0
     real, parameter :: STEP = 1.0

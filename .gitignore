@@ -39,3 +39,6 @@ control
 
 # output files
 output
+
+# input data
+data
