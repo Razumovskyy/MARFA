@@ -49,6 +49,7 @@ module LBL
     use molecule_vars
     use spectroscopy
     use molar_masses, only: WISO
+    use LINE_GRID_CALC
     implicit none
 contains
     
@@ -58,6 +59,21 @@ contains
 
         ! avoided SAVE blocks
         ! avoided COMMON blocks
+        
+        ! uncomment when ready to provide line-shape functions as arguments to the 
+        ! LEFTLBL, CENTLBL, RIGHTLBL subroutines
+        !Ensure all functions assigned to ShapeFuncPtr conform to the shape_func interface.
+        ! procedure(shape_func), pointer :: ShapeFuncPtr
+
+        ! ----- move this section below where LEFTLBL, CENTLBL and RIGHTLBL are called ---- !
+        ! ! Assign the function pointer to VOIGT and call LEFTLBL
+        ! ShapeFuncPtr => VOIGT
+        ! call LEFTLBL(..., ShapeFuncPtr)
+    
+        ! ! Later reassign the function pointer to DOPLER and call RightLBL
+        ! ShapeFuncPtr => DOPLER
+        ! call RightLBL(..., ShapeFuncPtr)
+        ! ----------------------------------------------------------------------------------!
 
         integer :: MO_E ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
         integer :: LINBEG ! integer line label used for locating record in direct access file
@@ -128,6 +144,19 @@ contains
         real(kind=DP) :: STR3 ! likely the partition function value at the standard temperature
         real(kind=DP) :: QDQ ! scaled partition function 
 
+        real(kind=DP) :: ADD ! Doppler width
+        
+        ! it characterizes the relative contributions of Lorentzian and Doppler broadening to the overall shape of the spectral line
+        real(kind=DP) :: ALAD ! ratio of is the ratio of the Lorentz HWHM (AL) to the Doppler width (ADD).
+
+        real(kind=DP) :: SL ! temperature-dependent line intensity
+        
+        real(kind=DP) :: BETVITS, BETVIT ! scaled version of the line position
+        
+        real(kind=DP) :: EXPVV, EXPVVS ! exponential terms used in the calculation of Van Vleck-Weiss-Huber factor
+        real(kind=DP) :: FVVHSL ! VV-W-H factor (calculation in two ways: for small BETVITS value approximation is used)
+        real(kind=DP) :: SLL ! can be interpreted as a measure of the contribution of the Lorentzian component to the overall line profile.
+        
         ! zero initialisation of pressure, temperature and density from shared_vars_main module
         ! MBR
 
@@ -257,6 +286,74 @@ contains
                 QDQ = STR3/STS3 * RO/PI ! <-------- FORMULA (scaled partition function)
             end if
 
+            ! Line 166 from the LEGACY CODE
+            ADD = DOPCON * VI ! <----- FORMULA
+
+            ALAD = AL / ADD ! <----- ratio
+
+            SL = SLSS * QDQ
+
+            if (STR3 >= 0.) SL = SL * exp(EK * E_I_)  ! <-- apply correction if st sum > 0
+
+            ! ----- LEGACY CODE COMMENTARY --- V-W-H factor for LTE and non-LTE ---------- !
+            ! LTE:	Pure radiation  (van Vleck-Weisskopf-Huber) factor!!! 26 Feb.,2009  !!!	*
+            ! b=C2=1.438786 the second radiation constant 
+            !  Fi(V)=S*[1/FACTOR(VI)]*FACTOR(V)] =
+            !  Sref*(...)*[(1+exp(-Vi*b/T)/[Vi*(1-exp(-Vi*b/Tref))] x       ! see below  
+            ! *** ATTENTON=> there are T in the NUMENATOR    and  Tref in the DENUMERATOR *** LTE-case !!!     
+            !       x [(1-exp(-V*b/T)/(1+exp(-V*b/T))]*V        ! see K_COEFF
+            ! <<< in this non-LTE program only T is used (not referenced !!!)
+            ! ----------------------------------------------------------------------------- !
+
+            ! This expressions calculate scaled versions of the line position at the standard temperature and current temperature
+            ! may be used in temperature-dependent ajustments
+            BETVITS = BET * VI / TS
+            BETVIT = BET * VI / T
+
+            if (BETVITS > 1E-5) then
+                EXPVV = exp(-BETVIT)
+                EXPVVS = exp(-BETVITS)
+                FVVHSL = (1. + EXPVV) / (1. - EXPVVS) / VI
+            else 
+                FVVHSL = (2. + BETVIT) / BETVITS / VI
+            end if
+
+            SL = FVVHSL * SL ! applying VV-W-H factor on line intensity
+            SLL = SL * AL
+
+            if (ALAD > BOUNDL) then
+                if (VI < VS) then
+                    call LEFTLBL(VS, VI, VV_LOR, EPS) 
+                else 
+                    if (VI >= VF) then
+                        call RIGHTLBL(VS, VI, VV_LOR, EPS)
+                    else 
+                        call CENTLBL(VS, VI, VV_LOR, EPS)
+                    end if
+                end if
+            else
+                if (ALAD > BOUNDD) then
+                    if (VI < VS) then
+                        call LEFTLBL(VS, VI, VOIGT, EPS)
+                    else
+                        if (VI >= VF) then
+                            call RIGHTLBL(VS, VI, VOIGT, EPS)
+                        else 
+                            call CENTLBL(VS, VI, VOIGT, EPS)
+                        end if
+                    end if
+                else 
+                    if ( VI < VS ) then
+                        call LEFTLBL(VS, VI, DOPLER, EPS)
+                    else 
+                        if ( VI >= VF) then
+                            call RIGHTLBL(VS, VI, DOPLER, EPS)
+                        else 
+                            call CENTLBL(VS, VI, DOPLER, EPS)
+                        end if
+                    end if
+                end if
+            end if 
         end do
 
         ! ------------------------------------------------------ !
