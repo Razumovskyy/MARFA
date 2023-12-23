@@ -150,4 +150,5 @@ program main
     end do
     close(5555)
     write(*,*) ' *** Congratulations! PT-table is READY! ***'
+    deallocate(QofT)
 end program main
