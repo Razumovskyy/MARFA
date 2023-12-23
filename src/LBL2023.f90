@@ -4,27 +4,26 @@ module spectroscopy
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
     real(kind=DP) :: V_I_ ! line position in cm^-1
-    real(kind=DP) :: S_I_  ! line intensity (typically for given temperature, often 296 K)
+    real :: S_I_  ! line intensity (typically for given temperature, often 296 K)
     
     ! Air-broadened half-width -- the half-width of the spectral line at half-maximum (HWHM)
     ! due to broadening by air (primarily nitrogen and oxygen)
-    real(kind=DP) :: ALFA_I_ ! HWHM due to air
-    real(kind=DP) :: ALFAS_I_ ! HWHM due to self-collisions
+    real :: ALFA_I_ ! HWHM due to air
+    real :: ALFAS_I_ ! HWHM due to self-collisions
     
-    real(kind=DP) :: E_I_  ! Lower-state energy (energy of the lower state of the transition)
+    real :: E_I_  ! Lower-state energy (energy of the lower state of the transition)
     
     ! A factor used to scale the line intensity, often related to isotopic abundance 
     ! or other factors that affect the overall intensity of the line.
-    real(kind=DP) :: FACT_I_ ! Intensity scaling factor
+    real :: FACT_I_ ! Intensity scaling factor
     
     integer :: NISO_I_ ! Isotopolouge number
     
     ! The shift in the line position due to pressure. 
     ! It represents the change in the central frequency of the line under different pressure conditions.
-    real(kind=DP) :: SHIFT_I_ ! Pressure-induced line shift
+    real :: SHIFT_I_ ! Pressure-induced line shift
 
-    real, allocatable :: QofT(:,:)
-    integer :: kk, ll, nMolecules, nTemperatures
+    ! ------- ^^^^ do not change the kinds there ^^^^ ------ !
 contains
     real function VOIGT(XXX)
         real(kind=DP), intent(in) :: XXX
@@ -66,6 +65,7 @@ contains
         integer :: NLIN ! number of lines in one file
         ! consider removing it from the subroutine argument list, otherwise warning 
         ! that this variable is already defined in the parent scope
+
         real(kind=DP) :: VAA, VFISH
 
         real :: TOLD, ISOOLD ! likely old values for save block
@@ -130,25 +130,17 @@ contains
 
         ! zero initialisation of pressure, temperature and density from shared_vars_main module
         ! MBR
-        T = 0. 
-        P = 0.
-        RO = 0.
+
+        ! CHANGE THIS IN LEGACY CODE !!! T, P, RO are fetched from the module shared_vars_main !
+        ! T = 0. 
+        ! P = 0.
+        ! RO = 0.  
 
         TOLD = -5.
         ISOOLD = -5.
 
         VS = 1.0-04
         VF = 1.0-04
-
-        ! --- BLOCK for initialising the partiion functions sum array (QofT) --- !
-        open(unit=5555, file='data/QofT_formatted.dat', status='old', action='read')
-        read(5555, *) nMolecules, nTemperatures
-        allocate(QofT(nMolecules, nTemperatures))
-        do kk = 1, nMolecules
-            read(5555, *) (QofT(kk, ll), ll=1, nTemperatures)
-        end do
-        close(5555)
-        ! ---------------------------------------------------------------------- !
 
         MOTYPE = MO_E ! might be confusing with `select case` block from the K_HITRAN subroutine
 
@@ -158,9 +150,13 @@ contains
             VF = VS + DLT8
         end if
 
-        if ( P /= P1 .OR. T/=T1 .OR. RO /= RO1 ) then
-            if ( T /= T1 ) then
-                T = T1 
+        ! DEBUG SECTION
+        ! write(*,*) 'T in LBL2023.f90: ', T
+        ! pause
+
+        ! if ( P /= P1 .OR. T/=T1 .OR. RO /= RO1 ) then
+        !     if ( T /= T1 ) then
+                !T = T1 
                 TT = T
                 TST = TS/T
                 EK = BET * (T - TS)/(T * TS)
@@ -170,28 +166,58 @@ contains
                 C_G1 = 1. - C_G2
                 
                 !###  296K -> N_TAB=139 ###TIPS=C_G1*QofT(N_MOLIS,NTAB_G)+C_G2*QofT(N_MOLIS,NTAB_G+1) ! <<--- WTF is it ??
-
-            end if
-            P = P1
-            RO = RO1
+                
+                ! DEBUG SECTION
+                ! write(*,*) 'T: ', T
+                ! write(*,*) 'NTAB_G', NTAB_G 
+                ! pause
+                
+            ! end if
+            ! P = P1
+            ! RO = RO1
             PSELF = RO * 10. / 2.6872E25 * T/273.15
             PFOREI = P - PSELF
             APF = PFOREI/PS
             APS = PSELF/PS
             APF2 = PFOREI/P
             APS2 = PSELF/P 
-        end if
+        ! end if
 
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
         I = LINBEG - 1 ! MBR !
         do I = LINBEG, NLIN
-            ! ---------- Reading and preprpocessing the data ---------------------- !
+
+            !DEBUG SECTION
+            !write(*,*) '! ---------- Reading and preprpocessing the HITRAN data ---------------------- !'
+            !write(*,*) 'I= ', I
+            !write(*,*) 'NLIN= ', NLIN
+            !pause
+            if (I<=0) then
+                !!!!! 10th level falls !!!
+                write(*,*) '!!!!!!!', I, T;
+                exit
+            end if
             read(7777, rec=I) V_I_, S_I_, ALFA_I_, ALFAS_I_, E_I_, FACT_I_, NISO_I_, SHIFT_I_
+
+            ! DEBUG SECTION
+            ! write(*,*) '!------ read HITRAN data ------ !'
+            ! write(*,*) 'V_I_: ', V_I_
+            ! write(*,*) 'S_I_: ', S_I_
+            ! write(*,*) 'ALFA_I: ', ALFA_I_
+            ! write(*,*) 'ALFAS_I_: ', ALFAS_I_
+            ! write(*,*) 'E_I_: ', E_I_
+            ! write(*,*) 'FACT_I_: ', FACT_I_
+            ! write(*,*) 'NISO_I_: ', NISO_I
+            ! write(*,*) 'SHIFT_I: ', SHIFT_I_
+            ! pause
+            
             if (V_I_ >= VFISH) exit
 
-            if (V_I_ <= VAA) LINBEG = I ! MBR !
-            
+            if (V_I_ <= VAA) then
+                LINBEG = I ! MBR !
+            end if 
+
             SLSS = S_I_
             APALF = APF * ALFA_I_
             APALS = APS * ALFAS_I_
@@ -217,6 +243,13 @@ contains
                 DOPCON = 4.29e-7 * sqrt(T/WISO(N_MOLIS)) ! <--------- FORMULA !!
 
                 !* Total internal partition function -- statistics sum ? *!
+                
+                !DEBUG SECTION
+                ! write(*,*) 'QofT dimensions:', size(QofT, 1), size(QofT, 2)
+                ! write(*,*) 'N_MOLIS: ', N_MOLIS
+                ! write(*,*) 'NTAB_G', NTAB_G 
+                ! pause
+
                 STS3 = C_G1 * QofT(N_MOLIS, NTAB_G) + C_G2 * QofT(N_MOLIS, NTAB_G+1) ! <---- INTERPOLATION FORMULA between two values of the partition function
                 STR3 = QofT(N_MOLIS, 139) ! At 296K
                 

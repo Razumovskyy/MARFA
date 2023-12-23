@@ -62,6 +62,11 @@ contains
 
         LINBEG0 = 1
         read(7777, rec=LINBEG0) VAA0
+
+        ! DEBUG SECTION
+        !write(*,*)'line position:', VAA0
+        !pause
+
         if (VSTART > OBR25) then
             VA = VSTART - OBR25
 
@@ -81,6 +86,8 @@ contains
 
         if ( JOLD /= JO ) then
             JOLD = JO
+            ! write(*,*) LINBEG0
+            ! pause
             LINBEG = LINBEG0
             VAA = VAA0
         end if
@@ -116,6 +123,14 @@ contains
 
         !*--------- LINE-by-LINE calculations ------------------------- !
 
+        ! write(*,*) '-------- input to LBL 2023 subroutine -------- !'
+        ! write(*,*) 'MOTYPE: ', MOTYPE
+        ! write(*,*) 'LINBEG: ', LINBEG
+        ! write(*,*) 'VAA: ', VAA
+        ! write(*,*) 'VFISH: ' , VFISH
+        ! write(*,*) 'NLIN: ', NLIN
+        ! write(*,*) '!------------------------------------------------ !'
+        
         call LBL2023(MOTYPE, LINBEG, VAA, VFISH, NLIN)
 
         VR4 = VS

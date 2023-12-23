@@ -18,7 +18,7 @@ program main
 
     ! Parameters
     integer, parameter :: IOUT = 47
-    real(kind=dp), parameter :: DIAP = 10.0
+    real(kind=DP), parameter :: DIAP = 10.0
 
     ! Numeric Variables
     integer :: NGS, JMAX, J, JJJ
@@ -27,7 +27,7 @@ program main
     real(kind=DP) :: VSTARTT, V_END, DLT8
 
     ! Arrays (pressure, temperature, density)
-    real(kind=DP) :: PPP(200), TTT(200), RORO(200)
+    real :: PPP(200), TTT(200), RORO(200)
 
     ! String Variables
     character(len=20) :: ATM
@@ -37,6 +37,8 @@ program main
     character(len=3) :: JNAMB ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
     ! character(len=20) :: LINE_PATH
     ! character(len=50) :: FI
+
+    integer :: kk, ll, nMolecules, nTemperatures
 
     EPS = 0.0
     H0=STEP
@@ -72,6 +74,16 @@ program main
     ! <<<< End of the user's part >>>> !
 
     DLT8 = 10.0
+
+    ! --- BLOCK for initialising the partiion functions sum array (QofT) --- !
+    open(unit=5555, file='data/QofT_formatted.dat', status='old', action='read')
+    read(5555, *) nMolecules, nTemperatures
+    allocate(QofT(nMolecules, nTemperatures))
+    do kk = 1, nMolecules
+        read(5555, *) (QofT(kk, ll), ll=1, nTemperatures)
+    end do
+    close(5555)
+    ! ---------------------------------------------------------------------- !
     
     open(5555, file='control/PT-Protocol')
 
@@ -80,8 +92,11 @@ program main
         P = PPP(JJJ)
         T = TTT(JJJ)
         RO = RORO(JJJ)
-        VSTART = VSTARTT - DLT8
+        VSTART = VSTARTT - DLT8 ! ???
         write(5555, *) JJJ, P, T, JMAX
+        
+        !DEBUG SECTION
+        !write(*,*) JJJ, P, T, JMAX
 
         JNAMB = '___'
         if ( JJJ < 10 ) then
@@ -100,8 +115,12 @@ program main
 
         do J = 0, 99999999
             ! *** calculation inside 10.0 cm^-1 *** !
+            ! write(*,*) 'VSTART: ', VSTART
             VSTART = VSTART + DLT8
             VFINISH = VSTART + DLT8
+            ! write(*,*) 'V_END: ', V_END
+            ! write(*,*) VSTART, VFINISH
+            ! pause
             
             if ( VSTART >= V_END ) exit
 
@@ -115,6 +134,12 @@ program main
                 WVA = 10.0
             end if
             
+            ! DEBUG SECTION
+            ! write(*,*) '!---------input to subroutine K_HITRAN_3g-----------!'
+            ! write(*,*) 'MOLECULE: ', MOLECULE
+            ! write(*,*) 'JJJ: ', JJJ
+            ! write(*,*) '---------end of input to subroutine K_HITRAN_3g------!'
+
             call K_HITRAN_3g(MOLECULE, JJJ)
 
             write(IOUT, rec=NW) RK
