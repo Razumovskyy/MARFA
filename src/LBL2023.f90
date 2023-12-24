@@ -1,47 +1,3 @@
-module spectroscopy
-    use globals
-    implicit none
-    ! HITRAN spectral data variables
-    ! Not 100% sure about the explanations !!
-    real(kind=DP) :: V_I_ ! line position in cm^-1
-    real :: S_I_  ! line intensity (typically for given temperature, often 296 K)
-    
-    ! Air-broadened half-width -- the half-width of the spectral line at half-maximum (HWHM)
-    ! due to broadening by air (primarily nitrogen and oxygen)
-    real :: ALFA_I_ ! HWHM due to air
-    real :: ALFAS_I_ ! HWHM due to self-collisions
-    
-    real :: E_I_  ! Lower-state energy (energy of the lower state of the transition)
-    
-    ! A factor used to scale the line intensity, often related to isotopic abundance 
-    ! or other factors that affect the overall intensity of the line.
-    real :: FACT_I_ ! Intensity scaling factor
-    
-    integer :: NISO_I_ ! Isotopolouge number
-    
-    ! The shift in the line position due to pressure. 
-    ! It represents the change in the central frequency of the line under different pressure conditions.
-    real :: SHIFT_I_ ! Pressure-induced line shift
-
-    ! ------- ^^^^ do not change the kinds there ^^^^ ------ !
-contains
-    real function VOIGT(XXX)
-        real(kind=DP), intent(in) :: XXX
-    end function VOIGT
-
-    real(kind=DP) function VV_LOR(X)
-        real(kind=DP), intent(in) :: X
-    end function VV_LOR
-
-    real(kind=DP) function DOPLER(X)
-        real(kind=DP), intent(in) :: X
-    end function DOPLER
-
-    real(kind=DP) function VAN_VLE(T, V)
-        real(kind=DP) :: T, V
-    end function VAN_VLE
-end module spectroscopy
-
 module LBL
     use globals
     use shared_vars_main
@@ -49,6 +5,7 @@ module LBL
     use molecule_vars
     use spectroscopy
     use molar_masses, only: WISO
+    use shape_functions
     use LINE_GRID_CALC
     implicit none
 contains
@@ -60,20 +17,7 @@ contains
         ! avoided SAVE blocks
         ! avoided COMMON blocks
         
-        ! uncomment when ready to provide line-shape functions as arguments to the 
-        ! LEFTLBL, CENTLBL, RIGHTLBL subroutines
-        !Ensure all functions assigned to ShapeFuncPtr conform to the shape_func interface.
-        ! procedure(shape_func), pointer :: ShapeFuncPtr
-
-        ! ----- move this section below where LEFTLBL, CENTLBL and RIGHTLBL are called ---- !
-        ! ! Assign the function pointer to VOIGT and call LEFTLBL
-        ! ShapeFuncPtr => VOIGT
-        ! call LEFTLBL(..., ShapeFuncPtr)
-    
-        ! ! Later reassign the function pointer to DOPLER and call RightLBL
-        ! ShapeFuncPtr => DOPLER
-        ! call RightLBL(..., ShapeFuncPtr)
-        ! ----------------------------------------------------------------------------------!
+        procedure(shape_func), pointer :: ShapeFuncPtr
 
         integer :: MO_E ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
         integer :: LINBEG ! integer line label used for locating record in direct access file
@@ -163,8 +107,8 @@ contains
         ! CHANGE THIS IN LEGACY CODE !!! T, P, RO are fetched from the module shared_vars_main !
         ! T = 0. 
         ! P = 0.
-        ! RO = 0.  
-
+        ! RO = 0.
+        
         TOLD = -5.
         ISOOLD = -5.
 
@@ -323,33 +267,42 @@ contains
 
             if (ALAD > BOUNDL) then
                 if (VI < VS) then
-                    call LEFTLBL(VS, VI, VV_LOR, EPS) 
+                    ShapeFuncPtr => VV_LOR
+                    call LEFTLBL(VS, VI, ShapeFuncPtr) 
                 else 
                     if (VI >= VF) then
-                        call RIGHTLBL(VS, VI, VV_LOR, EPS)
+                        ShapeFuncPtr => VV_LOR
+                        call RIGHTLBL(VS, VI, ShapeFuncPtr)
                     else 
-                        call CENTLBL(VS, VI, VV_LOR, EPS)
+                        ShapeFuncPtr => VV_LOR
+                        call CENTLBL(VS, VI, ShapeFuncPtr)
                     end if
                 end if
             else
                 if (ALAD > BOUNDD) then
                     if (VI < VS) then
-                        call LEFTLBL(VS, VI, VOIGT, EPS)
+                        ShapeFuncPtr => VOIGT
+                        call LEFTLBL(VS, VI, ShapeFuncPtr)
                     else
                         if (VI >= VF) then
-                            call RIGHTLBL(VS, VI, VOIGT, EPS)
+                            ShapeFuncPtr => VOIGT
+                            call RIGHTLBL(VS, VI, ShapeFuncPtr)
                         else 
-                            call CENTLBL(VS, VI, VOIGT, EPS)
+                            ShapeFuncPtr => VOIGT
+                            call CENTLBL(VS, VI, ShapeFuncPtr)
                         end if
                     end if
                 else 
                     if ( VI < VS ) then
-                        call LEFTLBL(VS, VI, DOPLER, EPS)
+                        ShapeFuncPtr => DOPLER
+                        call LEFTLBL(VS, VI, ShapeFuncPtr)
                     else 
                         if ( VI >= VF) then
-                            call RIGHTLBL(VS, VI, DOPLER, EPS)
+                            ShapeFuncPtr => DOPLER
+                            call RIGHTLBL(VS, VI, ShapeFuncPtr)
                         else 
-                            call CENTLBL(VS, VI, DOPLER, EPS)
+                            ShapeFuncPtr => DOPLER
+                            call CENTLBL(VS, VI, ShapeFuncPtr)
                         end if
                     end if
                 end if
