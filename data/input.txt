@@ -1,3 +1,0 @@
-10.0d0    100.d0                                          INTERVAL
-H2O_117.dat
- 
