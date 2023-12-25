@@ -1,5 +1,5 @@
 module K_HITRAN
-    use globals
+    use kinds
     use shared_vars_main
     use MESH1
     use molecule_vars

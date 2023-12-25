@@ -1,5 +1,5 @@
 module spectroscopy
-    use globals
+    use kinds
     implicit none
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!

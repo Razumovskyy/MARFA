@@ -1,6 +1,6 @@
 module molecule_vars
     ! variables related to the molecules
-    use globals
+    use kinds
     implicit none
     integer :: MOTYPE ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
     integer :: NLIN ! number of lines in one HITRAN file (e.g. H16.01)

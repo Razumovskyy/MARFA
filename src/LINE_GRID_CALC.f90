@@ -1,5 +1,5 @@
 module LINE_GRID_CALC
-    use globals
+    use kinds
     use MESH1
     use shape_functions
     implicit none
