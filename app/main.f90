@@ -1,30 +1,51 @@
+!*******************************************************************************
+! main.f90
+!*******************************************************************************
+!
+! Legacy Code Author: Boris Fomin
+! Rework and adding new features: Mikhail Razumovskii
+!
+! Program Description:
+! This program calculates PT-TABLE (Pressure-Temperature Table) for Venus Atmosphere,
+! specifically designed to handle temperatures up to 1000 K. The current version focuses
+! on line-by-line spectroscopic analysis for a single gas species at a time,
+! supporting H2O, CO2, or SO2. It does not incorporate continuum models.
+!
+! Principal Features:
+! 1. 9 internal grids for detailed spectral analysis.
+! 2. Adapted for high-resolution spectroscopic data from HITRAN database.
+!
+!*******************************************************************************
+
 program main
-    !*******************************************************************************
-    !*  Principal feature: 9  internal grids                                       *
-    !* --------------------------------------------------------------------------- * 
-    !*  Calculates PT-TABLE for Venus Atmosphere (up to 1000 K!)                   *
-    !* A.  HITRAN- ONLY 1 gas (H2O or CO2  or SO2);                                * 
-    !* B. NO Continuum models                                                      *
-    !!*******************************************************************************
-    use globals
-    use shared_vars_main
+    use kinds, only: DP
     use MESH1
     use K_HITRAN
-
-    ! REWORK FROM LEGACY CODE TIPS
-    ! use `only` with `use module`
-
     implicit none
 
-    ! Parameters
-    integer, parameter :: IOUT = 47
-    real(kind=DP), parameter :: DIAP = 10.0
+    ! MAIN OUTPUT FILE !
+    integer, parameter :: OUTPUT_UNIT = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
+    integer :: outputRecNum ! NW ! ** ! record number in the output file
 
-    ! Numeric Variables
-    integer :: NGS, JMAX, J, JJJ
-    integer :: NW ! record number in the derect access file
+    ! INPUT FILES !
+    integer, parameter :: CONFIG_UNIT = 675 ! NEW ! ** !
+    integer, parameter :: ATM_PROFILE_UNIT = 676 ! NEW ! ** ! 
+    integer, parameter :: ST_SUM_UNIT = 677 ! NEW ! ** !
+
+    ! CONTROL AND DEBUG FILES !
+    integer, parameter :: ATM_CONTROL_UNIT = 5555 ! NEW ! ** !
+
+    ! LIMITATIONS !
+    integer, parameter :: levelsThreshold = 200 ! NEW ! ** !
+
+    ! Atmospheric Profile Data
+    integer :: numGasSpecies ! NGS ! ** ! number of species in the analysis
+    integer :: levels ! levels ! ** ! number of levels in the header of the atmospheric profile file
     real :: ZZZ
     real(kind=DP) :: VSTARTT, V_END, DLT8
+
+    ! Indices !
+    integer :: levelsIdx ! levelsIdx ! ** ! 
 
     ! Arrays (pressure, temperature, density)
     real :: PPP(200), TTT(200), RORO(200)
@@ -53,67 +74,67 @@ program main
     H9=H8/2. 
     H=H9/4.
 
-    open(675, file='data/input.txt', status='old')
-    read(675, *) VSTARTT, V_END
-    read(675, '(A20)') ATM
-    close(675)
+    open(CONFIG_UNIT, file='simConfig.ini', status='old')
+    read(CONFIG_UNIT, *) VSTARTT, V_END
+    read(CONFIG_UNIT, '(A20)') ATM
+    close(CONFIG_UNIT)
 
-    open(676, file='data/Atmospheres/'//ATM, status='old')
-    read(676, '(A5)') N_HAUS !!! change the length value (first line of atmospheric profile)
-    read(676, *) NGS, JMAX
-    if (JMAX > 200) then
-        write(*,*) ' ***  JMAX>200  *** '
+    open(ATM_PROFILE_UNIT, file='data/Atmospheres/'//ATM, status='old')
+    read(ATM_PROFILE_UNIT, '(A5)') N_HAUS !!! change the length value (first line of atmospheric profile)
+    read(ATM_PROFILE_UNIT, *) numGasSpecies, levels
+    
+    if (levels > 200) then
+        write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is // &
+                                bigger than ', levelsThreshold, '. WARNING message here.'
     endif
-    read(676, '(A5)') MOLECULE
-    do J = 1, JMAX
-        read(676, *) ZZZ, PPP(J), TTT(J), RORO(J)
+    
+    read(ATM_PROFILE_UNIT, '(A5)') MOLECULE
+    do levelsIdx = 1, levels
+        read(ATM_PROFILE_UNIT, *) ZZZ, PPP(levelsIdx), TTT(levelsIdx), RORO(levelsIdx)
     end do
-    close(676)
+    close(ATM_PROFILE_UNIT)
 
     MOL3 = MOLECULE
-    ! <<<< End of the user's part >>>> !
 
     DLT8 = 10.0
 
-    ! --- BLOCK for initialising the partiion functions sum array (QofT) --- !
-    open(unit=5555, file='data/QofT_formatted.dat', status='old', action='read')
-    read(5555, *) nMolecules, nTemperatures
+    open(unit=ST_SUM_UNIT, file='data/QofT_formatted.dat', status='old', action='read')
+    read(ST_SUM_UNIT, *) nMolecules, nTemperatures
     allocate(QofT(nMolecules, nTemperatures))
     do kk = 1, nMolecules
-        read(5555, *) (QofT(kk, ll), ll=1, nTemperatures)
+        read(ST_SUM_UNIT, *) (QofT(kk, ll), ll=1, nTemperatures)
     end do
-    close(5555)
-    ! ---------------------------------------------------------------------- !
+    close(ST_SUM_UNIT)
     
     open(5555, file='control/PT-Protocol')
 
-    do JJJ = 1, JMAX
-        write(*,*) JJJ, JMAX ! for real time tracking how many levels has been processed
-        P = PPP(JJJ)
-        T = TTT(JJJ)
-        RO = RORO(JJJ)
+    do levelsIdx = 1, levels
+        write(*,*) levelsIdx, levels ! for real time tracking how many levels has been processed
+        P = PPP(levelsIdx)
+        T = TTT(levelsIdx)
+        RO = RORO(levelsIdx)
         VSTART = VSTARTT - DLT8 ! ???
-        write(5555, *) JJJ, P, T, JMAX
+        write(5555, *) levelsIdx, P, T, levels
         
         !DEBUG SECTION
-        !write(*,*) JJJ, P, T, JMAX
+        !write(*,*) levelsIdx, P, T, levels
 
         JNAMB = '___'
-        if ( JJJ < 10 ) then
-            write(JNAMB(1:1), '(I1)') JJJ
+        if ( levelsIdx < 10 ) then
+            write(JNAMB(1:1), '(I1)') levelsIdx
         else
-            if ( JJJ < 100 ) then
-                write(JNAMB(1:2), '(I2)') JJJ
+            if ( levelsIdx < 100 ) then
+                write(JNAMB(1:2), '(I2)') levelsIdx
             else
-                write(JNAMB(1:3), '(I2)') JJJ
+                write(JNAMB(1:3), '(I2)') levelsIdx
             end if
         end if
         
-        open(IOUT, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
+        open(OUTPUT_UNIT, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
             file='output/PT_CALC/'//JNAMB//'.'//MOL3)
         ! RECL = NT for Windows Fortrans !
 
-        do J = 0, 99999999
+        do while (VSTART < V_END)
             ! *** calculation inside 10.0 cm^-1 *** !
             ! write(*,*) 'VSTART: ', VSTART
             VSTART = VSTART + DLT8
@@ -121,10 +142,8 @@ program main
             ! write(*,*) 'V_END: ', V_END
             ! write(*,*) VSTART, VFINISH
             ! pause
-            
-            if ( VSTART >= V_END ) exit
 
-            NW = (VSTART + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
+            outputRecNum = (VSTART + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
             ! write(*,*) VSTART, V_END
 
             WVA = VSTART - OBR25
@@ -137,15 +156,15 @@ program main
             ! DEBUG SECTION
             ! write(*,*) '!---------input to subroutine K_HITRAN_3g-----------!'
             ! write(*,*) 'MOLECULE: ', MOLECULE
-            ! write(*,*) 'JJJ: ', JJJ
+            ! write(*,*) 'levelsIdx: ', levelsIdx
             ! write(*,*) '---------end of input to subroutine K_HITRAN_3g------!'
 
-            call K_HITRAN_3g(MOLECULE, JJJ)
+            call K_HITRAN_3g(MOLECULE, levelsIdx)
 
-            write(IOUT, rec=NW) RK
+            write(OUTPUT_UNIT, rec=outputRecNum) RK
             ! *** end of the calculation inside 10.0 cm^-1 *** !
         end do
-        close(IOUT)
+        close(OUTPUT_UNIT)
         ! *** end of the calculation over Z *** !
     end do
     close(5555)
