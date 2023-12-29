@@ -1,4 +1,4 @@
-module MESH1
+module mesh
     implicit none
     
     ! Parameters
@@ -35,4 +35,4 @@ module MESH1
     ! Additional variables
     real :: H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H
     
-end module MESH1
+end module mesh

@@ -1,7 +1,7 @@
 module LBL
     use kinds
     use shared_vars_main
-    use MESH1
+    use mesh
     use molecule_vars
     use spectroscopy
     use molar_masses, only: WISO

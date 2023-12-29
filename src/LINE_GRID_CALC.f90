@@ -1,6 +1,6 @@
 module LINE_GRID_CALC
     use kinds
-    use MESH1
+    use mesh
     use shape_functions
     implicit none
 contains

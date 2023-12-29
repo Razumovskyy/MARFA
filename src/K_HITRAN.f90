@@ -1,7 +1,7 @@
 module K_HITRAN
     use kinds
     use shared_vars_main
-    use MESH1
+    use mesh
     use molecule_vars
     use LBL
     use van_fleck_huber_vars
