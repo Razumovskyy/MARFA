@@ -2,8 +2,8 @@
 ! main.f90
 !*******************************************************************************
 !
-! Legacy Code Author: Boris Fomin
-! Rework and adding new features: Mikhail Razumovskii
+! Legacy code: Boris Fomin
+! Rework and new features: Mikhail Razumovskii
 !
 ! Program Description:
 ! This program calculates PT-TABLE (Pressure-Temperature Table) for Venus Atmosphere,
@@ -19,47 +19,46 @@
 
 program main
     use kinds, only: DP
-    use MESH1
+    use mesh
     use K_HITRAN
     implicit none
 
     ! MAIN OUTPUT FILE !
-    integer, parameter :: OUTPUT_UNIT = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
+    integer, parameter :: outputUnit = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
     integer :: outputRecNum ! NW ! ** ! record number in the output file
 
     ! INPUT FILES !
-    integer, parameter :: CONFIG_UNIT = 675 ! NEW ! ** !
-    integer, parameter :: ATM_PROFILE_UNIT = 676 ! NEW ! ** ! 
-    integer, parameter :: ST_SUM_UNIT = 677 ! NEW ! ** !
+    integer, parameter :: configUnit = 675 ! NEW ! ** !
+    integer, parameter :: atmProfileUnit = 676 ! NEW ! ** ! 
+    integer, parameter :: stSumUnit = 677 ! NEW ! ** !
 
     ! CONTROL AND DEBUG FILES !
-    integer, parameter :: ATM_CONTROL_UNIT = 5555 ! NEW ! ** !
+    integer, parameter :: atmControlUnit = 5555 ! NEW ! ** !
 
     ! LIMITATIONS !
     integer, parameter :: levelsThreshold = 200 ! NEW ! ** !
 
-    ! Atmospheric Profile Data
+    ! Input config file !
+    real(kind=DP) :: startWV, endWV
+    character(len=20) :: atmProfileFile ! NEW ! ** ! ATM
+    real(kind=DP) :: deltaWV ! NEW ! ** ! DLT8 ! also declared in LBL2023 !!! ! to be added to the input config file
+
+    ! Atmospheric Profile Data !
+    character(len=20) :: atmTitle
     integer :: numGasSpecies ! NGS ! ** ! number of species in the analysis
-    integer :: levels ! levels ! ** ! number of levels in the header of the atmospheric profile file
-    real :: ZZZ
-    real(kind=DP) :: VSTARTT, V_END, DLT8
+    integer :: levels ! JMAX ! ** ! number of levels in the header of the atmospheric profile file
+    character(len=7) :: molecule
+    real, allocatable :: pressure(:), temperature(:), density(:) ! NEW ! ** ! PPP, TTT, RORO
+    integer :: levelsIdx ! JJJ ! ** ! index for loop over levels
 
-    ! Indices !
-    integer :: levelsIdx ! levelsIdx ! ** ! 
+    ! Statistical sums file !
+    integer :: nIsotopes, nTemperatures
+    integer :: stSumTIdx, stSumIsoIdx  ! indices for statistical sums
 
-    ! Arrays (pressure, temperature, density)
-    real :: PPP(200), TTT(200), RORO(200)
+    ! Other variables !
+    character(len=3) :: reducedMoleculeName ! 
+    character(len=3) :: levelLabel ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
 
-    ! String Variables
-    character(len=20) :: ATM
-    character(len=5) :: N_HAUS
-    character(len=5) :: MOLECULE
-    character(len=3) :: MOL3
-    character(len=3) :: JNAMB ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
-    ! character(len=20) :: LINE_PATH
-    ! character(len=50) :: FI
-
-    integer :: kk, ll, nMolecules, nTemperatures
 
     EPS = 0.0
     H0=STEP
@@ -74,100 +73,115 @@ program main
     H9=H8/2. 
     H=H9/4.
 
-    open(CONFIG_UNIT, file='simConfig.ini', status='old')
-    read(CONFIG_UNIT, *) VSTARTT, V_END
-    read(CONFIG_UNIT, '(A20)') ATM
-    close(CONFIG_UNIT)
+    ! --------- reading from the config file -------------- !
+    open(configUnit, file='simConfig.ini', status='old')
+    read(configUnit, *) startWV, endWV
+    read(configUnit, '(A20)') atmProfileFile
+    close(configUnit)
+    ! ------------------------------------------------------ !
 
-    open(ATM_PROFILE_UNIT, file='data/Atmospheres/'//ATM, status='old')
-    read(ATM_PROFILE_UNIT, '(A5)') N_HAUS !!! change the length value (first line of atmospheric profile)
-    read(ATM_PROFILE_UNIT, *) numGasSpecies, levels
-    
+    ! ---------- reading from the ATM file ------------------ !
+
+    open(atmProfileUnit, file='data/Atmospheres/'//atmProfileFile, status='old')
+    read(atmProfileUnit, '(A20)') atmTitle
+    read(atmProfileUnit, *) numGasSpecies, levels
     if (levels > 200) then
-        write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is // &
+        write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is &
                                 bigger than ', levelsThreshold, '. WARNING message here.'
     endif
-    
-    read(ATM_PROFILE_UNIT, '(A5)') MOLECULE
+    read(atmProfileUnit, '(A7)') molecule
+    allocate(pressure(levels))
+    allocate(temperature(levels))
+    allocate(density(levels))
     do levelsIdx = 1, levels
-        read(ATM_PROFILE_UNIT, *) ZZZ, PPP(levelsIdx), TTT(levelsIdx), RORO(levelsIdx)
+        read(atmProfileUnit, *) pressure(levelsIdx), temperature(levelsIdx), density(levelsIdx)
     end do
-    close(ATM_PROFILE_UNIT)
+    close(atmProfileUnit)
 
-    MOL3 = MOLECULE
+    ! -------------------------------------------------------- !
 
-    DLT8 = 10.0
-
-    open(unit=ST_SUM_UNIT, file='data/QofT_formatted.dat', status='old', action='read')
-    read(ST_SUM_UNIT, *) nMolecules, nTemperatures
-    allocate(QofT(nMolecules, nTemperatures))
-    do kk = 1, nMolecules
-        read(ST_SUM_UNIT, *) (QofT(kk, ll), ll=1, nTemperatures)
+    ! ---------- reading Statistical Sums --------------------- !
+    open(unit=stSumUnit, file='data/QofT_formatted.dat', status='old', action='read')
+    read(stSumUnit, *) nIsotopes, nTemperatures
+    allocate(QofT(nIsotopes, nTemperatures))
+    do stSumIsoIdx = 1, nIsotopes
+        read(stSumUnit, *) (QofT(stSumIsoIdx, stSumTIdx), stSumTIdx=1, nTemperatures)
     end do
-    close(ST_SUM_UNIT)
+    close(stSumUnit)
+    ! --------------------------------------------------------- !
+
+    reducedMoleculeName = molecule
+
+    deltaWV = 10.0
     
-    open(5555, file='control/PT-Protocol')
+    open(atmControlUnit, file='control/PT-Protocol')
 
     do levelsIdx = 1, levels
         write(*,*) levelsIdx, levels ! for real time tracking how many levels has been processed
-        P = PPP(levelsIdx)
-        T = TTT(levelsIdx)
-        RO = RORO(levelsIdx)
-        VSTART = VSTARTT - DLT8 ! ???
-        write(5555, *) levelsIdx, P, T, levels
+        P = pressure(levelsIdx)
+        T = temperature(levelsIdx)
+        RO = density(levelsIdx)
+        write(atmControlUnit, *) levelsIdx, P, T, levels
         
         !DEBUG SECTION
         !write(*,*) levelsIdx, P, T, levels
 
-        JNAMB = '___'
+        levelLabel = '___'
         if ( levelsIdx < 10 ) then
-            write(JNAMB(1:1), '(I1)') levelsIdx
+            write(levelLabel(1:1), '(I1)') levelsIdx
         else
             if ( levelsIdx < 100 ) then
-                write(JNAMB(1:2), '(I2)') levelsIdx
+                write(levelLabel(1:2), '(I2)') levelsIdx
             else
-                write(JNAMB(1:3), '(I2)') levelsIdx
+                write(levelLabel(1:3), '(I2)') levelsIdx
             end if
         end if
         
-        open(OUTPUT_UNIT, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
-            file='output/PT_CALC/'//JNAMB//'.'//MOL3)
+        open(outputUnit, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
+            file='output/PT_CALC/'//levelLabel//'.'//reducedMoleculeName)
         ! RECL = NT for Windows Fortrans !
 
-        do while (VSTART < V_END)
+        
+        startDeltaWV = startWV - deltaWV
+        do while (startDeltaWV < endWV)
             ! *** calculation inside 10.0 cm^-1 *** !
-            ! write(*,*) 'VSTART: ', VSTART
-            VSTART = VSTART + DLT8
-            VFINISH = VSTART + DLT8
-            ! write(*,*) 'V_END: ', V_END
-            ! write(*,*) VSTART, VFINISH
+            ! write(*,*) 'startDeltaWV: ', startDeltaWV
+            ! write(*,*) 'endDeltaWV: ', endDeltaWV
+            ! pause
+            startDeltaWV = startDeltaWV + deltaWV
+            endDeltaWV = startDeltaWV + deltaWV
+            ! write(*,*) startDeltaWV, endDeltaWV
             ! pause
 
-            outputRecNum = (VSTART + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
-            ! write(*,*) VSTART, V_END
+            outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
+            ! write(*,*) startDeltaWV, V_END
 
-            WVA = VSTART - OBR25
-            WVB = VSTART + DLT8 + OBR25
+            extStartDeltaWV = startDeltaWV - cutOff
+            extEndDeltaWV = startDeltaWV + deltaWV + cutOff
 
-            if ( WVA < 10.0 ) then
-                WVA = 10.0
+            if ( extStartDeltaWV < startWV ) then
+                extStartDeltaWV = startDeltaWV
             end if
             
             ! DEBUG SECTION
             ! write(*,*) '!---------input to subroutine K_HITRAN_3g-----------!'
-            ! write(*,*) 'MOLECULE: ', MOLECULE
+            ! write(*,*) 'molecule: ', molecule
             ! write(*,*) 'levelsIdx: ', levelsIdx
             ! write(*,*) '---------end of input to subroutine K_HITRAN_3g------!'
 
-            call K_HITRAN_3g(MOLECULE, levelsIdx)
+            call K_HITRAN_3g(molecule, levelsIdx)
+            ! call K_HITRAN_3g(molecule, pressure, temperature, density, ...)
 
-            write(OUTPUT_UNIT, rec=outputRecNum) RK
+            write(outputUnit, rec=outputRecNum) RK
             ! *** end of the calculation inside 10.0 cm^-1 *** !
         end do
-        close(OUTPUT_UNIT)
+        close(outputUnit)
         ! *** end of the calculation over Z *** !
     end do
-    close(5555)
+    close(atmControlUnit)
     write(*,*) ' *** Congratulations! PT-table is READY! ***'
+    deallocate(pressure)
+    deallocate(density)
+    deallocate(temperature)
     deallocate(QofT)
 end program main
