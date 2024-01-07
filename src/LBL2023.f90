@@ -29,7 +29,7 @@ contains
         real(kind=DP) :: VAA, VFISH
 
         real :: TOLD, ISOOLD ! likely old values for save block
-        real(kind=DP) :: VS, VF ! MBR; similar to VSTART, VS, VFINISH
+        real(kind=DP) :: VS, VF ! MBR; similar to startDeltaWV, VS, endDeltaWV
 
         real, parameter :: PI = 3.141593 ! pi
         real, parameter :: TS = 296. ! Standard temperature
@@ -39,7 +39,7 @@ contains
         real, parameter :: BOUNDD = 0.01 ! likely some boundary value related to Doppler broadening, given its small value
         real, parameter :: BET = 1.438786  ! hc/k -- possibly second radiation constant in specific units (look for Planck law)
 
-        real(kind=DP) :: DLT8 ! likely the wavenumber-like delta with DP for loop 
+        real(kind=DP) :: deltaWV ! likely the wavenumber-like delta with DP for loop 
 
         real :: T1, P1, RO1 ! replicas of T, R, P -- can't find in legacy where they are initialised !
         
@@ -117,10 +117,10 @@ contains
 
         MOTYPE = MO_E ! might be confusing with `select case` block from the K_HITRAN subroutine
 
-        if ( VS /= VSTART ) then 
-            DLT8 = 10.0
-            VS = VSTART
-            VF = VS + DLT8
+        if ( VS /= startDeltaWV ) then 
+            deltaWV = 10.0
+            VS = startDeltaWV
+            VF = VS + deltaWV
         end if
 
         ! DEBUG SECTION
@@ -219,9 +219,9 @@ contains
                 
                 !DEBUG SECTION
                 ! write(*,*) 'QofT dimensions:', size(QofT, 1), size(QofT, 2)
-                ! write(*,*) 'N_MOLIS: ', N_MOLIS
-                ! write(*,*) 'NTAB_G', NTAB_G 
                 ! pause
+                ! ! write(*,*) 'N_MOLIS: ', N_MOLIS
+                ! write(*,*) 'NTAB_G', NTAB_G
 
                 STS3 = C_G1 * QofT(N_MOLIS, NTAB_G) + C_G2 * QofT(N_MOLIS, NTAB_G+1) ! <---- INTERPOLATION FORMULA between two values of the partition function
                 STR3 = QofT(N_MOLIS, 139) ! At 296K

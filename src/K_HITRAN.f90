@@ -18,9 +18,9 @@ contains
         integer :: LINBEG, LINBEG0 
         real(kind=DP) :: VAA, VAA0 ! spectral position of the first line from HITRAN file which is in the loop interval
         real(kind=DP) :: VFISH ! upper limit of the spectral range for each interval in the loop
-        real(kind=DP) :: VA ! VSTART with offset from the OBR250
+        real(kind=DP) :: VA ! startDeltaWV with offset from the OBR250
 
-        real(kind=DP) :: VS ! may be redundant ! the same as VSTART from the `shared_vars_main` module
+        real(kind=DP) :: VS ! may be redundant ! the same as startDeltaWV from the `shared_vars_main` module
         ! start of the interval
         real(kind=DP) :: VR4 ! may be redundant !
 
@@ -67,8 +67,8 @@ contains
         !write(*,*)'line position:', VAA0
         !pause
 
-        if (VSTART > OBR25) then
-            VA = VSTART - OBR25
+        if (startDeltaWV > cutOff) then
+            VA = startDeltaWV - cutOff
 
             do LINBEG0 = 1, NLIN
                 read(7777, rec=LINBEG0) VAA0
@@ -92,12 +92,12 @@ contains
             VAA = VAA0
         end if
 
-        VAA = VSTART + DELTA - OBR25
+        VAA = startDeltaWV + DELTA - cutOff
         if (VAA <= VAA0) VAA = VAA0
 
-        VFISH = VSTART + DELTA + OBR25
+        VFISH = startDeltaWV + DELTA + cutOff
 
-        VS = VSTART
+        VS = startDeltaWV
 
         !*-------------------------------------------------------------
 
