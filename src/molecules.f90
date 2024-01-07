@@ -3,7 +3,7 @@ module molecule_vars
     use kinds
     implicit none
     integer :: MOTYPE ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
-    integer :: NLIN ! number of lines in one HITRAN file (e.g. H16.01)
+    integer :: NLIN ! number of lines in one HITRAN file (e.g. H16.01) 
     character(len=20) :: LINE_PATH ! file names with HITRAN raw data (one file per molecule)
 end module molecule_vars
 

@@ -47,8 +47,8 @@ program main
     character(len=20) :: atmTitle
     integer :: numGasSpecies ! NGS ! ** ! number of species in the analysis
     integer :: levels ! JMAX ! ** ! number of levels in the header of the atmospheric profile file
-    character(len=7) :: molecule
-    real, allocatable :: pressure(:), temperature(:), density(:) ! NEW ! ** ! PPP, TTT, RORO
+    character(len=7) :: inputMolecule
+    real, allocatable :: height(:), pressure(:), temperature(:), density(:) ! NEW ! ** ! PPP, TTT, RORO
     integer :: levelsIdx ! JJJ ! ** ! index for loop over levels
 
     ! Statistical sums file !
@@ -89,15 +89,15 @@ program main
         write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is &
                                 bigger than ', levelsThreshold, '. WARNING message here.'
     endif
-    read(atmProfileUnit, '(A7)') molecule
+    read(atmProfileUnit, '(A7)') inputMolecule
+    allocate(height(levels))
     allocate(pressure(levels))
     allocate(temperature(levels))
     allocate(density(levels))
     do levelsIdx = 1, levels
-        read(atmProfileUnit, *) pressure(levelsIdx), temperature(levelsIdx), density(levelsIdx)
+        read(atmProfileUnit, *) height(levelsIdx), pressure(levelsIdx), temperature(levelsIdx), density(levelsIdx)
     end do
     close(atmProfileUnit)
-
     ! -------------------------------------------------------- !
 
     ! ---------- reading Statistical Sums --------------------- !
@@ -110,7 +110,7 @@ program main
     close(stSumUnit)
     ! --------------------------------------------------------- !
 
-    reducedMoleculeName = molecule
+    reducedMoleculeName = inputMolecule
 
     deltaWV = 10.0
     
@@ -122,9 +122,6 @@ program main
         T = temperature(levelsIdx)
         RO = density(levelsIdx)
         write(atmControlUnit, *) levelsIdx, P, T, levels
-        
-        !DEBUG SECTION
-        !write(*,*) levelsIdx, P, T, levels
 
         levelLabel = '___'
         if ( levelsIdx < 10 ) then
@@ -142,37 +139,28 @@ program main
         ! RECL = NT for Windows Fortrans !
 
         
-        startDeltaWV = startWV - deltaWV
+        startDeltaWV = startWV 
+        endDeltaWV = startDeltaWV + deltaWV
         do while (startDeltaWV < endWV)
             ! *** calculation inside 10.0 cm^-1 *** !
-            ! write(*,*) 'startDeltaWV: ', startDeltaWV
-            ! write(*,*) 'endDeltaWV: ', endDeltaWV
-            ! pause
-            startDeltaWV = startDeltaWV + deltaWV
-            endDeltaWV = startDeltaWV + deltaWV
-            ! write(*,*) startDeltaWV, endDeltaWV
-            ! pause
 
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
             ! write(*,*) startDeltaWV, V_END
 
-            extStartDeltaWV = startDeltaWV - cutOff
-            extEndDeltaWV = startDeltaWV + deltaWV + cutOff
+            ! extStartDeltaWV = startDeltaWV - cutOff
+            ! extEndDeltaWV = startDeltaWV + deltaWV + cutOff
 
-            if ( extStartDeltaWV < startWV ) then
-                extStartDeltaWV = startDeltaWV
-            end if
+            ! if ( extStartDeltaWV < startWV ) then
+            !     extStartDeltaWV = startDeltaWV
+            ! end if
             
-            ! DEBUG SECTION
-            ! write(*,*) '!---------input to subroutine K_HITRAN_3g-----------!'
-            ! write(*,*) 'molecule: ', molecule
-            ! write(*,*) 'levelsIdx: ', levelsIdx
-            ! write(*,*) '---------end of input to subroutine K_HITRAN_3g------!'
-
-            call K_HITRAN_3g(molecule, levelsIdx)
-            ! call K_HITRAN_3g(molecule, pressure, temperature, density, ...)
+            call K_HITRAN_3g(inputMolecule)
+            ! call K_HITRAN_3g(inputMolecule, pressure, temperature, density, ...)
 
             write(outputUnit, rec=outputRecNum) RK
+
+            startDeltaWV = startDeltaWV + deltaWV
+            endDeltaWV = startDeltaWV + deltaWV
             ! *** end of the calculation inside 10.0 cm^-1 *** !
         end do
         close(outputUnit)
@@ -180,6 +168,7 @@ program main
     end do
     close(atmControlUnit)
     write(*,*) ' *** Congratulations! PT-table is READY! ***'
+    deallocate(height)
     deallocate(pressure)
     deallocate(density)
     deallocate(temperature)
