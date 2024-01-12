@@ -154,7 +154,7 @@ program main
             !     extStartDeltaWV = startDeltaWV
             ! end if
             
-            call K_HITRAN_3g(inputMolecule)
+            call K_HITRAN_3g(inputMolecule, levelsIdx)
             ! call K_HITRAN_3g(inputMolecule, pressure, temperature, density, ...)
 
             write(outputUnit, rec=outputRecNum) RK

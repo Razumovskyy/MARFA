@@ -8,42 +8,37 @@ module K_HITRAN
     implicit none
 
 contains
-    subroutine K_HITRAN_3g(molecule)
-        logical, save :: isFirstCall = .true.
-        real(kind=DP), save :: VAA0
+    subroutine K_HITRAN_3g(molecule, currentLevel)
         character(len=5), intent(in) :: molecule
-
-        integer, parameter :: spectrDataUnit = 7777
+        integer, intent(in) :: currentLevel
         
-        ! integer :: JO ! most likely the current height level
-        ! integer :: JOLD ! the same as JO (but with save tricks)
+        integer, parameter :: spectrDataUnit = 7777
 
-        ! `0` at the end is used for saving the first call variable value
-        integer :: LINBEG
-        real(kind=DP) :: VAA ! spectral position of the first line from HITRAN file which is in the loop interval
-        real(kind=DP) :: VFISH ! upper limit of the spectral range for each interval in the loop
-        real(kind=DP) :: VA ! startDeltaWV with offset from the OBR250
+        logical, save :: isFirstCall = .true.
+        real(kind=DP), save :: startingLineWV ! VAA0
+        integer, save :: previousLevel
+        integer, save :: startingLineIdx ! LINBEG0
 
-        real(kind=DP) :: VS ! may be redundant ! the same as startDeltaWV from the `shared_vars_main` module
+        ! TODO understand better why `save` is needed for these guys:
+        real(kind=DP), save :: lineWV ! VAA ! spectral position of the first line from HITRAN file which is in the loop interval
+        integer, save :: lineIdx ! LINBEG
+        
+        ! real(kind=DP) :: VFISH ! *** ! extEndDeltaWV
+        ! real(kind=DP) :: VA ! *** ! extStartDeltaWV
+
+        ! real(kind=DP) :: VS ! may be redundant ! the same as startDeltaWV from the `shared_vars_main` module ! **** ! startDeltaWV
         ! start of the interval
-        real(kind=DP) :: VR4 ! may be redundant !
+        ! real(kind=DP) :: VR4 ! may be redundant ! **** ! startDeltaWV
 
         integer :: I, J, M ! loop variables in lines 122 - 231 
         
-        ! LEGACY -> MODERN tips
-        ! SAVE blocks -- consider to remove completely
-        ! DATA blocks used for the initial declaration of the variable. 
-        ! instead of DATA blocks use inline initialization in type declaration.
-
-        !SAVE ISTART,LINBEG,LINBEG0,MOTYPE,NLIN,LINE_PATH,JOLD,VS,VFISH,VA,VAA,VAA0    
-
-        ! DATA ISTART/0/
-        ! if (ISTART == 0) then
-        !     JOLD = 0
-        !     ISTART = 1
-        LINBEG = 1
+        write(*,*) 'currentLevel: ', currentLevel
+        write(*,*) 'startDeltaWV: ', startDeltaWV
+        pause
         if (isFirstCall) then
             isFirstCall = .false.
+            startingLineIdx = 1
+            previousLevel = 0
             select case (molecule)
             case ('H2O')
                 MOTYPE = 1
@@ -67,52 +62,32 @@ contains
             open(spectrDataUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=LINE_PATH)
             ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=LINE_PATH) ! for windows
 
-            read(spectrDataUnit, rec=LINBEG) VAA0
-
-            ! write(*,*) VAA0
-            ! write(*,*) cutOff
-            ! pause
-
-            ! DEBUG SECTION
-            !write(*,*)'line position:', VAA0
-            !pause
-
+            read(spectrDataUnit, rec=startingLineIdx) startingLineWV
             if (startDeltaWV > cutOff) then
-                VA = startDeltaWV - cutOff
-
-                do LINBEG = 1, NLIN
-                    read(7777, rec=LINBEG) VAA0
-                    if (VAA0 > VA) then
-                        write(*,*) 'VAA0: ', VAA0
-                        pause
-                        exit
-                    end if
+                extStartDeltaWV = startDeltaWV - cutOff
+                do while (startingLineWV <= extStartDeltaWV)
+                    startingLineIdx = startingLineIdx + 1
+                    read(spectrDataUnit, rec=startingLineIdx) startingLineWV
                 end do
             end if
         end if
-        ! end if ! end of `if` block from the line 23
-        ! END OF THE FIRST CALL OF this subroutine in the legacy code ! 
-        ! variables which were calculated here in this part, then were saved using
-        ! the `SAVE` block
 
         ! Consider moving up part to the separate subroutine, because
         ! it is only for reading from the HITRAN file and must be done only at once.
 
-        ! seems useless in legacy code (lines 51-55)
-        ! if ( JOLD /= JO ) then
-        !     JOLD = JO
-        !     ! write(*,*) LINBEG0
-        !     ! pause
-        !     LINBEG = LINBEG0
-        !     VAA = VAA0
-        ! end if
+        if ( currentLevel /= previousLevel ) then
+            previousLevel = currentLevel
+            lineIdx = startingLineIdx
+            lineWV = startingLineWV
+        end if
 
-            VAA = startDeltaWV + DELTA - cutOff
-            if (VAA <= VAA0) VAA = VAA0
+            ! Seems like redundant feature
+            lineWV = startDeltaWV + DELTA - cutOff
+            if (lineWV <= startingLineWV) lineWV = startingLineWV
 
-            VFISH = startDeltaWV + DELTA + cutOff
+            extEndDeltaWV = startDeltaWV + delta + cutOff
 
-            VS = startDeltaWV
+            ! VS = startDeltaWV
             !*-------------------------------------------------------------
 
             RK = 0.0
@@ -134,23 +109,17 @@ contains
             ! modifying it as per the specific requirements of the program.
 
             !*--------------------------------------------------------------
-
-            !*--------- LINE-by-LINE calculations ------------------------- !
-
-            ! write(*,*) '-------- input to LBL 2023 subroutine -------- !'
-            ! write(*,*) 'MOTYPE: ', MOTYPE
-            ! write(*,*) 'LINBEG: ', LINBEG
-            ! write(*,*) 'VAA: ', VAA
-            ! write(*,*) 'VFISH: ' , VFISH
-            ! write(*,*) 'NLIN: ', NLIN
-            ! write(*,*) '!------------------------------------------------ !'
             
-            !write(*,*) 'LINBEG: ', LINBEG
-            !pause
-            call LBL2023(MOTYPE, LINBEG, VAA, VFISH, NLIN)
+            ! consider removing lineWV from input parameters, because it is still read in LBL2023
+            write(*,*) 'lineIdx before LBL2023: ', lineIdx
+            pause
+            call LBL2023(MOTYPE, lineIdx, lineWV, NLIN)
+            write(*,*) 'lineIdx after LBL2023: ', lineIdx
+            pause
+            ! ------------ END OF THE FIRST PART ---------------------- !
+            ! VR4 = VS
 
-            VR4 = VS
-
+            ! ------- SECOND PART ----------- !
             ! ^^^^ CREATE SUBROUTINE TO REMOVE REPETITIONS ^^^^ !
             ! be careful that last loop differs from NT0-NT8    !
             
@@ -267,12 +236,14 @@ contains
 
             ! ^^^^ CREATE SUBROUTINE TO REMOVE REPETITIONS ^^^^ !
             ! be careful that last loop differs from NT0-NT8    !
+            ! -------- END OF SECOND PART -------------------------- !
 
+            ! -------- THIRD PART ---------------------------------- !
             ! Conditional Applying the Van-Vleck-Weisskopf-Huber factor !
-            if ( VS >= 2000. ) then
+            if ( startDeltaWV >= 2000. ) then
                 JM1 = 0
                 do J = 1, NT
-                    FACTV = VR4 + H * JM1
+                    FACTV = startDeltaWV + H * JM1
                     RK(J) = RK(J) * FACTV  ! <------ key line here
                     if ( RK(J) < 0.) RK(J) = 0.
                     JM1 = JM1 + 1
@@ -280,7 +251,7 @@ contains
             else
                 JM1 = 0
                 do J = 1, NT
-                    VIVI = VS + H * JM1
+                    VIVI = startDeltaWV + H * JM1
                     EVV_ = VIVI * 1.438786 / T
                     if (VIVI < 0.1) then
                         FACTV = VIVI * EVV_ / (2. - EVV_)

@@ -9,8 +9,9 @@ module LBL
     use LINE_GRID_CALC
     implicit none
 contains
-    
-    subroutine LBL2023(MO_E, LINBEG, VAA, VFISH, NLIN)
+
+    !subroutine LBL2023(MO_E, LINBEG, VAA, VFISH, NLIN)
+    subroutine LBL2023(MO_E, LINBEG, VAA, NLIN) ! VFISH is from shared_vars_main (extEndDeltaWV)
         ! consider avoid providing arguments in subroutine.
         ! if they are declared in the external module -- why to declare them twice ?
 
@@ -26,7 +27,7 @@ contains
         ! consider removing it from the subroutine argument list, otherwise warning 
         ! that this variable is already defined in the parent scope
 
-        real(kind=DP) :: VAA, VFISH
+        real(kind=DP) :: VAA
 
         real :: TOLD, ISOOLD ! likely old values for save block
         real(kind=DP) :: VS, VF ! MBR; similar to startDeltaWV, VS, endDeltaWV
@@ -185,8 +186,12 @@ contains
             ! write(*,*) 'SHIFT_I: ', SHIFT_I_
             ! pause
             
-            if (V_I_ >= VFISH) exit
-
+            if (V_I_ >= extEndDeltaWV) then
+                write(*,*) 'V_I_ >= VIFSH --> exit'
+                write(*,*) 'V_I_: ', V_I_, 'VFISH: ', extEndDeltaWV
+                exit
+            end if 
+            
             if (V_I_ <= VAA) then
                 LINBEG = I ! MBR !
             end if 
