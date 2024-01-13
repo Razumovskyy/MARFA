@@ -10,8 +10,8 @@ module LBL
     implicit none
 contains
 
-    !subroutine LBL2023(MO_E, LINBEG, VAA, VFISH, NLIN)
-    subroutine LBL2023(MO_E, LINBEG, VAA, NLIN) ! VFISH is from shared_vars_main (extEndDeltaWV)
+    !subroutine LBL2023(MO_E, LINBEG, VAA, VFISH, totalLines)
+    subroutine LBL2023(MO_E, LINBEG, VAA, totalLines) ! VFISH is from shared_vars_main (extEndDeltaWV)
         ! consider avoid providing arguments in subroutine.
         ! if they are declared in the external module -- why to declare them twice ?
 
@@ -23,7 +23,7 @@ contains
         integer :: MO_E ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
         integer :: LINBEG ! integer line label used for locating record in direct access file
         integer :: I ! loop variable for accessing the record in direct access file
-        integer :: NLIN ! number of lines in one file
+        integer :: totalLines ! number of lines in one file
         ! consider removing it from the subroutine argument list, otherwise warning 
         ! that this variable is already defined in the parent scope
 
@@ -116,7 +116,7 @@ contains
         VS = 1.0-04
         VF = 1.0-04
 
-        MOTYPE = MO_E ! might be confusing with `select case` block from the K_HITRAN subroutine
+        molType = MO_E ! might be confusing with `select case` block from the K_HITRAN subroutine
 
         if ( VS /= startDeltaWV ) then 
             deltaWV = 10.0
@@ -160,12 +160,12 @@ contains
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
         I = LINBEG - 1 ! MBR !
-        do I = LINBEG, NLIN
+        do I = LINBEG, totalLines
 
             !DEBUG SECTION
             !write(*,*) '! ---------- Reading and preprpocessing the HITRAN data ---------------------- !'
             !write(*,*) 'I= ', I
-            !write(*,*) 'NLIN= ', NLIN
+            !write(*,*) 'totalLines= ', totalLines
             !pause
             if (I<=0) then
                 !!!!! 10th level falls !!!
@@ -187,8 +187,8 @@ contains
             ! pause
             
             if (V_I_ >= extEndDeltaWV) then
-                write(*,*) 'V_I_ >= VIFSH --> exit'
-                write(*,*) 'V_I_: ', V_I_, 'VFISH: ', extEndDeltaWV
+                ! write(*,*) 'V_I_ >= VIFSH --> exit'
+                ! write(*,*) 'V_I_: ', V_I_, 'VFISH: ', extEndDeltaWV
                 exit
             end if 
             

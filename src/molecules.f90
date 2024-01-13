@@ -2,9 +2,9 @@ module molecule_vars
     ! variables related to the molecules
     use kinds
     implicit none
-    integer :: MOTYPE ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
-    integer :: NLIN ! number of lines in one HITRAN file (e.g. H16.01) 
-    character(len=20) :: LINE_PATH ! file names with HITRAN raw data (one file per molecule)
+    integer :: molType ! Fomin feature: molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
+    integer :: totalLines ! number of lines in one HITRAN file (e.g. H16.01) 
+    character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
 end module molecule_vars
 
 module van_fleck_huber_vars
