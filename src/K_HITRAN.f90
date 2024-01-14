@@ -14,19 +14,33 @@ contains
         
         integer, parameter :: hitranFileUnit = 7777 ! Unit of file with HITRAN data
 
+        ! this save is to decouple the logic run only for the first call
         logical, save :: isFirstCall = .true.
-        real(kind=DP), save :: startingLineWV ! VAA0
+        
+        ! this save is for the keeping the current level. 
+        ! It is calculated on the first call and then updates if the level changes in the calling procedure
         integer, save :: currentLevel ! JOLD
+        
+        ! this save is for the loop over height levels
+        ! after the step into the new level, LBL starts from startingLineIdx
         integer, save :: startingLineIdx ! LINBEG0
+        
+        ! this save is for the loop over deltas (deltaWV)
+        ! after the step into the next delta interval , we need to keep the lineIdx from the LBL calc
+        integer, save :: lineIdx ! LINBEG 
 
-        ! TODO understand better why `save` is needed for these guys:
-        real(kind=DP), save :: lineWV ! VAA ! spectral position of the first line from HITRAN file which is in the loop interval
-        integer, save :: lineIdx ! LINBEG
+        real(kind=DP), save :: startingLineWV ! VAA0
+
+        ! this save is for
+        real(kind=DP), save :: capWV
         
         ! real(kind=DP) :: VFISH ! *** ! extEndDeltaWV
         ! real(kind=DP) :: VA ! *** ! extStartDeltaWV
         ! real(kind=DP) :: VS ! the same as startDeltaWV
         ! real(kind=DP) :: VR4 ! the same as startDeltaWV
+
+        integer :: iterRecNum
+        real(kind=DP) :: iterLineWV
 
         integer :: I, J, M ! loop variables in lines 122 - 231 
         
@@ -45,11 +59,14 @@ contains
         ! 1. Fetch the molecule name and its molType
         ! 2. Fetch corresponding HITRAN file and a total number of lines in this file
         ! 3. Interrupt if unsuported molecule
-        ! 4. 
+        ! 4. Establish starting position of the line in HITRAN file and the value of transition for this line -- for global interval from conifig: [startWV, endWV] interval
+        !    cutOff -- included.
+
         if (isFirstCall) then
             isFirstCall = .false.
             startingLineIdx = 1
             currentLevel = 0
+            lineIdx = 0
             select case (molecule)
             case ('H2O')
                 molType = 1
@@ -75,27 +92,34 @@ contains
             ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=hitranFile)
 
             read(hitranFileUnit, rec=startingLineIdx) startingLineWV
-            if (startDeltaWV > cutOff) then
-                extStartDeltaWV = startDeltaWV - cutOff
-                do while (startingLineWV <= extStartDeltaWV)
-                    startingLineIdx = startingLineIdx + 1
-                    read(hitranFileUnit, rec=startingLineIdx) startingLineWV
+            if (startWV > cutOff) then
+                extStartWV = startWV - cutOff
+                iterRecNum = startingLineIdx
+                iterLineWV = startingLineWV
+                do while(iterLineWV <= extStartWV)
+                    iterRecNum = iterRecNum + 1
+                    read(hitranFileUnit, rec=iterRecNum) iterLineWV
                 end do
+                startingLineIdx = iterRecNum
+                startingLineWV = iterLineWV
             end if
         end if
 
+        ! TODO: move to the main.f90 file in the inner loop
+        extStartDeltaWV = startDeltaWV - cutOff
+        extEndDeltaWV = startDeltaWV + deltaWV + cutOff
+
         if ( currentLevel /= loopLevel ) then
+            ! write(*,*) 'Level change !'
+            ! write(*,*) 'current Level: ', currentLevel
+            ! write(*,*) 'loop Level: ', loopLevel
+            ! pause
             currentLevel = loopLevel
             lineIdx = startingLineIdx
-            lineWV = startingLineWV
         end if
 
-        ! -----------------UNKNOWN FEATURE --------------------!
-        lineWV = startDeltaWV + DELTA - cutOff
-        if (lineWV <= startingLineWV) lineWV = startingLineWV
-        ! ------------------------------------------------------!
-        
-        extEndDeltaWV = startDeltaWV + delta + cutOff
+        capWV = extStartDeltaWV + deltaWV
+        if (capWV <= startingLineWV) capWV = startingLineWV
 
         ! VS = startDeltaWV
         !*-------------------------------------------------------------
@@ -120,11 +144,9 @@ contains
 
         !*--------------------------------------------------------------
         
-        ! TODO: remove lineWV from LBL2023 input parameters, because it is accessible through the `shared_vars_main` module
-        
         ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
         ! pause
-        call LBL2023(molType, lineIdx, lineWV, totalLines)
+        call LBL2023(molType, lineIdx, capWV, totalLines)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause
         ! ------------ END OF THE FIRST PART ---------------------------------- !

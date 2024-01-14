@@ -11,12 +11,7 @@ module LBL
 contains
 
     !subroutine LBL2023(MO_E, LINBEG, VAA, VFISH, totalLines)
-    subroutine LBL2023(MO_E, LINBEG, VAA, totalLines) ! VFISH is from shared_vars_main (extEndDeltaWV)
-        ! consider avoid providing arguments in subroutine.
-        ! if they are declared in the external module -- why to declare them twice ?
-
-        ! avoided SAVE blocks
-        ! avoided COMMON blocks
+    subroutine LBL2023(MO_E, LINBEG, capWV, totalLines) ! VFISH is from shared_vars_main (extEndDeltaWV)
         
         procedure(shape_func), pointer :: ShapeFuncPtr
 
@@ -27,7 +22,10 @@ contains
         ! consider removing it from the subroutine argument list, otherwise warning 
         ! that this variable is already defined in the parent scope
 
-        real(kind=DP) :: VAA
+        ! this variable serves as a cap in the loop to stop increasing the lineIdx
+        ! it is the value as when there is the next step over the DeltaWV, hitran reading will from the correct record number
+        ! the definition and the value assignment is in K_HTRAN module
+        real(kind=DP) :: capWV
 
         real :: TOLD, ISOOLD ! likely old values for save block
         real(kind=DP) :: VS, VF ! MBR; similar to startDeltaWV, VS, endDeltaWV
@@ -39,8 +37,6 @@ contains
         real, parameter :: BOUNDL = 10. ! some boundary parameter
         real, parameter :: BOUNDD = 0.01 ! likely some boundary value related to Doppler broadening, given its small value
         real, parameter :: BET = 1.438786  ! hc/k -- possibly second radiation constant in specific units (look for Planck law)
-
-        real(kind=DP) :: deltaWV ! likely the wavenumber-like delta with DP for loop 
 
         real :: T1, P1, RO1 ! replicas of T, R, P -- can't find in legacy where they are initialised !
         
@@ -119,7 +115,6 @@ contains
         molType = MO_E ! might be confusing with `select case` block from the K_HITRAN subroutine
 
         if ( VS /= startDeltaWV ) then 
-            deltaWV = 10.0
             VS = startDeltaWV
             VF = VS + deltaWV
         end if
@@ -168,8 +163,8 @@ contains
             !write(*,*) 'totalLines= ', totalLines
             !pause
             if (I<=0) then
-                !!!!! 10th level falls !!!
-                write(*,*) '!!!!!!!', I, T;
+                write(*,*) '!!!!!!!'
+                write(*,*) 'Attention: Negative REC !'
                 exit
             end if
             read(7777, rec=I) V_I_, S_I_, ALFA_I_, ALFAS_I_, E_I_, FACT_I_, NISO_I_, SHIFT_I_
@@ -186,15 +181,9 @@ contains
             ! write(*,*) 'SHIFT_I: ', SHIFT_I_
             ! pause
             
-            if (V_I_ >= extEndDeltaWV) then
-                ! write(*,*) 'V_I_ >= VIFSH --> exit'
-                ! write(*,*) 'V_I_: ', V_I_, 'VFISH: ', extEndDeltaWV
-                exit
-            end if 
+            if (V_I_ >= extEndDeltaWV) exit
             
-            if (V_I_ <= VAA) then
-                LINBEG = I ! MBR !
-            end if 
+            if (V_I_ <= capWV) LINBEG = I
 
             SLSS = S_I_
             APALF = APF * ALFA_I_
@@ -313,7 +302,6 @@ contains
                 end if
             end if 
         end do
-
         ! ------------------------------------------------------ !
 
         ! -------- End of line-by-line loop (iteration over records in HITRAN file) --!

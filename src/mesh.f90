@@ -14,7 +14,7 @@ module mesh
     integer, parameter :: NT9 = NT8 * 2 !  = 5120
     integer, parameter :: NT = NT9 * 4 + 1 !  = 20481
     real, parameter :: cutOff = 250.0 ! consider moving to the line_vars module ! OBR25
-    real, parameter :: delta = 10.0
+    real, parameter :: deltaWV = 10.0
     real, parameter :: STEP = 1.0
     integer, parameter :: NINT = 10
 

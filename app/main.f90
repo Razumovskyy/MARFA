@@ -19,6 +19,7 @@
 
 program main
     use kinds, only: DP
+    use shared_vars_main
     use mesh
     use K_HITRAN
     implicit none
@@ -39,9 +40,9 @@ program main
     integer, parameter :: levelsThreshold = 200 ! NEW ! ** !
 
     ! Input config file !
-    real(kind=DP) :: startWV, endWV
+    !real(kind=DP) :: startWV, endWV
     character(len=20) :: atmProfileFile ! NEW ! ** ! ATM
-    real(kind=DP) :: deltaWV ! NEW ! ** ! DLT8 ! also declared in LBL2023 !!! ! to be added to the input config file
+    !real(kind=DP) :: deltaWV ! NEW ! ** ! DLT8 ! also declared in LBL2023 !!! ! to be added to the input config file
 
     ! Atmospheric Profile Data !
     character(len=20) :: atmTitle
@@ -60,6 +61,8 @@ program main
     character(len=3) :: levelLabel ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
 
 
+    ! TODO: optimization proposition. Reduce reading operations because of highly overlaping intervals: [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
+    
     EPS = 0.0
     H0=STEP
     H1=H0/2.
@@ -111,8 +114,6 @@ program main
     ! --------------------------------------------------------- !
 
     reducedMoleculeName = inputMolecule
-
-    deltaWV = 10.0
     
     open(atmControlUnit, file='control/PT-Protocol')
 
@@ -147,20 +148,19 @@ program main
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
             ! write(*,*) startDeltaWV, V_END
 
-            ! extStartDeltaWV = startDeltaWV - cutOff
-            ! extEndDeltaWV = startDeltaWV + deltaWV + cutOff
-
             ! if ( extStartDeltaWV < startWV ) then
             !     extStartDeltaWV = startDeltaWV
             ! end if
-            
+
+            ! write(*,*) 'startDeltaWV before K_HITRAN call: ', startDeltaWV
+            ! pause
             call K_HITRAN_3g(inputMolecule, levelsIdx)
-            ! call K_HITRAN_3g(inputMolecule, pressure, temperature, density, ...)
 
             write(outputUnit, rec=outputRecNum) RK
 
             startDeltaWV = startDeltaWV + deltaWV
             endDeltaWV = startDeltaWV + deltaWV
+            
             ! *** end of the calculation inside 10.0 cm^-1 *** !
         end do
         close(outputUnit)
