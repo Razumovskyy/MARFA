@@ -272,19 +272,15 @@ contains
         ! Conditional Applying the Van-Vleck-Weisskopf-Huber factor !
         
         ! VR4 = VS
-        
         if ( startDeltaWV >= 2000. ) then
-            JM1 = 0
             do J = 1, NT
-                FACTV = startDeltaWV + H * JM1
+                FACTV = startDeltaWV + H * (J - 1)
                 RK(J) = RK(J) * FACTV  ! <------ key line here
                 if ( RK(J) < 0.) RK(J) = 0.
-                JM1 = JM1 + 1
             end do
         else
-            JM1 = 0
             do J = 1, NT
-                VIVI = startDeltaWV + H * JM1
+                VIVI = startDeltaWV + H * (J - 1)
                 EVV_ = VIVI * 1.438786 / T
                 if (VIVI < 0.1) then
                     FACTV = VIVI * EVV_ / (2. - EVV_)
@@ -294,7 +290,6 @@ contains
                 end if
                 RK(J) = RK(J) * FACTV ! <------ key line here
                 if (RK(J) < 0.) RK(J) = 0.
-                JM1 = JM1 + 1
             end do
         end if
 
