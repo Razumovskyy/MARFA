@@ -280,9 +280,11 @@ contains
             end do
         else
             do J = 1, NT
+                ! TODO: why VIVI is a shifted line center ? See HITRAN documentation for clarifications
                 VIVI = startDeltaWV + H * (J - 1)
                 EVV_ = VIVI * 1.438786 / T
                 if (VIVI < 0.1) then
+                    ! TODO: simplify with continuing Taylor expnansion
                     FACTV = VIVI * EVV_ / (2. - EVV_)
                 else
                     EVV = exp(-EVV_)
