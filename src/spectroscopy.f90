@@ -40,4 +40,19 @@ contains
     real function VAN_VLE(T, V)
         real :: T, V
     end function VAN_VLE
+
+    real function R_factor(t, nu)
+        real :: T
+        real(kind=DP) :: nu
+
+        R_factor = nu * (1 - exp(-1.438786*nu/T)) / (1 + exp(-1.438786*nu/T))
+    end function R_factor
 end module spectroscopy
+
+module van_fleck_huber_vars
+    implicit none
+    integer :: JM1 ! likely just a loop index
+    real :: VIVI ! modified wavenumber within the loop
+    real :: EVV, EVV_ ! variables related to the exponential terms in the Van Vleck-Weisskopf-Huber factor calculations
+    real :: FACTV ! actual Van-Vleck factor applied
+end module van_fleck_huber_vars

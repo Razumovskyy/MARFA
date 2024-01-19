@@ -7,14 +7,6 @@ module molecule_vars
     character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
 end module molecule_vars
 
-module van_fleck_huber_vars
-    implicit none
-    integer :: JM1 ! likely just a loop index
-    real :: VIVI ! modified wavenumber within the loop
-    real :: EVV, EVV_ ! variables related to the exponential terms in the Van Vleck-Weisskopf-Huber factor calculations
-    real :: FACTV ! actual Van-Vleck factor applied
-end module van_fleck_huber_vars
-
 module molar_masses
     implicit none
     ! Molecular masses (isotopes as in GAMACHE's 2017data for 12 gases)
