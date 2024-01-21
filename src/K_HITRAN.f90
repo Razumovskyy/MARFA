@@ -1,5 +1,6 @@
 module K_HITRAN
     use kinds
+    use constants, only: C2
     use shared_vars_main
     use mesh
     use molecule_vars
@@ -42,7 +43,7 @@ contains
         integer :: iterRecNum
         real(kind=DP) :: iterLineWV
 
-        integer :: I, J, M ! loop variables in lines 122 - 231 
+        integer :: I, J, M ! loop variables mainly for grid calculations
         
         ! TODO: moving `ifFirstCall` part to the separate subroutine, because
         ! it is only for reading from the HITRAN file and must be done only at once.
@@ -269,32 +270,25 @@ contains
         ! ------------------------ END OF THE SECOND PART -------------------------- !
 
         ! ------------------------ THIRD PART ---------------------------------- !
-        ! Conditional Applying the Van-Vleck-Weisskopf-Huber factor !
+        ! Conditional Applying the Clough line shape factor !
         
-        ! VR4 = VS
-        if ( startDeltaWV >= 2000. ) then
-            do J = 1, NT
-                FACTV = startDeltaWV + H * (J - 1)
-                RK(J) = RK(J) * FACTV  ! <------ key line here
-                if ( RK(J) < 0.) RK(J) = 0.
-            end do
-        else
-            do J = 1, NT
-                ! TODO: why VIVI is a shifted line center ? See HITRAN documentation for clarifications
-                VIVI = startDeltaWV + H * (J - 1)
-                EVV_ = VIVI * 1.438786 / T
-                if (VIVI < 0.1) then
-                    ! TODO: simplify with continuing Taylor expnansion
-                    FACTV = VIVI * EVV_ / (2. - EVV_)
+        do J = 1, NT
+            lineShapeWV = startDeltaWV + H * (J - 1)
+            if ( startDeltaWV >= 2000. ) then
+                numeratorCloughFactor = lineShapeWV ! for nu >> 1 exp --> 0 in cloghFactor definition => numeratorCloughFactor ≈ nu
+            else
+                ! TODO: why lineShapeWV is a shifted line center ? See HITRAN documentation for clarifications
+                cloughFactorExpTerm = lineShapeWV * C2 / T
+                if (lineShapeWV < 0.1) then ! for nu << 1 
+                    ! TODO: simplify with continuing Taylor expansion
+                    numeratorCloughFactor = lineShapeWV * cloughFactorExpTerm / (2. - cloughFactorExpTerm)
                 else
-                    EVV = exp(-EVV_)
-                    FACTV = VIVI * (1. - EVV) / (1. + EVV)
+                    numeratorCloughFactor = R_factor(T, lineShapeWV)
                 end if
-                RK(J) = RK(J) * FACTV ! <------ key line here
-                if (RK(J) < 0.) RK(J) = 0.
-            end do
-        end if
-
+            end if
+            RK(J) = RK(J) * numeratorCloughFactor
+            if (RK(J) < 0.) RK(J) = 0.
+        end do
         ! ------------------------END OF THE THIRD PART ---------------------------- !
     end subroutine
 end module

@@ -1,5 +1,6 @@
 module spectroscopy
     use kinds
+    use constants, only: C2
     implicit none
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
@@ -44,15 +45,16 @@ contains
     real function R_factor(t, nu)
         real :: T
         real(kind=DP) :: nu
-
-        R_factor = nu * (1 - exp(-1.438786*nu/T)) / (1 + exp(-1.438786*nu/T))
+       
+        R_factor = nu * tanh(C2*nu/(2*T))
     end function R_factor
 end module spectroscopy
 
 module van_fleck_huber_vars
+    use kinds
     implicit none
     integer :: JM1 ! likely just a loop index
-    real :: VIVI ! modified wavenumber within the loop
-    real :: EVV, EVV_ ! variables related to the exponential terms in the Van Vleck-Weisskopf-Huber factor calculations
-    real :: FACTV ! actual Van-Vleck factor applied
+    real(kind=DP) :: lineShapeWV ! ** ! VIVI ! likely the grid line shape line position for grid calculations
+    real :: numeratorCloughFactor ! numerator of the Clough Factor see works by Clough 1989.
+    real :: cloughFactorExpTerm ! EVV_ ! ** ! auxilary variable for exponential factor in the R-fucntion
 end module van_fleck_huber_vars
