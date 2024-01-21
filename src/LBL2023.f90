@@ -1,5 +1,6 @@
 module LBL
     use kinds
+    use constants, only: PI, refTemperature, stPressure, stTemperature, LOSCHMIDT
     use shared_vars_main
     use mesh
     use molecule_vars
@@ -11,16 +12,16 @@ module LBL
 contains
 
     !subroutine LBL2023(MO_E, LINBEG, VAA, VFISH, totalLines)
-    subroutine LBL2023(MO_E, LINBEG, capWV, totalLines) ! VFISH is from shared_vars_main (extEndDeltaWV)
+    subroutine LBL2023(molType, LINBEG, capWV, totalLines, loopLevel) ! VFISH is from shared_vars_main (extEndDeltaWV)
         
         procedure(shape_func), pointer :: ShapeFuncPtr
 
-        integer :: MO_E ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
+        integer :: molType ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
         integer :: LINBEG ! integer line label used for locating record in direct access file
         integer :: I ! loop variable for accessing the record in direct access file
         integer :: totalLines ! number of lines in one file
-        ! consider removing it from the subroutine argument list, otherwise warning 
-        ! that this variable is already defined in the parent scope
+        integer :: loopLevel
+        integer, save :: currentLevel
 
         ! this variable serves as a cap in the loop to stop increasing the lineIdx
         ! it is the value as when there is the next step over the DeltaWV, hitran reading will from the correct record number
@@ -28,40 +29,26 @@ contains
         real(kind=DP) :: capWV
 
         real :: TOLD, ISOOLD ! likely old values for save block
-        real(kind=DP) :: VS, VF ! MBR; similar to startDeltaWV, VS, endDeltaWV
-
-        real, parameter :: PI = 3.141593 ! pi
-        real, parameter :: TS = 296. ! Standard temperature
-        real, parameter :: PS = 1. ! Standard pressure in atmsopheres
 
         real, parameter :: BOUNDL = 10. ! some boundary parameter
         real, parameter :: BOUNDD = 0.01 ! likely some boundary value related to Doppler broadening, given its small value
-        real, parameter :: BET = 1.438786  ! hc/k -- possibly second radiation constant in specific units (look for Planck law)
 
-        real :: T1, P1, RO1 ! replicas of T, R, P -- can't find in legacy where they are initialised !
+        real, save :: unitlessT ! unitless temperature (div by standard temperature)
         
-        real :: TT ! temperature
-        real :: TST ! unitless temperature (div by standard temperature)
-        
-        real :: EK ! some temperature dependent factor for energy-related calculations
-        ! ---------- second radiation constant is used for EK calculations (BET)
+        real, save :: EK ! some temperature dependent factor for energy-related calculations
+        ! ---------- second radiation constant is used for EK calculations (C2)
         
         ! variables likely related to temperature interpolation or indexing within
         ! temperature-realted data  (e.g. partition functions)
-        integer :: NTAB_G ! likely an index or pointer
-        real :: T_G1 ! likely temperature index corresponding to the specific index
-        real :: C_G1, C_G2 ! likely coefficients used for linear interpolation between table entries
+        integer, save :: NTAB_G ! likely an index or pointer
+        real, save :: T_G1 ! likely temperature index corresponding to the specific index
+        real, save :: C_G1, C_G2 ! likely coefficients used for linear interpolation between table entries
         
         ! variables related to pressure calculations
-        real :: PSELF ! self-broadening pressure component
-        real :: PFOREI ! foreign gas broadening component
-        ! ^^^ likely calculated from the total pressure P, density RO and standard conditions 
-        real :: APF ! likely ratio of foregin gas pressure to standard pressure
-        real :: APF2 ! likely ratio of foregin gas pressure to total pressure
-        real :: APS ! ratio of self-broadening pressure to standard pressure
-        real :: APS2 ! ration of self-broadening pressure to total pressure
+        real, save :: pSelf ! self-broadening pressure component
+        real, save :: pForeign ! foreign gas broadening component
         
-        real(kind=DP) :: SLSS ! replica of S_I_ (line intensity)
+        real(kind=DP) :: SLSS ! replica of lineIntensity (line intensity)
         real(kind=DP) :: APALS, APALF ! scaled self- and foreign- broadened HWMW
         real(kind=DP) :: AL ! Lorentz HWHM -- T and P dependent !
         
@@ -69,7 +56,7 @@ contains
         real(kind=DP) :: ALAL ! squared Lorentz half-width
         real(kind=DP) :: VI ! likely shifted line position under the current atmospheric pressure
 
-        integer :: ISO ! replica of NISO_I_ isotopolouge number
+        integer :: ISO ! replica of jointMolIso isotopolouge number
         
         !  The division by 100 could be a way to obtain a molecular identifier 
         ! from the isotopologue number. For example, if isotopologues are numbered such
@@ -97,60 +84,48 @@ contains
         real(kind=DP) :: EXPVV, EXPVVS ! exponential terms used in the calculation of Van Vleck-Weiss-Huber factor
         real(kind=DP) :: FVVHSL ! VV-W-H factor (calculation in two ways: for small BETVITS value approximation is used)
         real(kind=DP) :: SLL ! can be interpreted as a measure of the contribution of the Lorentzian component to the overall line profile.
-        
-        ! zero initialisation of pressure, temperature and density from shared_vars_main module
-        ! MBR
+
 
         ! CHANGE THIS IN LEGACY CODE !!! T, P, RO are fetched from the module shared_vars_main !
         ! T = 0. 
         ! P = 0.
         ! RO = 0.
         
-        TOLD = -5.
-        ISOOLD = -5.
+        ! TOLD = -5.
+        ! ISOOLD = -5.
 
-        VS = 1.0-04
-        VF = 1.0-04
+        ! VS = 1.0-04
+        ! endDeltaWV = 1.0-04
 
-        molType = MO_E ! might be confusing with `select case` block from the K_HITRAN subroutine
-
-        if ( VS /= startDeltaWV ) then 
-            VS = startDeltaWV
-            VF = VS + deltaWV
-        end if
+        ! if ( VS /= startDeltaWV ) then 
+        !     VS = startDeltaWV
+        !     endDeltaWV = VS + deltaWV
+        ! end if
 
         ! DEBUG SECTION
         ! write(*,*) 'T in LBL2023.f90: ', T
         ! pause
 
-        ! if ( P /= P1 .OR. T/=T1 .OR. RO /= RO1 ) then
-        !     if ( T /= T1 ) then
-                !T = T1 
-                TT = T
-                TST = TS/T
-                EK = BET * (T - TS)/(T * TS)
-                NTAB_G = (T - 20.0)/2 + 1
-                T_G1 = NTAB_G * 2.0 + 18.
-                C_G2 = (T - T_G1)/2.
-                C_G1 = 1. - C_G2
-                
-                !###  296K -> N_TAB=139 ###TIPS=C_G1*QofT(N_MOLIS,NTAB_G)+C_G2*QofT(N_MOLIS,NTAB_G+1) ! <<--- WTF is it ??
-                
-                ! DEBUG SECTION
-                ! write(*,*) 'T: ', T
-                ! write(*,*) 'NTAB_G', NTAB_G 
-                ! pause
-                
-            ! end if
-            ! P = P1
-            ! RO = RO1
-            PSELF = RO * 10. / 2.6872E25 * T/273.15
-            PFOREI = P - PSELF
-            APF = PFOREI/PS
-            APS = PSELF/PS
-            APF2 = PFOREI/P
-            APS2 = PSELF/P 
-        ! end if
+        if (currentLevel /= loopLevel) then
+            currentLevel = loopLevel
+            unitlessT = refTemperature/T
+            EK = C2 * (T - refTemperature)/(T * refTemperature)
+            NTAB_G = (T - 20.0)/2 + 1
+            T_G1 = NTAB_G * 2.0 + 18.
+            C_G2 = (T - T_G1)/2.
+            C_G1 = 1. - C_G2
+            
+            !###  296K -> N_TAB=139 ###TIPS=C_G1*QofT(N_MOLIS,NTAB_G)+C_G2*QofT(N_MOLIS,NTAB_G+1) ! <<--- WTF is it ??
+            
+            ! DEBUG SECTION
+            ! write(*,*) 'T: ', T
+            ! write(*,*) 'NTAB_G', NTAB_G 
+            ! pause
+
+            pSelf = RO * 10. / LOSCHMIDT * T/stTemperature
+            ! pSelf = RO * 10 * BOL * T ! more simpler ! 10 factor is because concentration data is in molecules/(cm^2*km)
+            pForeign = P - pSelf
+        end if
 
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
@@ -162,43 +137,40 @@ contains
             !write(*,*) 'I= ', I
             !write(*,*) 'totalLines= ', totalLines
             !pause
-            if (I<=0) then
-                write(*,*) '!!!!!!!'
-                write(*,*) 'Attention: Negative REC !'
-                exit
-            end if
-            read(7777, rec=I) V_I_, S_I_, ALFA_I_, ALFAS_I_, E_I_, FACT_I_, NISO_I_, SHIFT_I_
+
+            read(7777, rec=I) lineWV, lineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
+                                jointMolIso, deltaForeign
 
             ! DEBUG SECTION
             ! write(*,*) '!------ read HITRAN data ------ !'
-            ! write(*,*) 'V_I_: ', V_I_
-            ! write(*,*) 'S_I_: ', S_I_
-            ! write(*,*) 'ALFA_I: ', ALFA_I_
-            ! write(*,*) 'ALFAS_I_: ', ALFAS_I_
-            ! write(*,*) 'E_I_: ', E_I_
-            ! write(*,*) 'FACT_I_: ', FACT_I_
-            ! write(*,*) 'NISO_I_: ', NISO_I
-            ! write(*,*) 'SHIFT_I: ', SHIFT_I_
+            ! write(*,*)  lineWV: ', lineWV
+            ! write(*,*) 'lineIntensity: ', lineIntensity
+            ! write(*,*) 'ALFA_I: ', gammaForeign
+            ! write(*,*) 'gammaSelf: ', gammaSelf
+            ! write(*,*) 'lineLowerState: ', lineLowerState
+            ! write(*,*) 'foreignTempCoeff: ', foreignTempCoeff
+            ! write(*,*) 'jointMolIso: ', NISO_I
+            ! write(*,*) 'SHIFT_I: ', deltaForeign
             ! pause
             
-            if (V_I_ >= extEndDeltaWV) exit
+            if  (lineWV >= extEndDeltaWV) exit
             
-            if (V_I_ <= capWV) LINBEG = I
+            if  (lineWV <= capWV) LINBEG = I
 
-            SLSS = S_I_
-            APALF = APF * ALFA_I_
-            APALS = APS * ALFAS_I_
+            SLSS = lineIntensity
+            APALF = (pForeign / stPressure) * gammaForeign
+            APALS = (pSelf / stPressure) * gammaSelf
 
             ! Lorentz half-width
-            AL = TST ** FACT_I_ * (APALF * APF2 + APALS * APS2) !  <---- FORMULA !!
+            AL = unitlessT ** foreignTempCoeff * (APALF * (pForeign/P) + APALS * (pSelf/P))
 
             ! squared Lorentz half-width
             ALAL = AL * AL
 
-            VI = V_I_ + SHIFT_I_ * P ! <------- FORMULA !!
+            VI = lineWV + deltaForeign * P ! <------- FORMULA !!
             
-            ISO = NISO_I_
-            N_MOLIS = NISO_I_/100 
+            ISO = jointMolIso
+            N_MOLIS = jointMolIso/100 
 
             !!! WHY ?
             if (ISO == 222) ISO = 221 ! Attention: the second N2 isotopolouge is treated as the first !!!
@@ -231,7 +203,7 @@ contains
 
             SL = SLSS * QDQ
 
-            if (STR3 >= 0.) SL = SL * exp(EK * E_I_)  ! <-- apply correction if st sum > 0
+            if (STR3 >= 0.) SL = SL * exp(EK * lineLowerState)  ! <-- apply correction if st sum > 0
 
             ! ----- LEGACY CODE COMMENTARY --- V-W-H factor for LTE and non-LTE ---------- !
             ! LTE:	Pure radiation  (van Vleck-Weisskopf-Huber) factor!!! 26 Feb.,2009  !!!	*
@@ -245,8 +217,8 @@ contains
 
             ! This expressions calculate scaled versions of the line position at the standard temperature and current temperature
             ! may be used in temperature-dependent ajustments
-            BETVITS = BET * VI / TS
-            BETVIT = BET * VI / T
+            BETVITS = C2 * VI / refTemperature
+            BETVIT = C2 * VI / T
 
             if (BETVITS > 1E-5) then
                 EXPVV = exp(-BETVIT)
@@ -260,43 +232,43 @@ contains
             SLL = SL * AL
 
             if (ALAD > BOUNDL) then
-                if (VI < VS) then
-                    ShapeFuncPtr => VV_LOR
-                    call LEFTLBL(VS, VI, ShapeFuncPtr) 
+                if (VI < startDeltaWV) then
+                    ShapeFuncPtr => Lorentz
+                    call LEFTLBL(startDeltaWV, VI, ShapeFuncPtr) 
                 else 
-                    if (VI >= VF) then
-                        ShapeFuncPtr => VV_LOR
-                        call RIGHTLBL(VS, VI, ShapeFuncPtr)
+                    if (VI >= endDeltaWV) then
+                        ShapeFuncPtr => Lorentz
+                        call RIGHTLBL(startDeltaWV, VI, ShapeFuncPtr)
                     else 
-                        ShapeFuncPtr => VV_LOR
-                        call CENTLBL(VS, VI, ShapeFuncPtr)
+                        ShapeFuncPtr => Lorentz
+                        call CENTLBL(startDeltaWV, VI, ShapeFuncPtr)
                     end if
                 end if
             else
                 if (ALAD > BOUNDD) then
-                    if (VI < VS) then
+                    if (VI < startDeltaWV) then
                         ShapeFuncPtr => VOIGT
-                        call LEFTLBL(VS, VI, ShapeFuncPtr)
+                        call LEFTLBL(startDeltaWV, VI, ShapeFuncPtr)
                     else
-                        if (VI >= VF) then
+                        if (VI >= endDeltaWV) then
                             ShapeFuncPtr => VOIGT
-                            call RIGHTLBL(VS, VI, ShapeFuncPtr)
+                            call RIGHTLBL(startDeltaWV, VI, ShapeFuncPtr)
                         else 
                             ShapeFuncPtr => VOIGT
-                            call CENTLBL(VS, VI, ShapeFuncPtr)
+                            call CENTLBL(startDeltaWV, VI, ShapeFuncPtr)
                         end if
                     end if
                 else 
-                    if ( VI < VS ) then
+                    if ( VI < startDeltaWV ) then
                         ShapeFuncPtr => DOPLER
-                        call LEFTLBL(VS, VI, ShapeFuncPtr)
+                        call LEFTLBL(startDeltaWV, VI, ShapeFuncPtr)
                     else 
-                        if ( VI >= VF) then
+                        if ( VI >= endDeltaWV) then
                             ShapeFuncPtr => DOPLER
-                            call RIGHTLBL(VS, VI, ShapeFuncPtr)
+                            call RIGHTLBL(startDeltaWV, VI, ShapeFuncPtr)
                         else 
                             ShapeFuncPtr => DOPLER
-                            call CENTLBL(VS, VI, ShapeFuncPtr)
+                            call CENTLBL(startDeltaWV, VI, ShapeFuncPtr)
                         end if
                     end if
                 end if

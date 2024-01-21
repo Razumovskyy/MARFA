@@ -147,7 +147,7 @@ contains
         
         ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
         ! pause
-        call LBL2023(molType, lineIdx, capWV, totalLines)
+        call LBL2023(molType, lineIdx, capWV, totalLines, currentLevel)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause
         ! ------------ END OF THE FIRST PART ---------------------------------- !

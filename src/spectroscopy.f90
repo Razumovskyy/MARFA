@@ -4,25 +4,25 @@ module spectroscopy
     implicit none
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
-    real(kind=DP) :: V_I_ ! line position in cm^-1
-    real :: S_I_  ! line intensity (typically for given temperature, often 296 K)
+    real(kind=DP) :: lineWV ! The wavenumber of the spectral line transition (cm-1) in vacuum
+    real :: lineIntensity  ! intensity in cm-1/(molec * cm-2) at 296 Kelvin
     
     ! Air-broadened half-width -- the half-width of the spectral line at half-maximum (HWHM)
     ! due to broadening by air (primarily nitrogen and oxygen)
-    real :: ALFA_I_ ! HWHM due to air
-    real :: ALFAS_I_ ! HWHM due to self-collisions
+    real :: gammaForeign ! ALFA_I ! The air-broadened half width at half maximum (HWHM) (cm−1/atm) at Tref=296K and reference pressure pref=1atm
+    real :: gammaSelf ! ALFAS_I ! The self-broadened half width at half maximum (HWHM) (cm−1/atm) at Tref=296K and reference pressure pref=1atm
     
-    real :: E_I_  ! Lower-state energy (energy of the lower state of the transition)
+    real :: lineLowerState  ! E_I_ ! The lower-state energy of the transition (cm-1)
     
     ! A factor used to scale the line intensity, often related to isotopic abundance 
     ! or other factors that affect the overall intensity of the line.
-    real :: FACT_I_ ! Intensity scaling factor
+    real :: foreignTempCoeff ! FACT_I_ ! The coefficient of the temperature dependence of the air-broadened half width
     
-    integer :: NISO_I_ ! Isotopolouge number
+    integer :: jointMolIso! NISO_I_ ! joined reference to Molecule number (MOL) and Isotopologue number (ISO)
     
     ! The shift in the line position due to pressure. 
     ! It represents the change in the central frequency of the line under different pressure conditions.
-    real :: SHIFT_I_ ! Pressure-induced line shift
+    real :: deltaForeign ! SHIFT_I_ ! The pressure shift (cm−1/atm) at Tref=296K and pref=1atm of the line position with respect to the vacuum transition wavenumber νij
 
     ! ------- ^^^^ do not change the kinds there ^^^^ ------ !
 contains
@@ -30,9 +30,9 @@ contains
         real, intent(in) :: X
     end function VOIGT
 
-    real function VV_LOR(X)
+    real function LORENTZ(X)
         real, intent(in) :: X
-    end function VV_LOR
+    end function LORENTZ
 
     real function DOPLER(X)
         real, intent(in) :: X
