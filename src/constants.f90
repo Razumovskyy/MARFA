@@ -12,6 +12,7 @@ module constants
     real, parameter :: LOSCHMIDT = 2.6867811e25
     real, parameter :: AVOGADRO = 6.02214076e23
     real, parameter :: gasCONST = AVOGADRO * BOL
+    real, parameter :: dopplerCONST = sqrt(2*AVOGADRO*BOL*log(2.)) / SPL
 
     real, parameter :: refTemperature = 296. ! in K
 

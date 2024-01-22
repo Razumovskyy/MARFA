@@ -283,7 +283,7 @@ contains
                     ! TODO: simplify with continuing Taylor expansion
                     numeratorCloughFactor = lineShapeWV * cloughFactorExpTerm / (2. - cloughFactorExpTerm)
                 else
-                    numeratorCloughFactor = R_factor(T, lineShapeWV)
+                    numeratorCloughFactor = cloughRFunc(T, lineShapeWV)
                 end if
             end if
             RK(J) = RK(J) * numeratorCloughFactor
