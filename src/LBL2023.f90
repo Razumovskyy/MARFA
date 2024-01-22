@@ -1,10 +1,12 @@
 module LBL
     use kinds
-    use constants, only: PI, refTemperature, stPressure, stTemperature, LOSCHMIDT
+    use constants, only: PI, refTemperature, stPressure, stTemperature, LOSCHMIDT, C2
     use shared_vars_main
     use mesh
     use molecule_vars
-    use spectroscopy
+    use spectroscopy, only: lineWV, lineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
+                            jointMolIso, deltaForeign
+    use spectroscopy, only: cloughRFunc, LorentzianHWHM, DopplerHWHM, VOIGT, LORENTZ, DOPLER, pressureShiftedWV
     use molar_masses, only: WISO
     use shape_functions
     use LINE_GRID_CALC
@@ -48,15 +50,12 @@ contains
         real, save :: pSelf ! self-broadening pressure component
         real, save :: pForeign ! foreign gas broadening component
         
-        real(kind=DP) :: SLSS ! replica of lineIntensity (line intensity)
-        real(kind=DP) :: APALS, APALF ! scaled self- and foreign- broadened HWMW
-        real(kind=DP) :: AL ! Lorentz HWHM -- T and P dependent !
+        real(kind=DP) :: gammaPT ! AL ! Lorentz HWHM -- T and P dependent !
         
         ! Appears in the denominator of the Lorentzian line profile L(\nu)
-        real(kind=DP) :: ALAL ! squared Lorentz half-width
-        real(kind=DP) :: VI ! likely shifted line position under the current atmospheric pressure
+        real(kind=DP) :: shiftedLineWV ! likely shifted line position under the current atmospheric pressure
 
-        integer :: ISO ! replica of jointMolIso isotopolouge number
+        !integer :: ISO ! replica of jointMolIso isotopolouge number
         
         !  The division by 100 could be a way to obtain a molecular identifier 
         ! from the isotopologue number. For example, if isotopologues are numbered such
@@ -66,7 +65,7 @@ contains
         ! N_MOLIS treated as an index to WISO array of molar masses
         integer :: N_MOLIS ! for categorizing isotopolouges in more broader group
         
-        real :: DOPCON ! likely the Doppler broadening constant
+        real :: alphaT ! DOPCON ! The half-width at half-maximum (HWHM) of the Doppler-broadened component
 
         real(kind=DP) :: STS3 ! likely temperature-dependent partition function for a specific isotopologue
         real(kind=DP) :: STR3 ! likely the partition function value at the standard temperature
@@ -130,6 +129,7 @@ contains
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
         I = LINBEG - 1 ! MBR !
+        ! TODO: change this loop to 'DO WHILE'
         do I = LINBEG, totalLines
 
             !DEBUG SECTION
@@ -157,58 +157,44 @@ contains
             
             if  (lineWV <= capWV) LINBEG = I
 
-            SLSS = lineIntensity
-            APALF = (pForeign / stPressure) * gammaForeign
-            APALS = (pSelf / stPressure) * gammaSelf
-
-            ! Lorentz half-width
-            AL = unitlessT ** foreignTempCoeff * (APALF * (pForeign/P) + APALS * (pSelf/P))
-
-            ! squared Lorentz half-width
-            ALAL = AL * AL
-
-            VI = lineWV + deltaForeign * P ! <------- FORMULA !!
-            
-            ISO = jointMolIso
             N_MOLIS = jointMolIso/100 
 
-            !!! WHY ?
-            if (ISO == 222) ISO = 221 ! Attention: the second N2 isotopolouge is treated as the first !!!
+            gammaPT = LorentzianHWHM(P, T, pSelf, refTemperature, foreignTempCoeff, gammaSelf, gammaForeign)
+            shiftedLineWV = pressureShiftedWV(lineWV, deltaForeign, P)
+            alphaT = DopplerHWHM(shiftedLineWV, T, WISO(N_MOLIS))
             
-            if (ISO /= ISOOLD .OR. T /= TOLD) then
-                ISOOLD = ISO
-                TOLD = T ! <--- CHANGED LEGACY CODE !!! likely a tipo (was TOOLD)
-                
-                DOPCON = 4.29e-7 * sqrt(T/WISO(N_MOLIS)) ! <--------- FORMULA !!
-
-                !* Total internal partition function -- statistics sum ? *!
-                
-                !DEBUG SECTION
-                ! write(*,*) 'QofT dimensions:', size(QofT, 1), size(QofT, 2)
-                ! pause
-                ! ! write(*,*) 'N_MOLIS: ', N_MOLIS
-                ! write(*,*) 'NTAB_G', NTAB_G
-
-                STS3 = C_G1 * QofT(N_MOLIS, NTAB_G) + C_G2 * QofT(N_MOLIS, NTAB_G+1) ! <---- INTERPOLATION FORMULA between two values of the partition function
-                STR3 = QofT(N_MOLIS, 139) ! At 296K
-                
-                ! ration of the partition function at the standard temperature to the interpolated
-                QDQ = STR3/STS3 * RO/PI ! <-------- FORMULA (scaled partition function)
-            end if
+            ! if (ISO == 222) ISO = 221 ! Attention: the second N2 isotopolouge is treated as the first !!!
+            
+            !if (ISO /= ISOOLD .OR. T /= TOLD) then
+            !ISOOLD = ISO
+            !TOLD = T ! <--- CHANGED LEGACY CODE !!! likely a tipo (was TOOLD)
 
             ! Line 166 from the LEGACY CODE
-            ADD = DOPCON * VI ! <----- FORMULA
 
-            ALAD = AL / ADD ! <----- ratio
+            
+            !DEBUG SECTION
+            ! write(*,*) 'QofT dimensions:', size(QofT, 1), size(QofT, 2)
+            ! pause
+            ! ! write(*,*) 'N_MOLIS: ', N_MOLIS
+            ! write(*,*) 'NTAB_G', NTAB_G
 
-            SL = SLSS * QDQ
+            STS3 = C_G1 * QofT(N_MOLIS, NTAB_G) + C_G2 * QofT(N_MOLIS, NTAB_G+1) ! <---- INTERPOLATION FORMULA between two values of the partition function
+            STR3 = QofT(N_MOLIS, 139) ! At 296K
+            
+            ! ration of the partition function at the standard temperature to the interpolated
+            QDQ = STR3/STS3 * RO/PI ! <-------- FORMULA (scaled partition function)
+            !end if
+
+            ALAD = gammaPT / ADD ! <----- ratio
+
+            SL = lineIntensity * QDQ
 
             if (STR3 >= 0.) SL = SL * exp(EK * lineLowerState)  ! <-- apply correction if st sum > 0
 
             ! ----- LEGACY CODE COMMENTARY --- V-W-H factor for LTE and non-LTE ---------- !
             ! LTE:	Pure radiation  (van Vleck-Weisskopf-Huber) factor!!! 26 Feb.,2009  !!!	*
             ! b=C2=1.438786 the second radiation constant 
-            !  Fi(V)=S*[1/FACTOR(VI)]*FACTOR(V)] =
+            !  Fi(V)=S*[1/FACTOR(shiftedLineWV)]*FACTOR(V)] =
             !  Sref*(...)*[(1+exp(-Vi*b/T)/[Vi*(1-exp(-Vi*b/Tref))] x       ! see below  
             ! *** ATTENTON=> there are T in the NUMENATOR    and  Tref in the DENUMERATOR *** LTE-case !!!     
             !       x [(1-exp(-V*b/T)/(1+exp(-V*b/T))]*V        ! see K_COEFF
@@ -217,58 +203,58 @@ contains
 
             ! This expressions calculate scaled versions of the line position at the standard temperature and current temperature
             ! may be used in temperature-dependent ajustments
-            BETVITS = C2 * VI / refTemperature
-            BETVIT = C2 * VI / T
+            BETVITS = C2 * shiftedLineWV / refTemperature
+            BETVIT = C2 * shiftedLineWV / T
 
             if (BETVITS > 1E-5) then
                 EXPVV = exp(-BETVIT)
                 EXPVVS = exp(-BETVITS)
-                FVVHSL = (1. + EXPVV) / (1. - EXPVVS) / VI
+                FVVHSL = (1. + EXPVV) / (1. - EXPVVS) / shiftedLineWV
             else 
-                FVVHSL = (2. + BETVIT) / BETVITS / VI
+                FVVHSL = (2. + BETVIT) / BETVITS / shiftedLineWV
             end if
 
             SL = FVVHSL * SL ! applying VV-W-H factor on line intensity
-            SLL = SL * AL
+            SLL = SL * gammaPT
 
             if (ALAD > BOUNDL) then
-                if (VI < startDeltaWV) then
+                if (shiftedLineWV < startDeltaWV) then
                     ShapeFuncPtr => Lorentz
-                    call LEFTLBL(startDeltaWV, VI, ShapeFuncPtr) 
+                    call LEFTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr) 
                 else 
-                    if (VI >= endDeltaWV) then
+                    if (shiftedLineWV >= endDeltaWV) then
                         ShapeFuncPtr => Lorentz
-                        call RIGHTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                        call RIGHTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                     else 
                         ShapeFuncPtr => Lorentz
-                        call CENTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                        call CENTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                     end if
                 end if
             else
                 if (ALAD > BOUNDD) then
-                    if (VI < startDeltaWV) then
+                    if (shiftedLineWV < startDeltaWV) then
                         ShapeFuncPtr => VOIGT
-                        call LEFTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                        call LEFTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                     else
-                        if (VI >= endDeltaWV) then
+                        if (shiftedLineWV >= endDeltaWV) then
                             ShapeFuncPtr => VOIGT
-                            call RIGHTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                            call RIGHTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                         else 
                             ShapeFuncPtr => VOIGT
-                            call CENTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                            call CENTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                         end if
                     end if
                 else 
-                    if ( VI < startDeltaWV ) then
+                    if ( shiftedLineWV < startDeltaWV ) then
                         ShapeFuncPtr => DOPLER
-                        call LEFTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                        call LEFTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                     else 
-                        if ( VI >= endDeltaWV) then
+                        if ( shiftedLineWV >= endDeltaWV) then
                             ShapeFuncPtr => DOPLER
-                            call RIGHTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                            call RIGHTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                         else 
                             ShapeFuncPtr => DOPLER
-                            call CENTLBL(startDeltaWV, VI, ShapeFuncPtr)
+                            call CENTLBL(startDeltaWV, shiftedLineWV, ShapeFuncPtr)
                         end if
                     end if
                 end if
