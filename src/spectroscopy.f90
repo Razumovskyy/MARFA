@@ -1,6 +1,6 @@
 module spectroscopy
     use kinds
-    use constants, only: C2
+    use constants, only: C2, dopplerCONST
     implicit none
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
@@ -42,12 +42,38 @@ contains
         real :: T, V
     end function VAN_VLE
 
-    real function R_factor(t, nu)
+    real function cloughRFunc(t, nu)
         real :: T
         real(kind=DP) :: nu
        
-        R_factor = nu * tanh(C2*nu/(2*T))
-    end function R_factor
+        cloughRFunc = nu * tanh(C2*nu/(2*T))
+    end function cloughRFunc
+
+    real function LorentzianHWHM(p, t, pSelf, tRef, n, gammaS, gammaF)
+    ! see HITRAN docs, section 'Temperature and pressure dependence of the line width', formula 6
+        real :: p, pSelf
+        real :: t, tRef
+        real :: n
+        real :: gammaS, gammaF
+
+        LorentzianHWHM = ((tRef/t) ** n) * (gammaF * (p - pSelf) + gammaS * pSelf)
+    end function LorentzianHWHM 
+
+    real function pressureShiftedWV(nu, deltaF, p)
+        real(kind=DP) :: nu
+        real :: deltaF
+        real :: p
+        
+        pressureShiftedWV = nu + deltaF * p
+    end function pressureShiftedWV
+
+    real function DopplerHWHM(nu, t, molarMass)
+        real(kind=DP) :: nu
+        real :: t
+        real :: molarMass
+
+        DopplerHWHM = dopplerCONST * nu * sqrt(t/molarMass) 
+    end function
 end module spectroscopy
 
 module van_fleck_huber_vars
