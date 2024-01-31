@@ -43,6 +43,7 @@ contains
     end function VAN_VLE
 
     real function cloughRFunc(t, nu)
+    ! see the formula 2.5.28 from the Fomin file
         real :: T
         real(kind=DP) :: nu
        
