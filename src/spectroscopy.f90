@@ -1,11 +1,11 @@
 module spectroscopy
     use kinds
-    use constants, only: C2, dopplerCONST
+    use constants, only: C2, dopplerCONST, refTemperature
     implicit none
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
     real(kind=DP) :: lineWV ! The wavenumber of the spectral line transition (cm-1) in vacuum
-    real :: lineIntensity  ! intensity in cm-1/(molec * cm-2) at 296 Kelvin
+    real :: refLineIntensity  ! intensity in cm-1/(molec * cm-2) at 296 Kelvin
     
     ! Air-broadened half-width -- the half-width of the spectral line at half-maximum (HWHM)
     ! due to broadening by air (primarily nitrogen and oxygen)
@@ -74,6 +74,34 @@ contains
 
         DopplerHWHM = dopplerCONST * nu * sqrt(t/molarMass) 
     end function
+
+    real function lineIntensityofT(t, refLineIntensity, isotopeNum, partFunc, lowerState, transitionWV)
+        real, intent(in) :: t
+        real, intent(in) :: refLineIntensity
+        integer, intent(in) :: isotopeNum
+        real, intent(in) :: partFunc(:,:)
+        real, intent(in) :: lowerState 
+        real(kind=DP), intent(in) :: transitionWV
+
+        integer :: C_G1, C_G2, NTAB_G
+        real :: t_G1
+        real :: partFuncOfT, partFuncOfRefT
+        real :: partFuncFactor
+        real :: bolFactor
+        real :: stEmissFactor
+
+        NTAB_G = (t - 20.0)/2 + 1
+        t_G1 = NTAB_G * 2.0 + 18.
+        C_G2 = (t - t_G1)/2.
+        C_G1 = 1. - C_G2
+        partFuncOfT = C_G1 * partFunc(isotopeNum, NTAB_G) + C_G2 * partFunc(isotopeNum, NTAB_G+1)
+        partFuncOfRefT = partFunc(isotopeNum, 139)
+        partFuncFactor = partFuncOfRefT / partFuncOfT
+        bolFactor = exp(-C2*lowerState/t) / exp(-C2*lowerState/refTemperature) 
+        stEmissFactor = (1 - exp(-C2*transitionWV/t)) / (1 - exp(-C2*transitionWV/refTemperature))
+
+        lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor * stEmissFactor
+    end function lineIntensityofT
 end module spectroscopy
 
 module van_fleck_huber_vars
