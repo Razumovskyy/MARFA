@@ -84,7 +84,8 @@ contains
         real, intent(in) :: lowerState 
         real(kind=DP), intent(in) :: transitionWV
 
-        integer :: C_G1, C_G2, NTAB_G
+        integer :: NTAB_G
+        real :: C_G1, C_G2
         real :: t_G1
         real :: partFuncOfT, partFuncOfRefT
         real :: partFuncFactor
@@ -100,8 +101,10 @@ contains
         partFuncFactor = partFuncOfRefT / partFuncOfT
         bolFactor = exp(-C2*lowerState/t) / exp(-C2*lowerState/refTemperature) 
         stEmissFactor = (1 - exp(-C2*transitionWV/t)) / (1 - exp(-C2*transitionWV/refTemperature))
-
-        lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor * stEmissFactor
+        
+        ! TODO consider to use stEmissFactor in Longwave, found it was 0.4 for 50 - 80 cm-1 for H2O
+        ! lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor * stEmissFactor
+        lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor
     end function lineIntensityofT
 end module spectroscopy
 
