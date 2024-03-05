@@ -1,6 +1,6 @@
-module spectroscopy
-    use kinds
-    use constants, only: C2, dopplerCONST, refTemperature
+module Spectroscopy
+    use Kinds
+    use Constants, only: C2, dopplerCONST, refTemperature
     implicit none
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
@@ -24,31 +24,8 @@ module spectroscopy
     ! It represents the change in the central frequency of the line under different pressure conditions.
     real :: deltaForeign ! SHIFT_I_ ! The pressure shift (cm−1/atm) at Tref=296K and pref=1atm of the line position with respect to the vacuum transition wavenumber νij
 
-    ! ------- ^^^^ do not change the kinds there ^^^^ ------ !
+    ! ------- ^^^^ do not change the Kinds there ^^^^ ------ !
 contains
-    real function VOIGT(X)
-        real, intent(in) :: X
-    end function VOIGT
-
-    real function LORENTZ(X)
-        real, intent(in) :: X
-    end function LORENTZ
-
-    real function DOPLER(X)
-        real, intent(in) :: X
-    end function DOPLER
-
-    real function VAN_VLE(T, V)
-        real :: T, V
-    end function VAN_VLE
-
-    real function cloughRFunc(t, nu)
-    ! see the formula 2.5.28 from the Fomin file
-        real :: T
-        real(kind=DP) :: nu
-       
-        cloughRFunc = nu * tanh(C2*nu/(2*T))
-    end function cloughRFunc
 
     real function LorentzianHWHM(p, t, pSelf, tRef, n, gammaS, gammaF)
     ! see HITRAN docs, section 'Temperature and pressure dependence of the line width', formula 6
@@ -106,13 +83,4 @@ contains
         ! lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor * stEmissFactor
         lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor
     end function lineIntensityofT
-end module spectroscopy
-
-module van_fleck_huber_vars
-    use kinds
-    implicit none
-    integer :: JM1 ! likely just a loop index
-    real(kind=DP) :: lineShapeWV ! ** ! VIVI ! likely the grid line shape line position for grid calculations
-    real :: numeratorCloughFactor ! numerator of the Clough Factor see works by Clough 1989.
-    real :: cloughFactorExpTerm ! EVV_ ! ** ! auxilary variable for exponential factor in the R-fucntion
-end module van_fleck_huber_vars
+end module Spectroscopy

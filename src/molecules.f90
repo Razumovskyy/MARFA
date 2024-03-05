@@ -1,13 +1,13 @@
-module molecule_vars
+module MoleculeVars
     ! variables related to the molecules
-    use kinds
+    use Kinds
     implicit none
     integer :: molType ! Fomin feature: molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
     integer :: totalLines ! number of lines in one HITRAN file (e.g. H16.01) 
     character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
-end module molecule_vars
+end module MoleculeVars
 
-module molar_masses
+module MolarMasses
     implicit none
     ! Molecular masses (isotopes as in GAMACHE's 2017data for 12 gases)
     ! Double-check this !
@@ -149,4 +149,4 @@ module molar_masses
         WISO_CH3Cl, WISO_H2O2, WISO_C2H2, WISO_C2H6, WISO_PH3, WISO_COF2, WISO_SF6, WISO_H2S, WISO_HCOOH, WISO_HO2, &
         WISO_O, WISO_ClONO2, WISO_NO_plus, WISO_HOBr, WISO_C2H4, WISO_CH3OH, WISO_CH3Br, WISO_CH3CN, WISO_CF4 &
     ]
-end module molar_masses
+end module MolarMasses

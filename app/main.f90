@@ -18,10 +18,10 @@
 !*******************************************************************************
 
 program main
-    use kinds, only: DP
-    use shared_vars_main
-    use mesh
-    use K_HITRAN
+    use Kinds, only: DP
+    use SharedVarsMain
+    use Mesh
+    use HitranSpectraProcessor
     implicit none
 
     ! MAIN OUTPUT FILE !
@@ -154,7 +154,7 @@ program main
 
             ! write(*,*) 'startDeltaWV before K_HITRAN call: ', startDeltaWV
             ! pause
-            call K_HITRAN_3g(inputMolecule, levelsIdx)
+            call processSpectra(inputMolecule, levelsIdx)
 
             write(outputUnit, rec=outputRecNum) RK
 

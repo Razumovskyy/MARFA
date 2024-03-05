@@ -1,4 +1,4 @@
-module constants
+module Constants
     implicit none
     real, parameter :: PI = 3.1415926
     real, parameter :: PLANCK = 6.626070e-27
@@ -16,4 +16,4 @@ module constants
 
     real, parameter :: refTemperature = 296. ! in K
 
-end module constants
+end module Constants
