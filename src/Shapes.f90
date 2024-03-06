@@ -1,8 +1,9 @@
 module Shapes
     use Kinds
     use Constants
-    use ShapeVars
+    ! use ShapeVars
     implicit none
+    ! insert vars for shape functions here
 contains
     real function lorentz(X)
         real, intent(in) :: X
