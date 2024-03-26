@@ -4,7 +4,9 @@ program simpleSpectra
     
     integer, parameter :: DP = selected_real_kind(15, 307)
     integer, parameter :: hitranFileUnit = 7777
+    integer, parameter :: outputFileUnit = 7778
     character(len=20), parameter :: hitranFile = 'data/HITRAN16/H16.01'
+    character(len=22), parameter :: outputFile = 'test/simpleSpectra.dat'
 
     real(kind=DP) :: startWV, endWV, step
     real(kind=DP) :: lineWV ! cm-1 (wavenumber of the transition)
@@ -20,14 +22,14 @@ program simpleSpectra
 
     real(kind=DP), allocatable :: spectra(:,:)
     integer :: len ! len of the spectra array
-    integer :: i, j ! loop variables
+    integer :: i, j, k ! loop variables
 
     ! INPUT PARAMETERS !
-    pressure = 1.
-    density = 1e19
+    pressure = 1. ! ~ Venus 50 km level (see data/Atmospheres/H2O_117.dat)
+    density = 0.6994E+20 ! ~ Venus 50 km level (see data/Atmospheres/H2O_117.dat)
     startWV = 100.
     endWV = 110.
-    step = 0.001
+    step = 0.01
     
     len = int((endWV-startWV) / step) + 1
 
@@ -42,17 +44,23 @@ program simpleSpectra
         j = 1
         do
             open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=hitranFile)
-        
             read(hitranFileUnit, rec=j) lineWV, refLineIntensity, gammaForeign, gammaSelf, &
-                                    lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign
-                                    
+                                    lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign                      
             if (lineWV >= endWV) exit
-
             spectra(i, 2) = spectra(i,2) + simpleLorentz(refLineIntensity, spectra(i,1), lineWV, gammaForeign, pressure, density)
-    
             j = j + 1
         end do
     end do
+
+    open(outputFileUnit, file=outputFile, status='replace', action='write')
+
+    do k = 1, len
+        write(outputFileUnit, '(F8.3, ", ", F8.3)') spectra(k,1), spectra(k, 2)
+    end do
+    
+    close(hitranFileUnit)
+    close(outputFileUnit)
+    deallocate(spectra)
 
 end program simpleSpectra
 
