@@ -45,3 +45,4 @@ data
 simConfig.ini
 src/LBL2023_with_comments.f90
 .DS_Store
+test/simpleSpectra.dat
