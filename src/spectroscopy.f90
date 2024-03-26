@@ -5,7 +5,7 @@ module Spectroscopy
     ! HITRAN spectral data variables
     ! Not 100% sure about the explanations !!
     real(kind=DP) :: lineWV ! The wavenumber of the spectral line transition (cm-1) in vacuum
-    real :: refLineIntensity  ! intensity in cm-1/(molec * cm-2) at 296 Kelvin
+    real :: refLineIntensity  ! S_I_ ! intensity in cm-1/(molec * cm-2) at 296 Kelvin
     
     ! Air-broadened half-width -- the half-width of the spectral line at half-maximum (HWHM)
     ! due to broadening by air (primarily nitrogen and oxygen)

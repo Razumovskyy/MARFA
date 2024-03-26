@@ -1,24 +1,19 @@
 module Shapes
     use Kinds
     use Constants
-    ! use ShapeVars
+    use ShapeVars, only: VI, SLL, gammaPT, molType
     implicit none
-    ! insert vars for shape functions here
 contains
     real function lorentz(X)
         real, intent(in) :: X
-        integer :: molType
-        real(kind=DP) :: VI ! center of the line
-        real :: SLL
-        real :: ALAL
         !*---------------------------------------------------------------------*
         !* For this shape the following variables are used:			           *
         !* X	- distance from line center VI ( X = V - VI cm**-1 ),	       *
-        !* ALAL - (Lorentz half width)**2,								       *
+        !* ALAL (gammaPT) - (Lorentz half width)**2,								       *
         !* SLL	- (intensity*density*half_width*VVH_factor)/pi (see LBL93),    *
         !* MOTYPE - type of the molecule: 2 - CO2, 1 - H2O, 0 - other,         *
         !* --------------------------------------------------------------------*
-        lorentz = SLL / (X*X + ALAL)
+        lorentz = SLL / (X*X + gammaPT*gammaPT)
         !* CO2 far wing correction *
         select case (molType)
         case(2)

@@ -5,6 +5,7 @@ module HitranSpectraProcessor
     use SharedVarsMain
     use Mesh
     use MoleculeVars
+    use ShapeVars
     use LBL, only: modernLBL
     implicit none
 
