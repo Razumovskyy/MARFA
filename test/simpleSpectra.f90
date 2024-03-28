@@ -19,10 +19,11 @@ program simpleSpectra
 
     real :: pressure ! atm
     real :: density ! molecules/(cm^2*km)
+    real :: lineCutOff ! 
 
     real(kind=DP), allocatable :: spectra(:,:)
     integer :: len ! len of the spectra array
-    integer :: i, j, k ! loop variables
+    integer :: i, j, jStart, k ! loop variables
 
     ! INPUT PARAMETERS !
     pressure = 1. ! ~ Venus 50 km level (see data/Atmospheres/H2O_117.dat)
@@ -30,6 +31,7 @@ program simpleSpectra
     startWV = 100.
     endWV = 110.
     step = 0.01
+    lineCutOff = 25.
     
     len = int((endWV-startWV) / step) + 1
 
@@ -37,17 +39,32 @@ program simpleSpectra
 
     lineWV = startWV
 
+    jStart = 1
+    do
+        open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=hitranFile)
+        read(hitranFileUnit, rec=jStart) lineWV, refLineIntensity, gammaForeign, gammaSelf, &
+                                        lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign
+        ! if (lineWV > startWV - lineCutOff) exit
+        if (lineWV > startWV) exit
+        jStart = jStart + 1
+    end do
+    
+
     do i = 1, len
         write(*,*) i, ' of ', len, ' is processed'
         spectra(i, 1) = startWV + (i-1) * step
         spectra(i, 2) = 0.
-        j = 1
+        j = jStart
         do
             open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=hitranFile)
             read(hitranFileUnit, rec=j) lineWV, refLineIntensity, gammaForeign, gammaSelf, &
                                     lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign                      
+            ! if (lineWV >= endWV + lineCutOff) exit
             if (lineWV >= endWV) exit
-            spectra(i, 2) = spectra(i,2) + simpleLorentz(refLineIntensity, spectra(i,1), lineWV, gammaForeign, pressure, density)
+            ! if (abs(lineWV - spectra(i,1)) < lineCutOff) then
+            if (1 > 0) then
+                spectra(i,2) = spectra(i,2) + simpleLorentz(refLineIntensity, spectra(i,1), lineWV, gammaForeign, pressure, density)
+            end if
             j = j + 1
         end do
     end do
@@ -55,7 +72,7 @@ program simpleSpectra
     open(outputFileUnit, file=outputFile, status='replace', action='write')
 
     do k = 1, len
-        write(outputFileUnit, '(F8.3, ", ", F8.3)') spectra(k,1), spectra(k, 2)
+        write(outputFileUnit, '(F8.3, ", ", E10.3)') spectra(k,1), spectra(k, 2)
     end do
     
     close(hitranFileUnit)
