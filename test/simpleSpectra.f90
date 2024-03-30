@@ -6,7 +6,7 @@ program simpleSpectra
     integer, parameter :: hitranFileUnit = 7777
     integer, parameter :: outputFileUnit = 7778
     character(len=20), parameter :: hitranFile = 'data/HITRAN16/H16.01'
-    character(len=22), parameter :: outputFile = 'test/simpleSpectra.dat'
+    character(len=22), parameter :: outputFile = 'test/calc/simpleSpectra.dat'
 
     real(kind=DP) :: startWV, endWV, step
     real(kind=DP) :: lineWV ! cm-1 (wavenumber of the transition)
@@ -25,6 +25,7 @@ program simpleSpectra
     integer :: len ! len of the spectra array
     integer :: i, j, jStart, k ! loop variables
 
+    ! ---------------------------------------------------------------------------- !
     ! INPUT PARAMETERS !
     pressure = 1. ! ~ Venus 50 km level (see data/Atmospheres/H2O_117.dat)
     density = 0.6994E+20 ! ~ Venus 50 km level (see data/Atmospheres/H2O_117.dat)
@@ -32,7 +33,7 @@ program simpleSpectra
     endWV = 110.
     step = 0.01
     lineCutOff = 25.
-    
+    ! ---------------------------------------------------------------------------- !   
     len = int((endWV-startWV) / step) + 1
 
     allocate(spectra(len, 2))
