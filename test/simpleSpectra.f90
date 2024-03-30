@@ -1,5 +1,5 @@
 program simpleSpectra
-    use SimpleShapes, only: simpleLorentz
+    use SimpleShapes, only: simpleLorentz, shiftedLinePositionFunc
     implicit none
     
     integer, parameter :: DP = selected_real_kind(15, 307)
@@ -21,7 +21,9 @@ program simpleSpectra
     real :: density ! molecules/(cm^2*km)
     real :: lineCutOff ! 
 
-    real(kind=DP), allocatable :: spectra(:,:)
+    real(kind=DP), allocatable :: spectra(:,:) ! 2D array: first item is grid wavenumber in cm^-1 and the second is the absorption coefficient in km^-1
+    real(kind=DP) :: gridWV ! more human-readable variable for the x-values of the spectra array
+    real(kind=DP) :: gridAbsorptionCoeff ! more human readable variable for the y-values of the spectra array
     integer :: len ! len of the spectra array
     integer :: i, j, jStart, k ! loop variables
 
@@ -45,8 +47,7 @@ program simpleSpectra
         open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=hitranFile)
         read(hitranFileUnit, rec=jStart) lineWV, refLineIntensity, gammaForeign, gammaSelf, &
                                         lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign
-        ! if (lineWV > startWV - lineCutOff) exit
-        if (lineWV > startWV) exit
+        if (lineWV > startWV - lineCutOff) exit
         jStart = jStart + 1
     end do
     
@@ -55,18 +56,19 @@ program simpleSpectra
         write(*,*) i, ' of ', len, ' is processed'
         spectra(i, 1) = startWV + (i-1) * step
         spectra(i, 2) = 0.
+        gridWV = spectra(i, 1)
         j = jStart
         do
             open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=hitranFile)
             read(hitranFileUnit, rec=j) lineWV, refLineIntensity, gammaForeign, gammaSelf, &
                                     lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign                      
-            ! if (lineWV >= endWV + lineCutOff) exit
-            if (lineWV >= endWV) exit
-            ! if (abs(lineWV - spectra(i,1)) < lineCutOff) then
-            if (1 > 0) then
-                spectra(i,2) = spectra(i,2) + simpleLorentz(refLineIntensity, spectra(i,1), lineWV, gammaForeign, pressure, density)
+            if (lineWV >= endWV + lineCutOff) exit
+            if (abs(lineWV - gridWV) < lineCutOff) then
+                gridAbsorptionCoeff = gridAbsorptionCoeff + simpleLorentz(gridWV, refLineIntensity, lineWV, gammaForeign, pressure, density)
             end if
             j = j + 1
+        spectra(i, 1) = gridWV
+        spectra(i, 2) = gridAbsorptionCoeff
         end do
     end do
 
@@ -77,7 +79,7 @@ program simpleSpectra
     end do
     
     close(hitranFileUnit)
-    close(outputFileUnit)
+    close(outputFileUnit)f
     deallocate(spectra)
 
 end program simpleSpectra
@@ -87,13 +89,22 @@ module SimpleShapes
     integer, parameter :: DP = selected_real_kind(15, 307)
     integer, parameter :: pi = 3.14159
 contains
-    real function simpleLorentz(intensity, nu, nu0, gammaForeign, pressure, density)
-        real(kind=DP) nu, nu0
-        real :: intensity
-        real :: gammaForeign
-        real :: pressure, density
-        ! density is of dimension molecule/(cm^2*km). It is needed to have a total absorption coeff to be of km-1
+    real(kind=DP) function shiftedLinePositionFunc(lineWV, deltaForeign, pressure)
+        real(kind=DP), intent(in) :: lineWV ! cm-1 (lineWV) -- wavenumber of the transition (read from HITRAN or HITEMP)
+        real, intent(in) :: deltaForeign ! cm-1/atm (deltaForeign) -- pressure shift coefficient (read from HITRAN or HITEMP)
+        real, intent(in) :: pressure  ! [atm] -- pressure at the given atmospheric level 
+
+        shiftedLinePositionFunc = lineWV + deltaForeign * pressure 
+    end function shiftedLinePositionFunc
+
+    real function simpleLorentz(nu, intensity, shiftedLinePosition, gammaForeign, pressure, density)
+        real(kind=DP), intent(in) :: nu ! cm-1, (gridWV) -- spectral point in which the total contribution from lines is calculated
+        real(kind=DP), intent(in) :: shiftedLinePosition ! cm-1, (lineWV + deltaForeign * pressure) -- shifted line center
+        real, intent(in) :: intensity ! [cm-1/(molecule*cm-2)] (refLineIntensity) -- the spectral line intensity for a single molecule per unit volume.
+        real, intent(in) :: gammaForeign ! [cm-1/atm] -- Lorentzian foreign-broadened Lorentz HWHM
+        real, intent(in) :: pressure ! [atm] -- pressure at the given atmospheric level 
+        real, intent(in) :: density ! [molecule/(cm^2 * km)] -- such density units are needed for having absorption coefficient in km-1
         
-        simpleLorentz = (intensity*gammaForeign*pressure*density) / (pi*((nu-nu0)**2 + (gammaForeign*pressure)**2))
+        simpleLorentz = (intensity*gammaForeign*pressure*density) / (pi*((nu-shiftedLinePosition)**2 + (gammaForeign*pressure)**2))
     end function simpleLorentz
 end module SimpleShapes
