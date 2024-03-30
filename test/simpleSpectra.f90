@@ -6,7 +6,7 @@ program simpleSpectra
     integer, parameter :: hitranFileUnit = 7777
     integer, parameter :: outputFileUnit = 7778
     character(len=20), parameter :: hitranFile = 'data/HITRAN16/H16.01'
-    character(len=22), parameter :: outputFile = 'test/calc/simpleSpectra.dat'
+    character(len=27), parameter :: outputFile = 'test/calc/simpleSpectra.dat'
 
     real(kind=DP) :: startWV, endWV, step
     real(kind=DP) :: lineWV ! cm-1 (wavenumber of the transition)
@@ -64,7 +64,8 @@ program simpleSpectra
                                     lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign                      
             if (lineWV >= endWV + lineCutOff) exit
             if (abs(lineWV - gridWV) < lineCutOff) then
-                gridAbsorptionCoeff = gridAbsorptionCoeff + simpleLorentz(gridWV, refLineIntensity, lineWV, gammaForeign, pressure, density)
+                gridAbsorptionCoeff = gridAbsorptionCoeff + &
+                                    simpleLorentz(gridWV, refLineIntensity, lineWV, gammaForeign, pressure, density)
             end if
             j = j + 1
         spectra(i, 1) = gridWV
@@ -79,7 +80,7 @@ program simpleSpectra
     end do
     
     close(hitranFileUnit)
-    close(outputFileUnit)f
+    close(outputFileUnit)
     deallocate(spectra)
 
 end program simpleSpectra
