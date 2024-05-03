@@ -1,24 +1,18 @@
 module LBL
-    use Kinds
-    use Constants, only: PI, refTemperature, stPressure, stTemperature, LOSCHMIDT, C2
-    use SharedVarsMain
-    use Mesh
-    use MoleculeVars
-    use Spectroscopy, only: lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
-                            jointMolIso, deltaForeign, lineIntensityofT
-    use Spectroscopy, only: LorentzianHWHM, DopplerHWHM, pressureShiftedWV
-    use MolarMasses, only: WISO
-    use Shapes, only: lorentz, doppler, voigt
+    use Constants
     use ShapeFuncInterface
+    use Mesh
+    use IO
+    use Spectroscopy
+    use MolarMasses, only: WISO
+    use Shapes
     use LineGridCalc
     implicit none
 contains
 
-    subroutine modernLBL(molType, LINBEG, capWV, totalLines, loopLevel)
+    subroutine modernLBL(molTypeArg, LINBEG, capWV, totalLines, loopLevel)
         
-        procedure(shape), pointer :: shapeFuncPtr
-
-        integer :: molType ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
+        integer :: molTypeArg
         integer :: LINBEG ! integer line label used for locating record in direct access file
         integer :: I ! loop variable for accessing the record in direct access file
         integer :: totalLines ! number of lines in one file
@@ -40,8 +34,6 @@ contains
         real, save :: pSelf ! self-broadening pressure component
         real, save :: pForeign ! foreign gas broadening component
         
-        real(kind=DP) :: gammaPT ! AL ! Lorentz HWHM -- T and P dependent !
-        
         ! Appears in the denominator of the Lorentzian line profile L(\nu)
         real(kind=DP) :: shiftedLineWV ! VI ! shifted line position under the current atmospheric pressure
 
@@ -51,10 +43,6 @@ contains
 
         ! it characterizes the relative contributions of Lorentzian and Doppler broadening to the overall shape of the spectral line
         real(kind=DP) :: shapePrevailFactor ! ALAD ! ratio of is the ratio of the Lorentz HWHM (AL) to the Doppler width (ADD).
-
-        unitlessT = refTemperature/T
-        pSelf = RO * 10. / LOSCHMIDT * T/stTemperature
-        pForeign = P - pSelf
 
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
@@ -68,61 +56,61 @@ contains
 
             isotopeNum = jointMolIso/100
 
-            gammaPT = LorentzianHWHM(P, T, pSelf, refTemperature, foreignTempCoeff, gammaSelf, gammaForeign)
+            !gammaPT = LorentzianHWHM(P, T, pSelf, refTemperature, foreignTempCoeff, gammaSelf, gammaForeign)
             
-            shiftedLineWV = pressureShiftedWV(lineWV, deltaForeign, P)
+            !shiftedLineWV = pressureShiftedWV(lineWV, deltaForeign, P)
 
-            alphaT = DopplerHWHM(shiftedLineWV, T, WISO(isotopeNum))
+            !alphaT = DopplerHWHM(shiftedLineWV, T, WISO(isotopeNum))
             
-            lineIntensity = lineIntensityofT(T, refLineIntensity, isotopeNum, QofT, lineLowerState, lineWV)
+            !lineIntensity = lineIntensityofT(T, refLineIntensity, isotopeNum, QofT, lineLowerState, lineWV)
 
-            shapePrevailFactor = gammaPT / alphaT ! <----- ratio to see which effect (Doppler or Lorentz prevails)
+            !shapePrevailFactor = gammaPT / alphaT ! <----- ratio to see which effect (Doppler or Lorentz prevails)
+
+            ! SLL = gammaPT * 
 
             if (shapePrevailFactor > BOUNDL) then
                 if (shiftedLineWV < startDeltaWV) then
-                    shapeFuncPtr => lorentz
-                    call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
+                    ! shapeFuncPtr => lorentz
+                    ! call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
                 else 
                     if (shiftedLineWV >= endDeltaWV) then
-                        shapeFuncPtr => lorentz
-                        call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                        ! shapeFuncPtr => lorentz
+                        ! call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     else 
-                        shapeFuncPtr => lorentz
-                        call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                        ! shapeFuncPtr => lorentz
+                        ! call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     end if
                 end if
             else
                 if (shapePrevailFactor > BOUNDD) then
                     if (shiftedLineWV < startDeltaWV) then
-                        shapeFuncPtr => voigt
-                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                        ! shapeFuncPtr => voigt
+                        ! call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     else
                         if (shiftedLineWV >= endDeltaWV) then
-                            shapeFuncPtr => voigt
-                            call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                            ! shapeFuncPtr => voigt
+                            ! call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                         else 
-                            shapeFuncPtr => voigt
-                            call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                            ! shapeFuncPtr => voigt
+                            ! call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                         end if
                     end if
                 else 
                     if ( shiftedLineWV < startDeltaWV ) then
-                        shapeFuncPtr => doppler
-                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                        ! shapeFuncPtr => doppler
+                        ! call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     else 
                         if ( shiftedLineWV >= endDeltaWV) then
-                            shapeFuncPtr => doppler
-                            call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                            ! shapeFuncPtr => doppler
+                            ! call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                         else 
-                            shapeFuncPtr => doppler
-                            call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                            ! shapeFuncPtr => doppler
+                            ! call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                         end if
                     end if
                 end if
             end if 
         end do
-        ! ------------------------------------------------------ !
-
         ! -------- End of line-by-line loop (iteration over records in HITRAN file) --!
     end subroutine modernLBL
 end module LBL

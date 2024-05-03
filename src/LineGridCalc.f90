@@ -1,5 +1,5 @@
 module LineGridCalc
-    use Kinds
+    use Constants
     use Mesh
     use ShapeFuncInterface
     implicit none
