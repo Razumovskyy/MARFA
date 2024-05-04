@@ -11,12 +11,12 @@ module LBL
     implicit none
 contains
 
-    subroutine modernLBL(LINBEG, capWV, loopLevel)
+    subroutine modernLBL(LINBEG, capWV)
         
         ! integer :: molTypeArg
         integer :: LINBEG ! integer line label used for locating record in direct access file
         integer :: I ! loop variable for accessing the record in direct access file
-        integer :: loopLevel
+        ! integer :: loopLevel
         ! integer, save :: currentLevel
 
         ! this variable serves as a cap in the loop to stop increasing the lineIdx

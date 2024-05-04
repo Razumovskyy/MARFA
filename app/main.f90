@@ -267,7 +267,7 @@ contains
         !*--------------------------------------------------------------
         ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
         ! pause
-        call modernLBL(lineIdx, capWV, currentLevel)
+        call modernLBL(lineIdx, capWV)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause
         ! ------------ END OF THE FIRST PART ---------------------------------- !
