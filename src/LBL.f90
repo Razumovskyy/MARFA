@@ -4,13 +4,13 @@ module LBL
     use Mesh
     use IO
     use Spectroscopy
-    use MolarMasses, only: WISO
+    use MolarMasses
     use Shapes
     use LineGridCalc
     implicit none
 contains
 
-    subroutine modernLBL(molTypeArg, LINBEG, capWV, totalLines, loopLevel)
+    subroutine modernLBL(LINBEG, capWV, totalLines, loopLevel)
         
         integer :: molTypeArg
         integer :: LINBEG ! integer line label used for locating record in direct access file

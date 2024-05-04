@@ -94,12 +94,12 @@ program main
             file='output/PT_CALC/'//levelLabel//'.'//reducedMoleculeName)
         ! RECL = NT for Windows Fortrans !
 
-        
         startDeltaWV = startWV 
         endDeltaWV = startDeltaWV + deltaWV
         do while (startDeltaWV < endWV)
             ! *** calculation inside 10.0 cm^-1 *** !
 
+            !! It considers that startWV, endWV and deltaWV should be multiples of 10
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
             ! write(*,*) startDeltaWV, V_END
 
@@ -119,9 +119,8 @@ program main
             ! *** end of the calculation inside 10.0 cm^-1 *** !
         end do
         close(outputUnit)
-        ! *** end of the calculation over Z *** !
     end do
-    close(atmControlUnit)
+    ! close(atmControlUnit)
     write(*,*) ' *** Congratulations! PT-table is READY! ***'
     deallocate(heightArray)
     deallocate(pressureArray)
@@ -157,7 +156,7 @@ contains
         TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
         TIPSOfRefT = TIPS(isotopeNum, 139)
 
-        TIPSFactor = TIPSOfT / TIPSOfRefT
+        TIPSFactor = TIPSOfRefT / TIPSOfT
         boltzmannFactor = exp(-C2*lineLowerState/temperatureParameter) / exp(-C2*lineLowerState/refTemperature)
         emissionFactor = (1 - exp(-C2*lineWV/temperatureParameter)) / (1 - exp(-C2*lineWV/refTemperature))
 
@@ -294,17 +293,17 @@ contains
         RK8 = 0.0; RK8L = 0.0; RK8P = 0.0
         RK9 = 0.0; RK9L = 0.0; RK9P = 0.0
 
-        !! Note: Arrays are initialized to zero at the beginning of each subroutine call. 
-        ! This approach ensures that the arrays have a clean state for each calculation. 
-        ! If the subroutine is called multiple times and the arrays do not need to be 
-        ! reset every time, consider optimizing by removing this initialization or 
+        !! Note: Arrays are initialized to zero at the beginning of each subroutine call.
+        ! This approach ensures that the arrays have a clean state for each calculation.
+        ! If the subroutine is called multiple times and the arrays do not need to be
+        ! reset every time, consider optimizing by removing this initialization or
         ! modifying it as per the specific requirements of the program.
 
         !*--------------------------------------------------------------
         
         ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
         ! pause
-        call modernLBL(molType, lineIdx, capWV, totalLines, currentLevel)
+        call modernLBL(lineIdx, capWV, totalLines, currentLevel)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause
         ! ------------ END OF THE FIRST PART ---------------------------------- !
