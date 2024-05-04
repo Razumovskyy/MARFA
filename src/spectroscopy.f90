@@ -73,12 +73,12 @@ contains
 
         if (.not. isIncludeGammaSelf .and. isIncludeTemperature) then
             ! temperature dependence is present, but partial pressure not included
-            lorentzHWHM = ((temperatureParameter / refTemperature)**foreignTempCoeff) * (gammaForeign * pressureParameter)
+            lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * (gammaForeign * pressureParameter)
         end if
 
         if (isIncludeGammaSelf .and. isIncludeTemperature) then
             ! full formula (6) from HITRAN docs 
-            lorentzHWHM = ((temperatureParameter / refTemperature)**foreignTempCoeff) * &
+            lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
                             (gammaForeign * (pressureParameter - partialPressureParameter) + &
                             gammaSelf * partialPressureParameter)
         end if
