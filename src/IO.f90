@@ -3,6 +3,7 @@ module IO
     use ShapeFuncInterface
     use Atmosphere
     use Shapes
+    use Spectroscopy
     implicit none
     integer, parameter :: TIPSUnit = 5467
     character(len=30), parameter :: TIPSFile = 'data/QofT_formatted.dat'
@@ -11,7 +12,6 @@ module IO
     real(kind=DP) :: startWV, endWV, calcPrecision ! [cm-1] -- boundaries and grid calcPrecision for the spectral interval for calculating spectra 
     character(len=30) :: lineShapeFuncName ! name of the line shape function (custom or standard)
     procedure(shape), pointer :: shapeFuncPtr ! pointer for implementing different line shapes functions
-    real, allocatable :: TIPS(:,:) ! TIPS array (Total internal partition sums)
     integer :: totalLines ! number of lines in one HITRAN file (e.g. H16.01) 
     character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
     
@@ -26,7 +26,8 @@ module IO
     ! Shape Vars
     real(kind=DP) :: VI
     real :: SLL
-    real(kind=DP) :: gammaPT ! AL ! Lorentz HWHM -- T and P dependent !
+    real(kind=DP) :: LorHWHM ! AL ! Lorentz HWHM -- T and P dependent !
+    real(kind=DP) :: DopHWHM ! ADD ! Doppler HWHM
 
     ! SharedVars Main
     real(kind=DP) :: extStartWV, extEndWV
@@ -52,16 +53,16 @@ contains
             shapeFuncPtr => lorentz
         case ('doppler')
             shapeFuncPtr => doppler
-        case ('simpleLorentz')
-            shapeFuncPtr => simpleLorentz
-        case ('selfSimpleLorentz')
-            shapeFuncPtr => selfSimpleLorentz
-        case ('noSelfLorentz')
-            shapeFuncPtr => noSelfLorentz
         case ('voigt')
             shapeFuncPtr => voigt
         case ('tonkov')
             shapeFuncPtr => tonkov
+        ! case ('simpleLorentz')
+        !     shapeFuncPtr => simpleLorentz
+        ! case ('selfSimpleLorentz')
+        !     shapeFuncPtr => selfSimpleLorentz
+        ! case ('noSelfLorentz')
+        !     shapeFuncPtr => noSelfLorentz
         end select
     end subroutine fetchLineShapeFunction
 
