@@ -4,44 +4,44 @@ module Shapes
     implicit none
 contains
     ! TODO: consider removing various "lorentz" and keep one but with parameters
-    real function simpleLorentz(X)
-        !! 
-        ! Simplistic Lorentz line shape function in which there is no account for self-broadening and no temperature dependence
-        !!
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-        ! -------------------------------------------------------- !
-        real(kind=DP) :: HWHM
+    ! real function simpleLorentz(X)
+    !     !! 
+    !     ! Simplistic Lorentz line shape function in which there is no account for self-broadening and no temperature dependence
+    !     !!
+    !     ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
+    !     real(kind=DP), intent(in) :: X
+    !     ! -------------------------------------------------------- !
+    !     real(kind=DP) :: HWHM
 
-        HWHM = lorentzHWHM(pressure, includeGammaSelf=.false., includeTemperature=.false.)
-        simpleLorentz = HWHM / (pi*(X**2 + HWHM**2))
-    end function simpleLorentz
+    !     HWHM = lorentzHWHM(pressure, includeGammaSelf=.false., includeTemperature=.false.)
+    !     simpleLorentz = HWHM / (pi*(X**2 + HWHM**2))
+    ! end function simpleLorentz
 
-    real function selfSimpleLorentz(X)
-        !! 
-        ! Lorentz line shape function in which there is no temperature dependence (T = 296 K), but self-broadening is taken into account
-        !!
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-        ! -------------------------------------------------------- !
-        real(kind=DP) :: HWHM
+    ! real function selfSimpleLorentz(X)
+    !     !! 
+    !     ! Lorentz line shape function in which there is no temperature dependence (T = 296 K), but self-broadening is taken into account
+    !     !!
+    !     ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
+    !     real(kind=DP), intent(in) :: X
+    !     ! -------------------------------------------------------- !
+    !     real(kind=DP) :: HWHM
 
-        HWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, includeTemperature=.false.)
-        selfSimpleLorentz = HWHM / (pi*(X**2 + HWHM**2))
-    end function selfSimpleLorentz
+    !     HWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, includeTemperature=.false.)
+    !     selfSimpleLorentz = HWHM / (pi*(X**2 + HWHM**2))
+    ! end function selfSimpleLorentz
 
-    real function noSelfLorentz(X)
-        !! 
-        ! Temperature-dependent Lorentz line shape with no account for self-broadening
-        !!
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-        ! -------------------------------------------------------- !
-        real(kind=DP) :: HWHM
+    ! real function noSelfLorentz(X)
+    !     !! 
+    !     ! Temperature-dependent Lorentz line shape with no account for self-broadening
+    !     !!
+    !     ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
+    !     real(kind=DP), intent(in) :: X
+    !     ! -------------------------------------------------------- !
+    !     real(kind=DP) :: HWHM
 
-        HWHM = lorentzHWHM(pressure, includeGammaSelf=.false., includeTemperature=.true., temperatureParameter=temperature)
-        noSelfLorentz = HWHM / (pi*(X**2 + HWHM**2))
-    end function noSelfLorentz
+    !     HWHM = lorentzHWHM(pressure, includeGammaSelf=.false., includeTemperature=.true., temperatureParameter=temperature)
+    !     noSelfLorentz = HWHM / (pi*(X**2 + HWHM**2))
+    ! end function noSelfLorentz
 
     real function lorentz(X)
         !! 
@@ -56,6 +56,7 @@ contains
         HWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, & 
                             includeTemperature=.true., temperatureParameter=temperature)
         lorentz = HWHM / (pi*(X**2 + HWHM**2))
+        lorentz = lorentz * density * intensityOfT(temperature) 
     end function lorentz
 
     real function doppler(X)
@@ -66,6 +67,7 @@ contains
   
         HWHM = dopplerHWHM(lineWV, temperature, molarMass)        
         doppler = sqrt(log(2.) / (pi * HWHM**2)) * exp(-(X/HWHM)**2 * log(2.))
+        doppler = doppler * density * intensityOfT(temperature)
     end function doppler
 
     real function tonkov(X)
@@ -125,7 +127,8 @@ contains
                 A2 = 0.25 + Y_2 + Y_2**2
                 B2 = Y_2 + Y_2 - 1.
             end if
-            voigt = (A1 + B1*X2) / (A2 + B2*X2 + X2**2) * sqrt(pi) / dopHWHM
+            voigt = (A1 + B1*X2) / (A2 + B2*X2 + X2**2) * sqrt(pi) * intensityOfT(temperature) * &
+                    density / dopHWHM
         else
             ! Region 2
             if (XX + YY >= 5.5) then
@@ -141,7 +144,8 @@ contains
                     C4 = 10.5+6.0*(Y_2-1.0)*Y_2
                     D4 = 4.0*Y_2-6.0
                 end if 
-                voigt = (((D3*X2+C3)*X2+B3)*X2+A3) / ((((X2+D4)*X2+C4)*X2+B4)*X2+A4) * sqrt(pi) / dopHWHM
+                voigt = (((D3*X2+C3)*X2+B3)*X2+A3) / ((((X2+D4)*X2+C4)*X2+B4)*X2+A4) * sqrt(pi) * intensityOfT(temperature) * &
+                            density / dopHWHM
             else
                 ! IF(Y >= 0.195*X-0.176)THEN ! Region 3 in accordance with Kuntz
                 if (XX <= 1.0 .OR. YY >= 0.02) then 
@@ -167,7 +171,8 @@ contains
                         E6 = (5.0*Y3+13.3988)*Y3+1.49645
                     end if
                     voigt = ((((E5*X2+D5)*X2+C5)*X2+B5)*X2+A5)/	&
-                            (((((X2+E6)*X2+D6)*X2+C6)*X2+B6)*X2+A6) * sqrt(pi) / dopHWHM
+                            (((((X2+E6)*X2+D6)*X2+C6)*X2+B6)*X2+A6) * sqrt(pi) * intensityOfT(temperature) * & 
+                            density / dopHWHM
                 else					
                     ! Region 4
                     voigt = doppler(X)

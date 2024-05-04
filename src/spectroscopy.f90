@@ -13,6 +13,7 @@ module Spectroscopy
     real :: deltaForeign ! [cm-1/atm] (pressure shift of the line position at 296 K and 1 atm)
     real :: molarMass ! [g/mol] -- current species molar mass
     integer :: molType ! to define type of the molecule : 2 -CO2, 1 -H2O, 0 -other
+    real, allocatable :: TIPS(:,:) ! TIPS array (Total internal partition sums)
 
 contains
 
@@ -83,5 +84,37 @@ contains
                             gammaSelf * partialPressureParameter)
         end if
     end function lorentzHWHM
+
+    real function intensityOfT(temperatureParameter)
+        real, intent(in) :: temperatureParameter ! [K] -- temperature at the current atmospheric level
+        ! real(kind=DP), intent(in) :: nu ! [cm-1],  gridWV -- spectral point where absorption coefficitent will be calculated
+        ! procedure(shape), pointer, intent(in) :: lineShape ! [cm] -- normalized line shape function from the MyShapes module
+        ! --------------------------------------------------- !
+        real(kind=DP) :: shiftedLineWV
+        real :: intensity ! [cm-1/(molecule*cm-2)] (refLineIntensity) -- the spectral line intensity for a single molecule per unit volume.
+        real :: TIPSFactor, boltzmannFactor, emissionFactor
+        real :: TIPSOfT
+        real :: TIPSOfRefT
+        integer :: NTAB_G
+        real :: C_G1, C_G2
+        real :: t_G1
+        integer :: isotopeNum
+
+        shiftedLineWV = shiftedLinePosition(lineWV, pressure)
+
+        isotopeNum = jointMolIso / 100
+        NTAB_G = (temperatureParameter - 20.0) / 2 + 1
+        t_G1 = NTAB_G * 2.0 + 18.
+        C_G2 = (temperatureParameter - t_G1)/2.
+        C_G1 = 1. - C_G2
+        TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
+        TIPSOfRefT = TIPS(isotopeNum, 139)
+
+        TIPSFactor = TIPSOfRefT / TIPSOfT
+        boltzmannFactor = exp(-C2*lineLowerState/temperatureParameter) / exp(-C2*lineLowerState/refTemperature)
+        emissionFactor = (1 - exp(-C2*lineWV/temperatureParameter)) / (1 - exp(-C2*lineWV/refTemperature))
+
+        intensity = refLineIntensity * TIPSFactor * boltzmannFactor * emissionFactor
+    end function intensityOfT
 
 end module Spectroscopy

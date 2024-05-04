@@ -129,41 +129,6 @@ program main
     deallocate(TIPS)
 contains
 
-    real function absorptionCoeffCalc(nu, temperatureParameter, lineShape)
-        real, intent(in) :: temperatureParameter ! [K] -- temperature at the current atmospheric level
-        real(kind=DP), intent(in) :: nu ! [cm-1],  gridWV -- spectral point where absorption coefficitent will be calculated
-        procedure(shape), pointer, intent(in) :: lineShape ! [cm] -- normalized line shape function from the MyShapes module
-        ! --------------------------------------------------- !
-        real(kind=DP) :: X
-        real(kind=DP) :: shiftedLineWV
-        real :: intensity ! [cm-1/(molecule*cm-2)] (refLineIntensity) -- the spectral line intensity for a single molecule per unit volume.
-        real :: TIPSFactor, boltzmannFactor, emissionFactor
-        real :: TIPSOfT
-        real :: TIPSOfRefT
-        integer :: NTAB_G
-        real :: C_G1, C_G2
-        real :: t_G1
-        integer :: isotopeNum
-
-        shiftedLineWV = shiftedLinePosition(lineWV, pressure)
-        X = abs(nu - shiftedLineWV)
-
-        isotopeNum = jointMolIso / 100
-        NTAB_G = (temperatureParameter - 20.0) / 2 + 1
-        t_G1 = NTAB_G * 2.0 + 18.
-        C_G2 = (temperatureParameter - t_G1)/2.
-        C_G1 = 1. - C_G2
-        TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
-        TIPSOfRefT = TIPS(isotopeNum, 139)
-
-        TIPSFactor = TIPSOfRefT / TIPSOfT
-        boltzmannFactor = exp(-C2*lineLowerState/temperatureParameter) / exp(-C2*lineLowerState/refTemperature)
-        emissionFactor = (1 - exp(-C2*lineWV/temperatureParameter)) / (1 - exp(-C2*lineWV/refTemperature))
-
-        intensity = refLineIntensity * TIPSFactor * boltzmannFactor * emissionFactor
-        absorptionCoeffCalc = intensity * density * lineShape(X)
-    end function absorptionCoeffCalc
-
     subroutine processSpectra(molecule, loopLevel)
         implicit none
         character(len=5), intent(in) :: molecule
@@ -300,10 +265,9 @@ contains
         ! modifying it as per the specific requirements of the program.
 
         !*--------------------------------------------------------------
-        
         ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
         ! pause
-        call modernLBL(lineIdx, capWV, totalLines, currentLevel)
+        call modernLBL(lineIdx, capWV, currentLevel)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause
         ! ------------ END OF THE FIRST PART ---------------------------------- !
