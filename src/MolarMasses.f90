@@ -1,11 +1,3 @@
-module MoleculeVars
-    ! variables related to the molecules
-    use Kinds
-    implicit none
-    integer :: totalLines ! number of lines in one HITRAN file (e.g. H16.01) 
-    character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
-end module MoleculeVars
-
 module MolarMasses
     implicit none
     ! Molecular masses (isotopes as in GAMACHE's 2017data for 12 gases)

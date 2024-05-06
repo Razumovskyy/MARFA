@@ -48,3 +48,4 @@ src/LBL2023_with_comments.f90
 test/simpleSpectra.dat
 /test/calc
 /src/mySpectra/calc
+SPECTR

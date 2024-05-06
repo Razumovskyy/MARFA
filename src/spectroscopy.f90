@@ -1,86 +1,120 @@
 module Spectroscopy
-    use Kinds
-    use Constants, only: C2, dopplerCONST, refTemperature
+    use Constants
+    use Atmosphere
+    use MolarMasses
     implicit none
-    ! HITRAN spectral data variables
-    ! Not 100% sure about the explanations !!
-    real(kind=DP) :: lineWV ! The wavenumber of the spectral line transition (cm-1) in vacuum
-    real :: refLineIntensity  ! S_I_ ! intensity in cm-1/(molec * cm-2) at 296 Kelvin
-    
-    ! Air-broadened half-width -- the half-width of the spectral line at half-maximum (HWHM)
-    ! due to broadening by air (primarily nitrogen and oxygen)
-    real :: gammaForeign ! ALFA_I ! The air-broadened half width at half maximum (HWHM) (cm−1/atm) at Tref=296K and reference pressure pref=1atm
-    real :: gammaSelf ! ALFAS_I ! The self-broadened half width at half maximum (HWHM) (cm−1/atm) at Tref=296K and reference pressure pref=1atm
-    
-    real :: lineLowerState  ! E_I_ ! The lower-state energy of the transition (cm-1)
-    
-    ! A factor used to scale the line intensity, often related to isotopic abundance 
-    ! or other factors that affect the overall intensity of the line.
-    real :: foreignTempCoeff ! FACT_I_ ! The coefficient of the temperature dependence of the air-broadened half width
-    
-    integer :: jointMolIso! NISO_I_ ! joined reference to Molecule number (MOL) and Isotopologue number (ISO)
-    
-    ! The shift in the line position due to pressure. 
-    ! It represents the change in the central frequency of the line under different pressure conditions.
-    real :: deltaForeign ! SHIFT_I_ ! The pressure shift (cm−1/atm) at Tref=296K and pref=1atm of the line position with respect to the vacuum transition wavenumber νij
+    real(kind=DP) :: lineWV ! [cm-1] -- current spectral line, transition wavenumber
+    real :: refLineIntensity ! [cm-1/(molecule*cm-2)] -- spectral line intensity at refTemperature=296 K
+    real :: gammaForeign ! [cm-1/atm] -- Lorentzian foreign-broadened Lorentz HWHM at refTemperature=296 K
+    real :: gammaSelf ! [cm-1/atm] -- self-broadened component of Lorentz HWHM
+    real :: lineLowerState ! [cm-1] -- lower state energy of the transition
+    real :: foreignTempCoeff ! [dimensionless] (coefficient for temperature dependence of gammaForeign)
+    integer :: jointMolIso ! [dimensionless] custom variable: joined reference to Molecule number (MOL) and Isotopologue number (ISO)
+    real :: deltaForeign ! [cm-1/atm] (pressure shift of the line position at 296 K and 1 atm)
+    real :: molarMass ! [g/mol] -- current species molar mass
+    integer :: molType ! to define type of the molecule : 2 -CO2, 1 -H2O, 0 -other
+    real, allocatable :: TIPS(:,:) ! TIPS array (Total internal partition sums)
 
-    ! ------- ^^^^ do not change the Kinds there ^^^^ ------ !
 contains
 
-    real function LorentzianHWHM(p, t, pSelf, tRef, n, gammaS, gammaF)
-    ! see HITRAN docs, section 'Temperature and pressure dependence of the line width', formula 6
-        real :: p, pSelf
-        real :: t, tRef
-        real :: n
-        real :: gammaS, gammaF
+    ! molarMass = WISO(isotopeNum)
+    
+    real(kind=DP) function shiftedLinePosition(lineWVParameter, pressureParameter)
+        real(kind=DP), intent(in) :: lineWVParameter
+        real, intent(in) :: pressureParameter
 
-        LorentzianHWHM = ((tRef/t) ** n) * (gammaF * (p - pSelf) + gammaS * pSelf)
-    end function LorentzianHWHM 
+        shiftedLinePosition = lineWVParameter + deltaForeign * pressureParameter
+    end function shiftedLinePosition
 
-    real function pressureShiftedWV(nu, deltaF, p)
-        real(kind=DP) :: nu
-        real :: deltaF
-        real :: p
+    real function dopplerHWHM(lineWVParameter, temperatureParameter, molarMassParameter)
+        real(kind=DP), intent(in) :: lineWVParameter
+        real, intent(in) :: temperatureParameter
+        real, intent(in) :: molarMassParameter
+
+        dopplerHWHM = dopplerCONST * shiftedLinePosition(lineWVParameter, pressure) * &
+                sqrt(temperatureParameter / molarMassParameter)
+
+    end function dopplerHWHM
+
+    real function lorentzHWHM(pressureParameter, includeGammaSelf, partialPressureParameter, & 
+                                includeTemperature, temperatureParameter)
+        ! TODO: add check if includeTemperature=true but not passed as an argument
+        real, intent(in) :: pressureParameter
+        logical, optional, intent(in) :: includeGammaSelf, includeTemperature
+        real, optional, intent(in) :: partialPressureParameter
+        real, optional, intent(in) :: temperatureParameter
         
-        pressureShiftedWV = nu + deltaF * p
-    end function pressureShiftedWV
+        logical :: isIncludeGammaSelf, isIncludeTemperature
+        
+        ! defaults:
+        isIncludeGammaSelf = .false.   ! do not count p_self, and gamma_self
+        isIncludeTemperature = .false. ! no temperature dependency: temperature is set to 296 K
+        
+        if (present(includeTemperature)) isincludeTemperature = includeTemperature
+        if (present(includeGammaSelf)) isIncludeGammaSelf = includeGammaSelf
 
-    real function DopplerHWHM(nu, t, molarMass)
-        real(kind=DP) :: nu
-        real :: t
-        real :: molarMass
+        ! TODO: rewrite using select case: use integer indicator which is mapped to two bool variables:
+        ! if (isIncludeGammaSelf) then
+        !     caseIndex = caseIndex + 2
+        ! endif
+        ! if (isIncludeTemperature) then
+        !     caseIndex = caseIndex + 1
+        ! endif
 
-        DopplerHWHM = dopplerCONST * nu * sqrt(t/molarMass) 
-    end function
+        if (.not. isIncludeGammaSelf .and. .not. isIncludeTemperature) then
+            ! temperature is set to 296 K and partial pressure is not counted
+            lorentzHWHM = gammaForeign * pressureParameter
+        end if
+        
+        if (isIncludeGammaSelf .and. .not. isIncludeTemperature) then
+            ! temperature is set to 296 K and partial pressure included
+            lorentzHWHM = gammaForeign * (pressureParameter - partialPressureParameter) + &
+                            gammaSelf * partialPressureParameter
+        end if
 
-    real function lineIntensityofT(t, refLineIntensity, isotopeNum, partFunc, lowerState, transitionWV)
-        real, intent(in) :: t
-        real, intent(in) :: refLineIntensity
-        integer, intent(in) :: isotopeNum
-        real, intent(in) :: partFunc(:,:)
-        real, intent(in) :: lowerState 
-        real(kind=DP), intent(in) :: transitionWV
+        if (.not. isIncludeGammaSelf .and. isIncludeTemperature) then
+            ! temperature dependence is present, but partial pressure not included
+            lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * (gammaForeign * pressureParameter)
+        end if
 
+        if (isIncludeGammaSelf .and. isIncludeTemperature) then
+            ! full formula (6) from HITRAN docs 
+            lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
+                            (gammaForeign * (pressureParameter - partialPressureParameter) + &
+                            gammaSelf * partialPressureParameter)
+        end if
+    end function lorentzHWHM
+
+    real function intensityOfT(temperatureParameter)
+        real, intent(in) :: temperatureParameter ! [K] -- temperature at the current atmospheric level
+        ! real(kind=DP), intent(in) :: nu ! [cm-1],  gridWV -- spectral point where absorption coefficitent will be calculated
+        ! procedure(shape), pointer, intent(in) :: lineShape ! [cm] -- normalized line shape function from the MyShapes module
+        ! --------------------------------------------------- !
+        real(kind=DP) :: shiftedLineWV
+        real :: intensity ! [cm-1/(molecule*cm-2)] (refLineIntensity) -- the spectral line intensity for a single molecule per unit volume.
+        real :: TIPSFactor, boltzmannFactor, emissionFactor
+        real :: TIPSOfT
+        real :: TIPSOfRefT
         integer :: NTAB_G
         real :: C_G1, C_G2
         real :: t_G1
-        real :: partFuncOfT, partFuncOfRefT
-        real :: partFuncFactor
-        real :: bolFactor
-        real :: stEmissFactor
+        integer :: isotopeNum
 
-        NTAB_G = (t - 20.0)/2 + 1
+        shiftedLineWV = shiftedLinePosition(lineWV, pressure)
+
+        isotopeNum = jointMolIso / 100
+        NTAB_G = (temperatureParameter - 20.0) / 2 + 1
         t_G1 = NTAB_G * 2.0 + 18.
-        C_G2 = (t - t_G1)/2.
+        C_G2 = (temperatureParameter - t_G1)/2.
         C_G1 = 1. - C_G2
-        partFuncOfT = C_G1 * partFunc(isotopeNum, NTAB_G) + C_G2 * partFunc(isotopeNum, NTAB_G+1)
-        partFuncOfRefT = partFunc(isotopeNum, 139)
-        partFuncFactor = partFuncOfRefT / partFuncOfT
-        bolFactor = exp(-C2*lowerState/t) / exp(-C2*lowerState/refTemperature) 
-        stEmissFactor = (1 - exp(-C2*transitionWV/t)) / (1 - exp(-C2*transitionWV/refTemperature))
-        
-        ! TODO consider to use stEmissFactor in Longwave, found it was 0.4 for 50 - 80 cm-1 for H2O
-        ! lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor * stEmissFactor
-        lineIntensityofT = refLineIntensity * partFuncFactor * bolFactor
-    end function lineIntensityofT
+        TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
+        TIPSOfRefT = TIPS(isotopeNum, 139)
+
+        TIPSFactor = TIPSOfRefT / TIPSOfT
+        boltzmannFactor = exp(-C2*lineLowerState/temperatureParameter) / exp(-C2*lineLowerState/refTemperature)
+        emissionFactor = (1 - exp(-C2*lineWV/temperatureParameter)) / (1 - exp(-C2*lineWV/refTemperature))
+
+        intensity = refLineIntensity * TIPSFactor * boltzmannFactor * emissionFactor
+    end function intensityOfT
+
 end module Spectroscopy

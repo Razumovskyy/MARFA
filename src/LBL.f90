@@ -1,29 +1,23 @@
 module LBL
-    use Kinds
-    use Constants, only: PI, refTemperature, stPressure, stTemperature, LOSCHMIDT, C2
-    use SharedVarsMain
-    use Mesh
-    use MoleculeVars
-    use Spectroscopy, only: lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
-                            jointMolIso, deltaForeign, lineIntensityofT
-    use Spectroscopy, only: LorentzianHWHM, DopplerHWHM, pressureShiftedWV
-    use MolarMasses, only: WISO
-    use Shapes, only: lorentz, doppler, voigt
+    use Constants
     use ShapeFuncInterface
+    use Atmosphere
+    use Mesh
+    use IO
+    use Spectroscopy
+    use MolarMasses
+    use Shapes
     use LineGridCalc
     implicit none
 contains
 
-    subroutine modernLBL(molType, LINBEG, capWV, totalLines, loopLevel)
+    subroutine modernLBL(LINBEG, capWV)
         
-        procedure(shape), pointer :: shapeFuncPtr
-
-        integer :: molType ! molecule type-integer: '1' - for SO2 and H2O, '2' -- for CO2
+        ! integer :: molTypeArg
         integer :: LINBEG ! integer line label used for locating record in direct access file
         integer :: I ! loop variable for accessing the record in direct access file
-        integer :: totalLines ! number of lines in one file
-        integer :: loopLevel
-        integer, save :: currentLevel
+        ! integer :: loopLevel
+        ! integer, save :: currentLevel
 
         ! this variable serves as a cap in the loop to stop increasing the lineIdx
         ! it is the value as when there is the next step over the DeltaWV, hitran reading will from the correct record number
@@ -33,28 +27,22 @@ contains
         real, parameter :: BOUNDL = 10. ! some boundary parameter
         real, parameter :: BOUNDD = 0.01 ! likely some boundary value related to Doppler broadening, given its small value
 
-        real, save :: unitlessT ! unitless temperature (refTemperature/T)
+        ! real, save :: unitlessT ! unitless temperature (refTemperature/T)
 
-        real :: lineIntensity ! temperature and pressure dependent line intensity
+        ! real :: lineIntensity ! SLL ! temperature and pressure dependent line intensity
         
-        real, save :: pSelf ! self-broadening pressure component
-        real, save :: pForeign ! foreign gas broadening component
-        
-        real(kind=DP) :: gammaPT ! AL ! Lorentz HWHM -- T and P dependent !
+        ! real, save :: pSelf ! self-broadening pressure component
+        ! real, save :: pForeign ! foreign gas broadening component
         
         ! Appears in the denominator of the Lorentzian line profile L(\nu)
         real(kind=DP) :: shiftedLineWV ! VI ! shifted line position under the current atmospheric pressure
 
         integer :: isotopeNum ! N_MOLIS ! for categorizing isotopolouges in more broader group
         
-        real :: alphaT ! ADD ! The half-width at half-maximum (HWHM) of the Doppler-broadened component
+        ! real :: alphaT ! ADD ! The half-width at half-maximum (HWHM) of the Doppler-broadened component
 
         ! it characterizes the relative contributions of Lorentzian and Doppler broadening to the overall shape of the spectral line
         real(kind=DP) :: shapePrevailFactor ! ALAD ! ratio of is the ratio of the Lorentz HWHM (AL) to the Doppler width (ADD).
-
-        unitlessT = refTemperature/T
-        pSelf = RO * 10. / LOSCHMIDT * T/stTemperature
-        pForeign = P - pSelf
 
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
@@ -63,20 +51,22 @@ contains
                                 jointMolIso, deltaForeign
 
             if  (lineWV >= extEndDeltaWV) exit
-            
+
             if  (lineWV <= capWV) LINBEG = I
 
             isotopeNum = jointMolIso/100
 
-            gammaPT = LorentzianHWHM(P, T, pSelf, refTemperature, foreignTempCoeff, gammaSelf, gammaForeign)
-            
-            shiftedLineWV = pressureShiftedWV(lineWV, deltaForeign, P)
+            ! AL
+            LorHWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, & 
+                                includeTemperature=.true., temperatureParameter=temperature)
+    
+            ! ADD
+            DopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
 
-            alphaT = DopplerHWHM(shiftedLineWV, T, WISO(isotopeNum))
-            
-            lineIntensity = lineIntensityofT(T, refLineIntensity, isotopeNum, QofT, lineLowerState, lineWV)
+            ! intensity SL is calculated in the main.f90
+            ! SLL = SL * AL
 
-            shapePrevailFactor = gammaPT / alphaT ! <----- ratio to see which effect (Doppler or Lorentz prevails)
+            shapePrevailFactor = LorHWHM / DopHWHM ! <----- ratio to see which effect (Doppler or Lorentz prevails)
 
             if (shapePrevailFactor > BOUNDL) then
                 if (shiftedLineWV < startDeltaWV) then
@@ -121,8 +111,6 @@ contains
                 end if
             end if 
         end do
-        ! ------------------------------------------------------ !
-
         ! -------- End of line-by-line loop (iteration over records in HITRAN file) --!
     end subroutine modernLBL
 end module LBL
