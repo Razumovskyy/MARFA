@@ -41,30 +41,30 @@ contains
     open(configUnit, file='simConfig.ini', status='old')
     read(configUnit, *) startWV, endWV
     read(configUnit, '(A20)') atmProfileFile
-    read(configUnit, '(A30)') lineShapeFuncName
+    ! read(configUnit, '(A30)') lineShapeFuncName
     close(configUnit)
     ! ------------------------------------------------------ !
     end subroutine readInputParameters
 
-    subroutine fetchLineShapeFunction()
-        ! TODO: add flow for the incorrect line shape input
-        select case(trim(adjustl(lineShapeFuncName)))
-        case ('lorentz')
-            shapeFuncPtr => lorentz
-        case ('doppler')
-            shapeFuncPtr => doppler
-        case ('voigt')
-            shapeFuncPtr => voigt
-        case ('tonkov')
-            shapeFuncPtr => tonkov
-        ! case ('simpleLorentz')
-        !     shapeFuncPtr => simpleLorentz
-        ! case ('selfSimpleLorentz')
-        !     shapeFuncPtr => selfSimpleLorentz
-        ! case ('noSelfLorentz')
-        !     shapeFuncPtr => noSelfLorentz
-        end select
-    end subroutine fetchLineShapeFunction
+    ! subroutine fetchLineShapeFunction()
+    !     ! TODO: add flow for the incorrect line shape input
+    !     select case(trim(adjustl(lineShapeFuncName)))
+    !     case ('lorentz')
+    !         shapeFuncPtr => lorentz
+    !     case ('doppler')
+    !         shapeFuncPtr => doppler
+    !     case ('voigt')
+    !         shapeFuncPtr => voigt
+    !     case ('tonkov')
+    !         shapeFuncPtr => tonkov
+    !     ! case ('simpleLorentz')
+    !     !     shapeFuncPtr => simpleLorentz
+    !     ! case ('selfSimpleLorentz')
+    !     !     shapeFuncPtr => selfSimpleLorentz
+    !     ! case ('noSelfLorentz')
+    !     !     shapeFuncPtr => noSelfLorentz
+    !     end select
+    ! end subroutine fetchLineShapeFunction
 
     subroutine readTIPS()
     ! ---------- reading Statistical Sums --------------------- !
