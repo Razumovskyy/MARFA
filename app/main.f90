@@ -56,7 +56,7 @@ program main
     call readInputParameters
     
     ! initializes line shape function from the input config
-    call fetchLineShapeFunction
+    ! call fetchLineShapeFunction
     
     ! reads atmospheric profile arrays: height, pressure, temperature and density
     call readAtmosphericParameters
@@ -73,8 +73,6 @@ program main
         pressure = pressureArray(levelsIdx)
         temperature = temperatureArray(levelsIdx)
         density = densityArray(levelsIdx)
-        ! write(atmControlUnit, *) levelsIdx, pressure, temperature, levels
-
         unitlessT = refTemperature/temperature
         pSelf = density * 10. / LOSCHMIDT * temperature/stTemperature
         pForeign = pressure - pSelf
@@ -97,7 +95,7 @@ program main
         startDeltaWV = startWV 
         endDeltaWV = startDeltaWV + deltaWV
         do while (startDeltaWV < endWV)
-            ! *** calculation inside 10.0 cm^-1 *** !
+            ! loop over 10 cm intervals accross the whole range !
 
             !! It considers that startWV, endWV and deltaWV should be multiples of 10
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
@@ -109,6 +107,7 @@ program main
 
             ! write(*,*) 'startDeltaWV before K_HITRAN call: ', startDeltaWV
             ! pause
+            ! *** calculation inside 10.0 cm^-1 *** !
             call processSpectra(inputMolecule, levelsIdx)
 
             write(outputUnit, rec=outputRecNum) RK
@@ -266,7 +265,6 @@ contains
 
         !*--------------------------------------------------------------
         ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
-        ! pause
         call modernLBL(lineIdx, capWV)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause
