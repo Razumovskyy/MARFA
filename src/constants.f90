@@ -3,11 +3,12 @@ module Constants
     integer, parameter :: DP = selected_real_kind(15,  307) ! selected kind for double precision
     
     real, parameter :: PI = 3.1415926
+    real, parameter :: sqln2 = sqrt(log(2.))
 
     ! CGS system is used
     real, parameter :: PLANCK = 6.626070e-27 ! [erg*s]
     real, parameter :: SPL = 2.99792458e10 ! [cm/s] -- speed of light
-    real, parameter :: BOL = 1.3806503e-16 ! [erg/K]
+    real, parameter :: BOL = 1.3806503e-16 ! [erg/K] -- Boltzmann constant
     real, parameter :: C2 = (PLANCK * SPL / BOL) ! 1.438769 [cm * K] -- second radiation constant
     real, parameter :: stPressure = 1. ! [atm]
     real, parameter :: stTemperature = 273.15 ! [K]

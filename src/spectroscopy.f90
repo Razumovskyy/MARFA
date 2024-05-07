@@ -31,7 +31,7 @@ contains
         real, intent(in) :: temperatureParameter
         real, intent(in) :: molarMassParameter
 
-        dopplerHWHM = dopplerCONST * shiftedLinePosition(lineWVParameter, pressure) * &
+        dopplerHWHM = dopplerCONST * abs(shiftedLinePosition(lineWVParameter, pressure)) * &
                 sqrt(temperatureParameter / molarMassParameter)
 
     end function dopplerHWHM

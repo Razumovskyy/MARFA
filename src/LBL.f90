@@ -56,6 +56,8 @@ contains
 
             isotopeNum = jointMolIso/100
 
+            molarMass = WISO(isotopeNum)
+
             ! AL
             LorHWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, & 
                                 includeTemperature=.true., temperatureParameter=temperature)
@@ -63,11 +65,10 @@ contains
             ! ADD
             DopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
 
-            ! intensity SL is calculated in the main.f90
-            ! SLL = SL * AL
+            shapePrevailFactor = LorHWHM / (DopHWHM/sqln2) ! <----- ratio to see which effect (Doppler or Lorentz prevails)
 
-            shapePrevailFactor = LorHWHM / DopHWHM ! <----- ratio to see which effect (Doppler or Lorentz prevails)
-
+            shiftedLineWV = shiftedLinePosition(lineWV, pressure)
+            
             if (shapePrevailFactor > BOUNDL) then
                 if (shiftedLineWV < startDeltaWV) then
                     shapeFuncPtr => lorentz
@@ -96,11 +97,11 @@ contains
                         end if
                     end if
                 else 
-                    if ( shiftedLineWV < startDeltaWV ) then
+                    if (shiftedLineWV < startDeltaWV ) then
                         shapeFuncPtr => doppler
                         call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     else 
-                        if ( shiftedLineWV >= endDeltaWV) then
+                        if (shiftedLineWV >= endDeltaWV) then
                             shapeFuncPtr => doppler
                             call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                         else 
