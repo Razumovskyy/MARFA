@@ -1,6 +1,8 @@
 module Shapes
     use Constants
+    use Atmosphere
     use Spectroscopy
+
     implicit none
 contains
     ! TODO: consider removing various "lorentz" and keep one but with parameters
@@ -64,8 +66,8 @@ contains
         real(kind=DP), intent(in) :: X
         ! -------------------------------------------------------- !
         real(kind=DP) :: HWHM ! [cm-1] -- Doppler HWHM
-  
-        HWHM = dopplerHWHM(lineWV, temperature, molarMass)        
+
+        HWHM = dopplerHWHM(lineWV, temperature, molarMass)      
         doppler = sqrt(log(2.) / (pi * HWHM**2)) * exp(-(X/HWHM)**2 * log(2.))
         doppler = doppler * density * intensityOfT(temperature)
     end function doppler
