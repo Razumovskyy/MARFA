@@ -93,6 +93,7 @@ contains
     end function tonkov
 
     real function correctedDoppler(X)
+        ! used only for the Voigt function estimation
         ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
         real(kind=DP), intent(in) :: X
         real, parameter :: bound = 12.5 * 12.5
