@@ -84,7 +84,7 @@ program main
             if ( levelsIdx < 100 ) then
                 write(levelLabel(1:2), '(I2)') levelsIdx
             else
-                write(levelLabel(1:3), '(I2)') levelsIdx
+                write(levelLabel(1:3), '(I3)') levelsIdx
             end if
         end if
         
