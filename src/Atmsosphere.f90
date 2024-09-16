@@ -8,7 +8,8 @@ module Atmosphere
     integer :: levels ! JMAX ! ** ! number of levels in the header of the atmospheric profile file
     real, allocatable :: heightArray(:), pressureArray(:), temperatureArray(:), densityArray(:) ! NEW ! ** ! PPP, TTT, RORO
     integer, parameter :: levelsThreshold = 200 ! NEW ! ** !
-    character(len=7) :: inputMolecule
+    character(len=7) :: inputMolecule ! is read in the IO module
+    ! character(len=7) :: inputMoleculeDEPR
     integer :: levelsIdx ! JJJ ! ** ! index for loop over levels
     ! ----------------------------------------------------------- !
     ! real :: pressure ! [atm] -- pressure on the current atmospheric level
@@ -31,7 +32,10 @@ contains
                                     bigger than ', levelsThreshold, '. WARNING message here.'
             stop
         endif
-        read(atmProfileUnit, '(A7)') inputMolecule
+        
+        ! Skip the line containing inputMoleculeDEPR
+        read(atmProfileUnit, *)
+
         allocate(heightArray(levels))
         allocate(pressureArray(levels))
         allocate(temperatureArray(levels))
