@@ -71,14 +71,14 @@ contains
             
             if (shapePrevailFactor > BOUNDL) then
                 if (shiftedLineWV < startDeltaWV) then
-                    shapeFuncPtr => lorentz
+                    shapeFuncPtr => chiCorrectedLorentz
                     call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
                 else 
                     if (shiftedLineWV >= endDeltaWV) then
-                        shapeFuncPtr => lorentz
+                        shapeFuncPtr => chiCorrectedLorentz
                         call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     else 
-                        shapeFuncPtr => lorentz
+                        shapeFuncPtr => chiCorrectedLorentz
                         call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     end if
                 end if

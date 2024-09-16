@@ -2,48 +2,9 @@ module Shapes
     use Constants
     use Atmosphere
     use Spectroscopy
-
+    use ChiFactors
     implicit none
 contains
-    ! TODO: consider removing various "lorentz" and keep one but with parameters
-    ! real function simpleLorentz(X)
-    !     !! 
-    !     ! Simplistic Lorentz line shape function in which there is no account for self-broadening and no temperature dependence
-    !     !!
-    !     ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-    !     real(kind=DP), intent(in) :: X
-    !     ! -------------------------------------------------------- !
-    !     real(kind=DP) :: HWHM
-
-    !     HWHM = lorentzHWHM(pressure, includeGammaSelf=.false., includeTemperature=.false.)
-    !     simpleLorentz = HWHM / (pi*(X**2 + HWHM**2))
-    ! end function simpleLorentz
-
-    ! real function selfSimpleLorentz(X)
-    !     !! 
-    !     ! Lorentz line shape function in which there is no temperature dependence (T = 296 K), but self-broadening is taken into account
-    !     !!
-    !     ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-    !     real(kind=DP), intent(in) :: X
-    !     ! -------------------------------------------------------- !
-    !     real(kind=DP) :: HWHM
-
-    !     HWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, includeTemperature=.false.)
-    !     selfSimpleLorentz = HWHM / (pi*(X**2 + HWHM**2))
-    ! end function selfSimpleLorentz
-
-    ! real function noSelfLorentz(X)
-    !     !! 
-    !     ! Temperature-dependent Lorentz line shape with no account for self-broadening
-    !     !!
-    !     ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-    !     real(kind=DP), intent(in) :: X
-    !     ! -------------------------------------------------------- !
-    !     real(kind=DP) :: HWHM
-
-    !     HWHM = lorentzHWHM(pressure, includeGammaSelf=.false., includeTemperature=.true., temperatureParameter=temperature)
-    !     noSelfLorentz = HWHM / (pi*(X**2 + HWHM**2))
-    ! end function noSelfLorentz
 
     real function lorentz(X)
         !! 
@@ -72,27 +33,18 @@ contains
         doppler = doppler * density * intensityOfT(temperature)
     end function doppler
 
-    real function tonkov(X)
+    real function chiCorrectedLorentz(X)
         ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
         real(kind=DP), intent(in) :: X
-        ! -------------------------------------------------------- !
-        real(kind=DP) :: shiftedLineWV
+        ! -------------------------------------------------------- !`
 
-        shiftedLineWV = shiftedLinePosition(lineWV, pressure)
-        tonkov = lorentz(X)
-        if (molType == 2) then
-            if (shiftedLineWV > 3750 .and. shiftedLineWV < 4700. .and. abs(X) > 3.) then
-                if (abs(X) <= 150.) then
-                    tonkov = lorentz(X) * 1.084 * exp(-0.027*abs(X))
-                else
-                    tonkov = lorentz(X) * 0.208 * exp(-0.016*abs(X))
-                end if
-            end if
-            return
-        end if
-    end function tonkov
+        chiCorrectedLorentz = lorentz(X) * chiFactorFuncPtr(X)
+
+    end function chiCorrectedLorentz
 
     real function correctedDoppler(X)
+        ! TODO: move this to the Voigt function definition
+        ! used only for the Voigt function estimation
         ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
         real(kind=DP), intent(in) :: X
         real, parameter :: bound = 12.5 * 12.5
@@ -117,7 +69,7 @@ contains
         if (XX < bound) then
             !* Lorentz correction *
             if (XX >= 25.) then
-                correctedDoppler = lorentz(X) * (1.+1.5/XX)
+                correctedDoppler = chiCorrectedLorentz(X) * (1.+1.5/XX)
                 return
             end if
             !* Pure Doppler *! -- the same is my doppler function
@@ -130,7 +82,7 @@ contains
             correctedDoppler = correctedDoppler + lorHWHM/(pi*X**2) * (1.+F)
         else
             !* Doppler must be changed to Lorentz *
-            correctedDoppler = lorentz(X)
+            correctedDoppler = chiCorrectedLorentz(X)
             return
         end if
     end function correctedDoppler
@@ -156,7 +108,7 @@ contains
         XX = abs(X / (dopHWHM/sqln2))
 
         if (XX > 15.) then	! Kuntz
-            voigt = lorentz(X)
+            voigt = chiCorrectedLorentz(X)
             return
         end if
 
