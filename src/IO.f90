@@ -4,6 +4,8 @@ module IO
     use Atmosphere
     use Shapes
     use Spectroscopy
+    use Mesh
+    use ChiFactors, only: chiFactorFuncName
     implicit none
     integer, parameter :: TIPSUnit = 5467
     character(len=30), parameter :: TIPSFile = 'data/QofT_formatted.dat'
@@ -11,7 +13,9 @@ module IO
     integer, parameter :: stSumUnit = 666
     real(kind=DP) :: startWV, endWV, calcPrecision ! [cm-1] -- boundaries and grid calcPrecision for the spectral interval for calculating spectra 
     character(len=30) :: lineShapeFuncName ! name of the line shape function (custom or standard)
+
     procedure(shape), pointer :: shapeFuncPtr ! pointer for implementing different line shapes functions
+
     integer :: totalLines ! number of lines in one HITRAN file (e.g. H16.01) 
     character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
     
@@ -39,32 +43,15 @@ contains
     subroutine readInputParameters()
     ! --------- reading from the config file -------------- !
     open(configUnit, file='simConfig.ini', status='old')
+    read(configUnit, '(A7)') inputMolecule
     read(configUnit, *) startWV, endWV
     read(configUnit, '(A20)') atmProfileFile
-    ! read(configUnit, '(A30)') lineShapeFuncName
+    read(configUnit, *) cutOff
+    read(configUnit, '(A30)') chiFactorFuncName
     close(configUnit)
     ! ------------------------------------------------------ !
     end subroutine readInputParameters
 
-    ! subroutine fetchLineShapeFunction()
-    !     ! TODO: add flow for the incorrect line shape input
-    !     select case(trim(adjustl(lineShapeFuncName)))
-    !     case ('lorentz')
-    !         shapeFuncPtr => lorentz
-    !     case ('doppler')
-    !         shapeFuncPtr => doppler
-    !     case ('voigt')
-    !         shapeFuncPtr => voigt
-    !     case ('tonkov')
-    !         shapeFuncPtr => tonkov
-    !     ! case ('simpleLorentz')
-    !     !     shapeFuncPtr => simpleLorentz
-    !     ! case ('selfSimpleLorentz')
-    !     !     shapeFuncPtr => selfSimpleLorentz
-    !     ! case ('noSelfLorentz')
-    !     !     shapeFuncPtr => noSelfLorentz
-    !     end select
-    ! end subroutine fetchLineShapeFunction
 
     subroutine readTIPS()
     ! ---------- reading Statistical Sums --------------------- !

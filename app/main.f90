@@ -55,8 +55,8 @@ program main
     ! reads the input config file with: startWV, endWV, file name with atmospheric profile and line shape function name
     call readInputParameters
     
-    ! initializes line shape function from the input config
-    ! call fetchLineShapeFunction
+    ! initializes the chi-factor function from the input config
+    call fetchChiFactorFunction
     
     ! reads atmospheric profile arrays: height, pressure, temperature and density
     call readAtmosphericParameters
