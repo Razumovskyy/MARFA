@@ -10,7 +10,7 @@ real ::  RK(NT)
 real :: V, VV
 
 !!! INPUT EXTENSION !!!
-MET='H2O'
+MET='CO2'
 
 
 H=10.0/(NT-1)
