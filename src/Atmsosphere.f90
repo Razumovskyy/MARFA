@@ -4,7 +4,6 @@ module Atmosphere
     character(len=10) :: uuid
     character(len=20) :: atmProfileFile ! NEW ! ** ! ATM
     character(len=50) :: fullNameAtmProfile
-    logical :: startsWithDefault
     character(len=20) :: atmTitle
     integer, parameter :: atmProfileUnit = 777
     integer :: numGasSpecies ! NGS ! ** ! number of species in the analysis
@@ -26,8 +25,7 @@ module Atmosphere
     real :: temperature, pressure, density ! physical parameters of the atmosphere on the current height level
 contains
     subroutine readAtmosphericParameters()
-        startsWithDefault = (index(trim(atmProfileFile), 'default') == 1)
-        if (startsWithDefault) then
+        if (uuid == 'default') then
             fullNameAtmProfile = 'data/Atmospheres/'//atmProfileFile
         else 
             fullNameAtmProfile = 'users/'//uuid//atmProfileFile
