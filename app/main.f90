@@ -31,6 +31,7 @@ program main
 
     ! CONTROL AND DEBUG FILES !
     integer, parameter :: atmControlUnit = 5555 ! NEW ! ** !
+    integer :: argc
 
     ! Other variables !
     character(len=3) :: reducedMoleculeName ! 
@@ -39,6 +40,18 @@ program main
     character(len=3) :: targetValue
 
     integer :: l ! loop variable
+
+        ! Get the number of command-line arguments
+    argc = command_argument_count()
+
+    ! Check if the number of arguments is not equal to 8
+    if (argc /= 8) then
+        print *, 'Error: Incorrect number of arguments.'
+        print *, 'Expected 8 arguments, but received ', argc
+        print *, 'Usage:'
+        print *, '  your_program_name inputMolecule startWV endWV cutOff chiFactorFuncName targetValue atmProfileFile uuid'
+        stop 1
+    end if
 
     do l = 1, command_argument_count()
         select case (l)
