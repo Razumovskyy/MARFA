@@ -35,10 +35,48 @@ program main
     ! Other variables !
     character(len=3) :: reducedMoleculeName ! 
     character(len=3) :: levelLabel ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
+    character(len=10) :: startWVcla, endWVcla, cutOffcla, startWVclaTrimmed, endWVclaTrimmed, cutOffclaTrimmed
+    character(len=3) :: targetValue
 
+    integer :: l ! loop variable
 
+    do l = 1, command_argument_count()
+        select case (l)
+        case (1)
+            call get_command_argument(l, inputMolecule)
+        case (2)
+            call get_command_argument(l, startWVcla)
+            startWVclaTrimmed = trim(startWVcla)
+            read(startWVclaTrimmed, *) startWV
+        case (3)
+            call get_command_argument(l, endWVcla)
+            endWVclaTrimmed = trim(endWVcla)
+            read(endWVclaTrimmed, *) endWV
+        case (4)
+            call get_command_argument(l, cutOffcla)
+            cutOffclaTrimmed = trim(cutOffcla)
+            read(cutOffclaTrimmed, *) cutOff
+        case (5)
+            call get_command_argument(l, chiFactorFuncName)
+        case (6)
+            call get_command_argument(l, targetValue)
+            ! set ACS or VAC
+        case (7)
+            call get_command_argument(l, atmProfileFile)
+        case (8)
+            call get_command_argument(l, uuid)
+        end select
+    end do
     ! TODO: optimization proposition. Reduce reading operations because of highly overlaping intervals: [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
+    ! write(*,*) inputMolecule
+    ! write(*,*) startWV
+    ! write(*,*) endWV
+    ! write(*,*) cutOff
+    ! write(*,*) chiFactorFuncName
+    ! write(*,*) targetValue
+    ! write(*,*) atmProfileFile
+
     EPS = 0.0
     H0 = STEP ! STEP = 1.0
     H1 = H0/2.
@@ -53,7 +91,7 @@ program main
     H = H9/4.
 
     ! reads the input config file with: startWV, endWV, file name with atmospheric profile and line shape function name
-    call readInputParameters
+    ! call readInputParameters
     
     ! initializes the chi-factor function from the input config
     call fetchChiFactorFunction
