@@ -21,6 +21,6 @@ module Constants
 
     ! ------------------------------------------ !
     real, parameter :: C1 = 2 * PI * PLANCK * (SPL**2) ! SOMETIMES PI is omitted
-    real, parameter :: redPLANCK = PLANCK / (2 * PI)
+    real, parameter :: redPLANCK = PLANCK / (2 * PI) ! reduced planck constant
 
 end module Constants
