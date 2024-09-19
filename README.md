@@ -1,6 +1,6 @@
-# Atmospheric Absorption Coefficient Calculator
+# MARFA (Molecular Absorption with Rapid and Flexible Analysis)
 ## Overview
-This repository hosts a Fortran-based tool designed for calculating volume molecular absorption coefficients or monochromatic absorption cross-sections based on initial spectroscopic data and a given atmospheric profile. Originally developed to facilitate modeling of radiative transfer in Venus's atmosphere, its flexible design permits adaptation to various spectroscopic and atmospheric scenarios.
+MARFA is a Fortran-based tool designed for calculating volume molecular absorption coefficients or monochromatic absorption cross-sections based on initial spectroscopic data and a given atmospheric profile. Originally developed to facilitate modeling of radiative transfer in Venus's atmosphere, its flexible design permits adaptation to various spectroscopic and atmospheric scenarios.
 
 In addition to using and contributing to the source code, it is recommended to interact with the web interface of the tool to better understand its capabilities. The web interface can be accessed at: <URL>
 
@@ -9,7 +9,7 @@ In addition to using and contributing to the source code, it is recommended to i
 - **Efficient Line-by-Line Technique**: Employs an effective interpolation method [Fomin, 1995] featuring nine grids to speed up line summation in the core of the tool.
 - **Atmospheric Profile Handling**: Computes absorption coefficients or cross-sections based on atmospheric profiles provided via input files.
 - **Line Shapes Support**: Supports standard line shapes with the Voigt profile set as the default. Additional line shapes can be manually added by implementing a specific abstract interface.
-- **Line Wings Corrections**: Supports various chi-factors for implementing sub-Lorentzian behavior of spectral lines. Custom chi-factors can be added manually.
+- **Line Wings Corrections**: Supports various chi-factors for implementing sub-Lorentzian behavior of wings of spectral lines. Custom chi-factors can be added manually.
 - **Line Cut-Off Criterion**: Can be set as an input to control accuracy and match continuum parameters.
 - **Line Databases Support**: Includes HITRAN2016 databases for CO₂ and H₂O within the source code. Custom databases can be introduced by preprocessing them into the required format.
 - **PT-Tables Generation**: Generates resulting spectra as direct-access files in PT-format (each output file corresponds to one atmospheric level), which can be immediately introduced into radiative transfer schemes.
@@ -39,11 +39,24 @@ cd MultiGrid-AtmoSpectra
 fpm build
 ```
 ### Set the atmospheric file
-### Run the project
+For a quick start you can choose one of the default atmospheric profiles located in the `data/Atmospheres` folder. For example `CO2_gas_profile.dat` which reflects the carbon dioxide profile in the Venus nightside atmosphere.
+### Run the project with some command line parameters
 For example:
 ```
-fpm run VenusPT-Tables -- CO2 4000 4100 125 pollack ACS test_chi.dat default
+fpm run VenusPT-Tables -- CO2 4000 4100 125 pollack VAC CO2_gas_profile.dat default
 ```
+
+Here is a breakdown of the command-line arguments:
+- **`CO2`**: The input molecule
+- **`4000`** and **`4100`**: The boundaries of the desired spectral interval (in cm<sup>-1</sup>)
+- **`125`**: The line cut-off condition (in cm<sup>-1</sup>)
+- **`pollack`**: The name of the chi-factor correction used for CO₂.
+- **`VAC`** Specifies the target value as volume absorption coefficient.
+- **`CO2_gas_profile.dat`** The atmospheric profile file to use.
+- **`default`** - A technical flag indicating that this run is made locally rather than via the web version.
+
+After running this command, the PT-tables for each level from the `CO2_gas_profile.dat` file would be genereated in the `output` folder. 
+## Command line parameters
 ## Modules overview
 ### `MolarMasses.f90`
 Contains molar masses of 124 isotoplogues of 42 gaseous species common for spectroscopic and atmospheric studies.
