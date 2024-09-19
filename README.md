@@ -22,6 +22,8 @@ To build and run this tool on your machine, you need to have GFortran (GNU Fortr
 For installing the `gfortran` you can use [GNU Fortran website](https://gcc.gnu.org/fortran/) or use your system's package manager.
 ### fpm
 Installation instructions ara available on the [official website](https://fpm.fortran-lang.org/install/index.html) or on the [fpm github page](https://github.com/fortran-lang/fpm).
+### python3
+Python3 is mainly needed for running the plotting scripts and converting binary files to a human readable format.
 
 ## Quick start instructions
 ### Clone the repository:
@@ -55,7 +57,11 @@ Here is a breakdown of the command-line arguments:
 - **`CO2_gas_profile.dat`** The atmospheric profile file to use.
 - **`default`** - A technical flag indicating that this run is made locally rather than via the web version.
 
-After running this command, the PT-tables for each level from the `CO2_gas_profile.dat` file would be genereated in the `output` folder. 
+After running this command, the PT-tables for each level from the `CO2_gas_profile.dat` file would be genereated in the `output` folder. The output files are genereated in the binary format (direct access files), in order to speed-up the integration to radiative transfer models.
+
+### Converting to a human-readable output and plotting
+To convert the specific PT-table file to a human-readable format and to plot the spectra, you can use the python script ...
+
 ## Command line parameters
 ## Modules overview
 ### `MolarMasses.f90`
