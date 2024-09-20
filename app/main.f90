@@ -150,14 +150,11 @@ program main
 
             !! It considers that startWV, endWV and deltaWV should be multiples of 10
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
-            ! write(*,*) startDeltaWV, V_END
 
             ! if ( extStartDeltaWV < startWV ) then
             !     extStartDeltaWV = startDeltaWV
             ! end if
 
-            ! write(*,*) 'startDeltaWV before K_HITRAN call: ', startDeltaWV
-            ! pause
             ! *** calculation inside 10.0 cm^-1 *** !
             call processSpectra(inputMolecule, levelsIdx)
 

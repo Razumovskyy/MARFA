@@ -21,7 +21,7 @@ module Mesh
 
     ! Arrays likely for various grids to cover the spectral shape
     ! consider setting double precision here !
-    real :: RK(NT) ! array that likely holds calculated spectral data
+    real :: RK(NT) ! array that holds final calculated spectral data
     real :: RK0(NT0), RK0L(NT0), RK0P(NT0)
     real :: RK1(NT1), RK1L(NT1), RK1P(NT1)
     real :: RK2(NT2), RK2L(NT2), RK2P(NT2)
