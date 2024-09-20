@@ -28,7 +28,7 @@ contains
         if (uuid == 'default') then
             fullNameAtmProfile = 'data/Atmospheres/'//atmProfileFile
         else 
-            fullNameAtmProfile = 'users/'//uuid//atmProfileFile
+            fullNameAtmProfile = 'users/'//trim(uuid)//'/'//atmProfileFile
         end if
         ! ---------- reading from the ATM file ------------------ !
         open(atmProfileUnit, file=fullNameAtmProfile, status='old')
