@@ -27,17 +27,32 @@ program main
 
     ! MAIN OUTPUT FILE !
     integer, parameter :: outputUnit = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
+    integer, parameter :: infoUnit = 67
     integer :: outputRecNum ! NW ! ** ! record number in the output file
 
     ! CONTROL AND DEBUG FILES !
     integer, parameter :: atmControlUnit = 5555 ! NEW ! ** !
     integer :: argc
+    integer :: dateTimeValues(8)
+    integer :: year, month, day, hour, minute
+    integer :: status
 
     ! Other variables !
-    character(len=3) :: reducedMoleculeName ! 
     character(len=3) :: levelLabel ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
     character(len=10) :: startWVcla, endWVcla, cutOffcla, startWVclaTrimmed, endWVclaTrimmed, cutOffclaTrimmed
     character(len=3) :: targetValue
+    character(len=20) :: timestamp
+
+    ! Construct the subdirectory name
+    character(len=300) :: subDirName
+    character(len=100) :: formattedStartWV, formattedEndWV
+    character(len=200) :: parentDir
+    ! Full path for the new subdirectory
+    character(len=300) :: fullSubDirPath
+    character(len=500) :: mkdirCommand
+    ! character(len=1) :: pathSep
+    ! Define the info file path
+    character(len=300) :: infoFilePath
 
     integer :: l ! loop variable
 
@@ -80,6 +95,57 @@ program main
             call get_command_argument(l, uuid)
         end select
     end do
+
+    call date_and_time(values=dateTimeValues)
+    year = dateTimeValues(1)
+    month = dateTimeValues(2)
+    day = dateTimeValues(3)
+    hour = dateTimeValues(5)
+    minute = dateTimeValues(6)
+
+    write(timestamp, '(I4, I2.2, I2.2, "_", I2.2, I2.2, I2.2)') year, month, day, hour, minute
+    ! Format numeric parameters to remove decimal points and convert to integers
+    write(formattedStartWV, '(I0)') int(startWV)
+    write(formattedEndWV, '(I0)') int(endWV)
+
+    ! Assemble the subdirectory name: Molecule_StartWV-EndWV_Timestamp
+    subDirName = trim(inputMolecule) // "_" // trim(formattedStartWV) // "-" // trim(formattedEndWV) // "_" // trim(timestamp)
+    parentDir = 'output/ptTables/'
+    fullSubDirPath = trim(parentDir) // trim(subDirName)
+
+    mkdirCommand = 'mkdir -p "' // trim(fullSubDirPath) // '"'
+    call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
+
+    if (status /= 0) then
+        print *, "Error: Failed to create directory ", trim(fullSubDirPath)
+        stop 1
+    else
+        print *, "Directory created: ", trim(fullSubDirPath)
+    end if
+
+    infoFilePath = trim(fullSubDirPath) // '/info.txt'
+    open(infoUnit, file=infoFilePath, status='replace', action='write', iostat=status)
+
+    if (status /= 0) then
+        print *, "Error: Unable to create info file at ", trim(infoFilePath)
+        stop 1
+    end if
+
+        ! Write command-line arguments to the info file
+    write(infoUnit, '(A)') 'Command-Line Arguments:'
+    write(infoUnit, '(A,A)') 'Input Molecule: ', trim(inputMolecule)
+    write(infoUnit, '(A,A)') 'Start Wavenumber: ', trim(startWVclaTrimmed)
+    write(infoUnit, '(A,A)') 'End Wavenumber: ', trim(endWVclaTrimmed)
+    write(infoUnit, '(A,A)') 'Cut Off: ', trim(cutOffclaTrimmed)
+    write(infoUnit, '(A,A)') 'Chi Factor Function Name: ', trim(chiFactorFuncName)
+    write(infoUnit, '(A,A)') 'Target Value: ', trim(targetValue)
+    write(infoUnit, '(A,A)') 'Atmospheric Profile File: ', trim(atmProfileFile)
+    write(infoUnit, '(A,A)') 'UUID: ', trim(uuid)
+
+    ! Close the info file
+    close(infoUnit)
+    print *, "Info file created at: ", trim(infoFilePath)
+
     ! TODO: optimization proposition. Reduce reading operations because of highly overlaping intervals: [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
     ! write(*,*) inputMolecule
@@ -114,8 +180,6 @@ program main
     
     ! reads and initializes the TIPS array
     call readTIPS
-
-    reducedMoleculeName = inputMolecule
     
     ! open(atmControlUnit, file='control/PT-Protocol')
 
@@ -140,10 +204,10 @@ program main
         end if
         
         open(outputUnit, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
-            file='output/PT_CALC/'//levelLabel//'.'//reducedMoleculeName)
+            file=trim(fullSubDirPath)//'/'//trim(inputMolecule)//'_'//levelLabel//'.ptbin')
         ! RECL = NT for Windows Fortrans !
 
-        startDeltaWV = startWV 
+        startDeltaWV = startWV
         endDeltaWV = startDeltaWV + deltaWV
         do while (startDeltaWV < endWV)
             ! loop over 10 cm intervals accross the whole range !
