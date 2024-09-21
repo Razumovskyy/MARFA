@@ -12,7 +12,6 @@ real :: V, VV
 !!! INPUT EXTENSION !!!
 MET='CO2'
 
-
 H=10.0/(NT-1)
 ! -------------------------------!
 DO NCASE=1,5
