@@ -6,7 +6,6 @@ plt.rcParams['font.family'] = 'Times New Roman'
 wn1, ka1 = np.loadtxt(fname='SPECTR', skiprows=1, unpack=True)
 wn2, ka2 = np.loadtxt(fname='SPECTR_PYTHON.dat', skiprows=1, unpack=True)
 
-
 fig, ax = plt.subplots()
 
 # ax.plot(wn1, ka1, color='b', linestyle='-', marker='o', markersize=10, label='Voigt (125)')
