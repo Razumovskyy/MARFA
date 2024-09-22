@@ -28,6 +28,7 @@ program main
     ! MAIN OUTPUT FILE !
     integer, parameter :: outputUnit = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
     integer, parameter :: infoUnit = 67
+    integer, parameter :: latestRunUnit = 87
     integer :: outputRecNum ! NW ! ** ! record number in the output file
 
     ! CONTROL AND DEBUG FILES !
@@ -53,6 +54,7 @@ program main
     ! character(len=1) :: pathSep
     ! Define the info file path
     character(len=300) :: infoFilePath
+    character(len=300) :: latestRunFilePath
 
     integer :: l ! loop variable
 
@@ -146,6 +148,20 @@ program main
     close(infoUnit)
     print *, "Info file created at: ", trim(infoFilePath)
 
+    latestRunFilePath = 'output/ptTables/latest_run.txt'
+
+    open(unit=latestRunUnit, file=trim(latestRunFilePath), status='replace', action='write', iostat=status)
+
+    if (status /= 0) then
+        print *, "Error: Unable to create latest run file at ", trim(latestRunFilePath)
+        stop 1
+    end if
+
+    write(latestRunUnit, '(A)') subDirName
+    ! Close the latest run file
+    close(latestRunUnit)
+    print *, "Latest run recorded at: ", trim(latestRunFilePath)
+
     ! TODO: optimization proposition. Reduce reading operations because of highly overlaping intervals: [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
     ! write(*,*) inputMolecule
@@ -204,7 +220,7 @@ program main
         end if
         
         open(outputUnit, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
-            file=trim(fullSubDirPath)//'/'//trim(inputMolecule)//'_'//levelLabel//'.ptbin')
+            file=trim(fullSubDirPath)//'/'//levelLabel//'.ptbin')
         ! RECL = NT for Windows Fortrans !
 
         startDeltaWV = startWV
