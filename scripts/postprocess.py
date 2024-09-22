@@ -6,19 +6,36 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def process_data(V1, V2, level, resolution):
+def process_data(subdir_path, V1, V2, level, resolution):
     NT = 20481
-    MET = 'CO2'
-    OUTPUT_DIR = './output/PT_CALC/'
+    extention = 'ptbin'
+    full_subdir_path = os.path.join('output', 'ptTables', subdir_path)
 
-    # Construct DIR_NAME based on level
-    DIR_NAME = '___.'  # Initialize with underscores and a dot
-    if level < 10:
-        DIR_NAME = f"{level}{DIR_NAME[1:]}"  # e.g., '1___.'
-    elif level < 100:
-        DIR_NAME = f"{level}{DIR_NAME[2:]}"  # e.g., '12_.'
+    # Verify the directory exists
+    if not os.path.isdir(full_subdir_path):
+        sys.exit(f"Error: Directory {full_subdir_path} does not exist.")
+
+    # Path to the info.txt file
+    info_file_path = os.path.join(full_subdir_path, 'info.txt')
+    
+    # Read info.txt content
+    if os.path.isfile(info_file_path):
+        with open(info_file_path, 'r') as info_file:
+            header_content = info_file.read()
     else:
-        DIR_NAME = f"{level}{DIR_NAME[3:]}"  # e.g., '123.'
+        sys.exit(f"Error: info.txt file not found in {full_subdir_path}")
+
+    # Extract required information from info.txt
+    molecule = None
+    target_value = None
+    for line in header_content.splitlines():
+        if "Input Molecule:" in line:
+            molecule = line.split("Input Molecule:")[1].strip()
+        elif "Target Value:" in line:
+            target_value = line.split("Target Value:")[1].strip()
+    
+    if not molecule or not target_value:
+        sys.exit("Error: Unable to extract 'Input Molecule' or 'Target Value' from 'info.txt'.")
 
     deltaWV = 10 # deltaWV parameter from marfa code
 
@@ -41,8 +58,17 @@ def process_data(V1, V2, level, resolution):
     NZ2 = int((V2-1) / 10.0)
     count = NZ2 - NZ1 + 1  # Number of records to process
 
+        # Construct DIR_NAME based on level
+    NAME = '___.'  # Initialize with underscores and a dot
+    if level < 10:
+        NAME = f"{level}{NAME[1:]}"  # e.g., '1___.'
+    elif level < 100:
+        NAME = f"{level}{NAME[2:]}"  # e.g., '12_.'
+    else:
+        NAME = f"{level}{NAME[3:]}"  # e.g., '123.'
+
     # Open the binary file
-    filename = os.path.join(OUTPUT_DIR, f"{DIR_NAME}{MET}")
+    filename = os.path.join(full_subdir_path, f"{NAME}{extention}")
     if not os.path.exists(filename):
         sys.exit(f"File {filename} does not exist.")
 
@@ -88,8 +114,24 @@ def process_data(V1, V2, level, resolution):
     # Create DataFrame
     df = pd.DataFrame(data, columns=['Wavenumber', 'Log Absorption Coefficient'])
 
-    # Write to 'SPECTR_PYTHON.dat' with formatted output
-    with open('SPECTR_PYTHON.dat', 'w') as f_out:
+    # Write to file with formatted output
+    formatted_filename = os.path.join('output', 'processedData', f'{molecule}_{level}_{target_value}_{int(V1)}-{int(V2)}.dat')
+    with open(formatted_filename, 'w') as f_out:
+        # Write header lines
+        # Filter out unwanted lines from info.txt
+        for line in header_content.splitlines():
+            if not any(keyword in line for keyword in ["UUID", "Start Wavenumber", "End Wavenumber", "Command-Line Arguments"]):
+                f_out.write(f"# {line}\n")
+        
+        # Add new header lines
+        additional_headers = [
+            f"V1: {V1:.1f} cm-1",
+            f"V2: {V2:.1f} cm-1",
+            f"Resolution: {resolution}",
+            f"Level Number: {level}"
+        ]
+        for header in additional_headers:
+            f_out.write(f"# {header}\n")
         M = 1
         total_points = len(data)
         # Match Fortran formatting in the header
@@ -98,29 +140,47 @@ def process_data(V1, V2, level, resolution):
             # Write with controlled precision: 5 decimal places for VV and 7 for log_RK
             f_out.write(f"{VV:15.5f} {log_RK:17.7f}\n")
 
-    print("Data processing complete. Output written to 'SPECTR_PYTHON.dat'.")
-    return df
+    print("Data processing complete. Output written to " + formatted_filename)
+    return df, formatted_filename
 
-def plot_spectra(df):
+def plot_spectra(df, file_name):
+    plt.rcParams['font.family'] = 'Times New Roman'
     sns.set(style="whitegrid", context='talk')
+
+    level = file_name.split('_')[1]
+
+    # Create plots directory if it doesn't exist
+    plots_dir = os.path.dirname(file_name).replace('processedData', 'plots')
+    os.makedirs(plots_dir, exist_ok=True)
+
+    # Define the plot filename based on the data filename
+    base_filename = os.path.basename(file_name)
+    plot_image_name = base_filename.replace('.dat', '.png')
+    plot_image_path = os.path.join(plots_dir, plot_image_name)
 
     # Plot using Seaborn
     plt.figure(figsize=(12, 6))
     ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b')
 
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
-    ax.set_ylabel('Log$_{10}$(Absorption Coefficient) [cm$^2$ mol$^{-1}$]')
-    ax.set_title('Absorption Spectrum')
+    ax.set_ylabel('Log$_{10}$(Absorption Cross-Section) [cm$^2$ mol$^{-1}$]')
+    ax.set_title(f'{base_filename[:3]} Absorption Spectrum ({level} atmospheric level)')
     ax.grid(True)
 
     # Customize tick parameters
     plt.tick_params(axis='both', which='both', direction='in', top=True, right=True)
 
     plt.tight_layout()
-    plt.show()
+    try:
+        plt.savefig(plot_image_path)
+        print(f"Plot saved to '{plot_image_path}'.")
+    except Exception as e:
+        sys.exit(f"Error saving plot to '{plot_image_path}': {e}")
+    plt.close()
 
 def main():
     parser = argparse.ArgumentParser(description='Process and plot PT-table data.')
+    parser.add_argument('subdir', type=str, nargs='?', help="Subdirectory name (e.g., CO2_7500-7600_20240922_0152). If omitted, the latest run will be used.")
     parser.add_argument('--v1', type=float, required=True, help='Starting wavenumber V1')
     parser.add_argument('--v2', type=float, required=True, help='Ending wavenumber V2')
     parser.add_argument('--level', type=int, required=True, help='Atmospheric level')
@@ -138,6 +198,19 @@ def main():
     )
     args = parser.parse_args()
 
+    # Determine subdirectory path
+    if args.subdir:
+        subdir = args.subdir
+    else:
+        # Read the latest_run.txt to get the latest subdirectory
+        latest_run_file = os.path.join('output', 'ptTables', 'latest_run.txt')
+        if not os.path.isfile(latest_run_file):
+            sys.exit("Error: No subdirectory provided and latest_run.txt not found.")
+        with open(latest_run_file, 'r') as f:
+            subdir = f.read().strip()
+        if not subdir:
+            sys.exit("Error: latest_run.txt is empty.")
+
     V1 = args.v1
     V2 = args.v2
     level = args.level
@@ -153,11 +226,13 @@ def main():
         sys.exit("Error: Atmospheric level must be a positive integer.")
 
     # Process data
-    df = process_data(V1, V2, level, resolution)
+    df, formatted_filename = process_data(subdir, V1, V2, level, resolution)
 
+    # plt.show()
+    
     # Conditionally plot
     if plot_flag:
-        plot_spectra(df)
+        plot_spectra(df, formatted_filename)
     else:
         print("Plotting skipped as per the '--plot' flag.")
 
