@@ -148,6 +148,7 @@ def plot_spectra(df, file_name):
     sns.set(style="whitegrid", context='talk')
 
     level = file_name.split('_')[1]
+    molecule = base_filename[:3]
 
     # Create plots directory if it doesn't exist
     plots_dir = os.path.dirname(file_name).replace('processedData', 'plots')
@@ -164,7 +165,7 @@ def plot_spectra(df, file_name):
 
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
     ax.set_ylabel('Log$_{10}$(Absorption Cross-Section) [cm$^2$ mol$^{-1}$]')
-    ax.set_title(f'{base_filename[:3]} Absorption Spectrum ({level} atmospheric level)')
+    ax.set_title(f'{molecule} Absorption Spectrum ({level} atmospheric level)')
     ax.grid(True)
 
     # Customize tick parameters
