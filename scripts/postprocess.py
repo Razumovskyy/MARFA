@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def process_data(subdir_path, V1, V2, level, resolution):
+    print('Processing started')
     NT = 20481
     extention = 'ptbin'
     full_subdir_path = os.path.join('output', 'ptTables', subdir_path)
@@ -148,7 +149,6 @@ def plot_spectra(df, file_name):
     sns.set(style="whitegrid", context='talk')
 
     level = file_name.split('_')[1]
-    molecule = base_filename[:3]
 
     # Create plots directory if it doesn't exist
     plots_dir = os.path.dirname(file_name).replace('processedData', 'plots')
@@ -156,6 +156,7 @@ def plot_spectra(df, file_name):
 
     # Define the plot filename based on the data filename
     base_filename = os.path.basename(file_name)
+    molecule = base_filename[:3]
     plot_image_name = base_filename.replace('.dat', '.png')
     plot_image_path = os.path.join(plots_dir, plot_image_name)
 
