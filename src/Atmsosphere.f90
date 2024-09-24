@@ -33,15 +33,12 @@ contains
         ! ---------- reading from the ATM file ------------------ !
         open(atmProfileUnit, file=fullNameAtmProfile, status='old')
         read(atmProfileUnit, '(A20)') atmTitle
-        read(atmProfileUnit, *) numGasSpecies, levels
+        read(atmProfileUnit, *) levels
         if (levels > 200) then
             write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is &
                                     bigger than ', levelsThreshold, '. WARNING message here.'
             stop
         endif
-        
-        ! Skip the line containing inputMoleculeDEPR
-        read(atmProfileUnit, *)
 
         allocate(heightArray(levels))
         allocate(pressureArray(levels))
