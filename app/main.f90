@@ -35,7 +35,7 @@ program main
     integer, parameter :: atmControlUnit = 5555 ! NEW ! ** !
     integer :: argc
     integer :: dateTimeValues(8)
-    integer :: year, month, day, hour, minute
+    integer :: year, month, day, hour, minute, second
     integer :: status
 
     ! Other variables !
@@ -104,8 +104,9 @@ program main
     day = dateTimeValues(3)
     hour = dateTimeValues(5)
     minute = dateTimeValues(6)
+    second = dateTimeValues(7)
 
-    write(timestamp, '(I4, I2.2, I2.2, "_", I2.2, I2.2, I2.2)') year, month, day, hour, minute
+    write(timestamp, '(I4, I2.2, I2.2, "_", I2.2, I2.2, I2.2, I2.2)') year, month, day, hour, minute, second
     ! Format numeric parameters to remove decimal points and convert to integers
     write(formattedStartWV, '(I0)') int(startWV)
     write(formattedEndWV, '(I0)') int(endWV)
@@ -115,7 +116,7 @@ program main
     parentDir = 'output/ptTables/'
     fullSubDirPath = trim(parentDir) // trim(subDirName)
 
-    mkdirCommand = 'mkdir -p "' // trim(fullSubDirPath) // '"'
+    mkdirCommand = 'mkdir "' // trim(fullSubDirPath) // '"'
     call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
 
     if (status /= 0) then
