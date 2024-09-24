@@ -38,7 +38,14 @@
 control
 
 # output files
-output
+output/processedData
+!output/processedData/.gitkeep
+
+output/plots
+!output/plots/.gitkeep
+
+output/ptTables
+!output/ptTables/.gitkeep
 
 # input data
 simConfig.ini
