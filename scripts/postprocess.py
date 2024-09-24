@@ -29,11 +29,14 @@ def process_data(subdir_path, V1, V2, level, resolution):
     # Extract required information from info.txt
     molecule = None
     target_value = None
+    atmospheric_file = None
     for line in header_content.splitlines():
         if "Input Molecule:" in line:
             molecule = line.split("Input Molecule:")[1].strip()
         elif "Target Value:" in line:
             target_value = line.split("Target Value:")[1].strip()
+        elif "Atmospheric Profile File:" in line:
+            atmospheric_file = line.split("Atmospheric Profile File:")[1].strip()
     
     if not molecule or not target_value:
         sys.exit("Error: Unable to extract 'Input Molecule' or 'Target Value' from 'info.txt'.")
@@ -142,13 +145,65 @@ def process_data(subdir_path, V1, V2, level, resolution):
             f_out.write(f"{VV:15.5f} {log_RK:17.7f}\n")
 
     print("Data processing complete. Output written to " + formatted_filename)
-    return df, formatted_filename
+    return df, formatted_filename, atmospheric_file
 
-def plot_spectra(df, file_name):
+def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright):
     plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['text.usetex'] = False
     sns.set(style="whitegrid", context='talk')
 
-    level = file_name.split('_')[1]
+    level = int(file_name.split('_')[1])
+
+    # read data from the atmospheric file to match pressure, temperature and level
+    atmospheric_file_fullname = os.path.join('data', 'atmospheres', atmospheric_file)
+
+    # Read info.txt content
+    if os.path.isfile(atmospheric_file_fullname):
+        with open(atmospheric_file_fullname, 'r') as atmosphere:
+            lines = atmosphere.readlines()
+    else:
+        sys.exit(f"Error: Atmospheric file {atmospheric_file_fullname} not found")
+
+    # Ensure the file has at least two lines (title and N)
+    if len(lines) < 2:
+        sys.exit("Error: Atmospheric file does not contain enough header information.")
+
+    # Extract the title and number of levels
+    title = lines[0].strip()
+    try:
+        N = int(lines[1].strip())
+    except ValueError:
+        sys.exit("Error: The second line of the atmospheric file should be an integer representing the number of levels.")
+
+    # Validate the level
+    if level < 1 or level > N:
+        sys.exit(f"Error: Level {level} is out of range. The file contains {N} levels.")
+
+    # Ensure the file has enough data lines
+    expected_total_lines = 2 + N  # 1 title + 1 N + N data lines
+    if len(lines) < expected_total_lines:
+        sys.exit(f"Error: Expected {N} data lines, but found {len(lines) - 2}.")
+
+    # Extract the data line for the specified level
+    # Assuming levels are 1-based
+    data_line_index = 2 + (level - 1)
+    data_line = lines[data_line_index].strip()
+
+    # Split the data line into columns
+    columns = data_line.split()
+
+    # Ensure there are enough columns (at least 3 for pressure and temperature)
+    if len(columns) < 3:
+        sys.exit(f"Error: Data line for level {level} does not contain enough columns.")
+
+    # Extract pressure and temperature
+    try:
+        height = float(columns[0])
+        pressure = float(columns[1])      # Second column: Pressure
+        temperature = float(columns[2])   # Third column: Temperature
+    except ValueError:
+        sys.exit(f"Error: Non-numeric data found in pressure or temperature columns for level {level}.")
+
 
     # Create plots directory if it doesn't exist
     plots_dir = os.path.dirname(file_name).replace('processedData', 'plots')
@@ -166,7 +221,10 @@ def plot_spectra(df, file_name):
 
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
     ax.set_ylabel('Log$_{10}$(Absorption Cross-Section) [cm$^2$ mol$^{-1}$]')
-    ax.set_title(f'{molecule} Absorption Spectrum ({level} atmospheric level)')
+    ax.set_title(f'{molecule} Absorption Spectrum for the atmosphere: {atmospheric_file}\n'
+                 f'Level {level}: height {height}[km], pressure {pressure:.3E} [atm], temperature {temperature} [K]')
+    
+    ax.set_xlim(Vleft, Vright)
     ax.grid(True)
 
     # Customize tick parameters
@@ -182,7 +240,7 @@ def plot_spectra(df, file_name):
 
 def main():
     parser = argparse.ArgumentParser(description='Process and plot PT-table data.')
-    parser.add_argument('subdir', type=str, nargs='?', help="Subdirectory name (e.g., CO2_7500-7600_20240922_0152). If omitted, the latest run will be used.")
+    parser.add_argument('subdir', type=str, nargs='?', help="Subdirectory name (e.g., CO2_7500-7600_20240922_015244). If omitted, the latest run will be used.")
     parser.add_argument('--v1', type=float, required=True, help='Starting wavenumber V1')
     parser.add_argument('--v2', type=float, required=True, help='Ending wavenumber V2')
     parser.add_argument('--level', type=int, required=True, help='Atmospheric level')
@@ -228,13 +286,13 @@ def main():
         sys.exit("Error: Atmospheric level must be a positive integer.")
 
     # Process data
-    df, formatted_filename = process_data(subdir, V1, V2, level, resolution)
+    df, formatted_filename, atmospheric_file = process_data(subdir, V1, V2, level, resolution)
 
     # plt.show()
     
     # Conditionally plot
     if plot_flag:
-        plot_spectra(df, formatted_filename)
+        plot_spectra(df, formatted_filename, atmospheric_file, V1, V2)
     else:
         print("Plotting skipped as per the '--plot' flag.")
 
