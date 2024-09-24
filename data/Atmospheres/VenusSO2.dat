@@ -1,6 +1,5 @@
-Haus2015
-1    66
-SO2                                     #height(km), pressure(atm), temperature(K), concentration (molecules/cm^2*km)
+Haus2015 SO2
+66
 0.0  9.09181e+01  733.0  1.35135e+22
 2.0  8.00592e+01  717.0  1.22040e+22
 4.0  7.02863e+01  701.0  1.09980e+22
