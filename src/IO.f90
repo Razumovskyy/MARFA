@@ -55,7 +55,7 @@ contains
 
     subroutine readTIPS()
     ! ---------- reading Statistical Sums --------------------- !
-    open(unit=TIPSUnit, file='data/QofT_formatted.dat', status='old', action='read')
+    open(unit=TIPSUnit, file='data/TIPS/TIPS.dat', status='old', action='read')
     read(TIPSUnit, *) nIsotopes, nTemperatures
     allocate(TIPS(nIsotopes, nTemperatures))
     do stSumIsoIdx = 1, nIsotopes
