@@ -1,6 +1,5 @@
-Haus2015
-1    66
-CO2                                             #height(km), pressure(atm), temperature(K), concentration (molecules/cm^2*km)
+Haus2015 CO2
+66
 0.0  9.09181e+01  733.0  8.69368e+25
 2.0  8.00592e+01  717.0  7.85124e+25
 4.0  7.02863e+01  701.0  7.07538e+25
