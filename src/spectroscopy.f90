@@ -91,7 +91,6 @@ contains
         ! procedure(shape), pointer, intent(in) :: lineShape ! [cm] -- normalized line shape function from the MyShapes module
         ! --------------------------------------------------- !
         real(kind=DP) :: shiftedLineWV
-        real :: intensity ! [cm-1/(molecule*cm-2)] (refLineIntensity) -- the spectral line intensity for a single molecule per unit volume.
         real :: TIPSFactor, boltzmannFactor, emissionFactor
         real :: TIPSOfT
         real :: TIPSOfRefT
@@ -114,7 +113,7 @@ contains
         boltzmannFactor = exp(-C2*lineLowerState/temperatureParameter) / exp(-C2*lineLowerState/refTemperature)
         emissionFactor = (1 - exp(-C2*lineWV/temperatureParameter)) / (1 - exp(-C2*lineWV/refTemperature))
 
-        intensity = refLineIntensity * TIPSFactor * boltzmannFactor * emissionFactor
+        intensityOfT = refLineIntensity * TIPSFactor * boltzmannFactor * emissionFactor
     end function intensityOfT
 
 end module Spectroscopy
