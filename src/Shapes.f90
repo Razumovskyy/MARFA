@@ -19,7 +19,7 @@ contains
         HWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, & 
                             includeTemperature=.true., temperatureParameter=temperature)
         lorentz = HWHM / (pi*(X**2 + HWHM**2))
-        lorentz = lorentz * density * intensityOfT(temperature) 
+        lorentz = lorentz * intensityOfT(temperature) 
     end function lorentz
 
     real function doppler(X)
@@ -30,7 +30,7 @@ contains
 
         HWHM = dopplerHWHM(lineWV, temperature, molarMass)      
         doppler = sqrt(log(2.) / (pi * HWHM**2)) * exp(-(X/HWHM)**2 * log(2.))
-        doppler = doppler * density * intensityOfT(temperature)
+        doppler = doppler * intensityOfT(temperature)
     end function doppler
 
     real function chiCorrectedLorentz(X)
@@ -73,7 +73,7 @@ contains
                 return
             end if
             !* Pure Doppler *! -- the same is my doppler function
-            correctedDoppler = (exp(-XX) / sqrt(pi) / (dopHWHM/sqln2)) * density * intensityOfT(temperature)
+            correctedDoppler = (exp(-XX) / sqrt(pi) / (dopHWHM/sqln2)) * intensityOfT(temperature)
             if (XX <= 1.4) return
             !* Doppler shape begins to transform to Lorentz shape *
             XI = abs(X / (dopHWHM/sqln2))
@@ -124,7 +124,7 @@ contains
                 A2 = 0.25 + Y_2 + Y_2**2
                 B2 = Y_2 + Y_2 - 1.
             end if
-            voigt = (A1+B1*X2) / (A2+B2*X2+X2**2) / sqrt(pi) / (dopHWHM/sqln2) * density * intensityOfT(temperature)
+            voigt = (A1+B1*X2) / (A2+B2*X2+X2**2) / sqrt(pi) / (dopHWHM/sqln2) * intensityOfT(temperature)
         else
             ! Region 2
             if (XX + YY >= 5.5) then
@@ -141,7 +141,7 @@ contains
                     D4 = 4.0*Y_2-6.0
                 end if 
                 voigt = (((D3*X2+C3)*X2+B3)*X2+A3) / ((((X2+D4)*X2+C4)*X2+B4)*X2+A4) / sqrt(pi) / (dopHWHM/sqln2) * &
-                    density * intensityOfT(temperature)
+                     intensityOfT(temperature)
             else
                 ! IF(Y >= 0.195*X-0.176)THEN ! Region 3 in accordance with Kuntz
                 if (XX <= 1.0 .OR. YY >= 0.02) then 
@@ -168,7 +168,7 @@ contains
                     end if
                     voigt = ((((E5*X2+D5)*X2+C5)*X2+B5)*X2+A5)/	&
                             (((((X2+E6)*X2+D6)*X2+C6)*X2+B6)*X2+A6) / sqrt(pi) / (dopHWHM/sqln2) * &
-                             density * intensityOfT(temperature)
+                             intensityOfT(temperature)
                 else					
                     ! Region 4
                     voigt = correctedDoppler(X)

@@ -41,7 +41,7 @@ program main
     ! Other variables !
     character(len=3) :: levelLabel ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
     character(len=10) :: startWVcla, endWVcla, cutOffcla, startWVclaTrimmed, endWVclaTrimmed, cutOffclaTrimmed
-    character(len=3) :: targetValue
+    character(len=30) :: targetValue, targetValuecla
     character(len=20) :: timestamp
 
     ! Construct the subdirectory name
@@ -89,8 +89,16 @@ program main
         case (5)
             call get_command_argument(l, chiFactorFuncName)
         case (6)
-            call get_command_argument(l, targetValue)
-            ! set ACS or VAC
+            call get_command_argument(l, targetValuecla)
+            ! Set ACS or VAC with validation
+            targetValue = trim(targetValuecla)  ! Trim any leading/trailing spaces
+            select case (targetValue)
+            case ('ACS', 'VAC')
+                ! Valid targetValue; proceed as normal
+            case default
+                write(*,*) 'Error: Invalid targetValue "', targetValue, '". Must be either "ACS" or "VAC".'
+                stop 1  ! Exit the program with a non-zero status to indicate an error
+            end select
         case (7)
             call get_command_argument(l, atmProfileFile)
         case (8)
@@ -239,7 +247,11 @@ program main
             ! *** calculation inside 10.0 cm^-1 *** !
             call processSpectra(inputMolecule, levelsIdx)
 
-            write(outputUnit, rec=outputRecNum) RK
+            if (targetValue == 'VAC') then
+                write(outputUnit, rec=outputRecNum) density * RK
+            elseif (targetValue == 'ACS') then
+                write(outputUnit, rec=outputRecNum) RK
+            end if
 
             startDeltaWV = startDeltaWV + deltaWV
             endDeltaWV = startDeltaWV + deltaWV

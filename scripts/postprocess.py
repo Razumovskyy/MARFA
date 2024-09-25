@@ -145,9 +145,9 @@ def process_data(subdir_path, V1, V2, level, resolution):
             f_out.write(f"{VV:15.5f} {log_RK:17.7f}\n")
 
     print("Data processing complete. Output written to " + formatted_filename)
-    return df, formatted_filename, atmospheric_file
+    return df, formatted_filename, atmospheric_file, target_value
 
-def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright):
+def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright, target_value):
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['text.usetex'] = False
     sns.set(style="whitegrid", context='talk')
@@ -157,7 +157,6 @@ def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright):
     # read data from the atmospheric file to match pressure, temperature and level
     atmospheric_file_fullname = os.path.join('data', 'atmospheres', atmospheric_file)
 
-    # Read info.txt content
     if os.path.isfile(atmospheric_file_fullname):
         with open(atmospheric_file_fullname, 'r') as atmosphere:
             lines = atmosphere.readlines()
@@ -215,12 +214,17 @@ def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright):
     plot_image_name = base_filename.replace('.dat', '.png')
     plot_image_path = os.path.join(plots_dir, plot_image_name)
 
+    y_axname = (
+        f'Absorption Cross-Section [cm$^{{2}}$ mol$^{{-1}}$]'
+        if target_value == 'ACS' 
+        else f'Volume Absorption Coefficient [km$^{{-1}}$]'
+    )
     # Plot using Seaborn
     plt.figure(figsize=(12, 6))
     ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b')
 
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
-    ax.set_ylabel('Log$_{10}$(Absorption Cross-Section) [cm$^2$ mol$^{-1}$]')
+    ax.set_ylabel(y_axname)
     ax.set_title(f'{molecule} Absorption Spectrum for the atmosphere: {atmospheric_file}\n'
                  f'Level {level}: height {height}[km], pressure {pressure:.3E} [atm], temperature {temperature} [K]')
     
@@ -286,13 +290,13 @@ def main():
         sys.exit("Error: Atmospheric level must be a positive integer.")
 
     # Process data
-    df, formatted_filename, atmospheric_file = process_data(subdir, V1, V2, level, resolution)
+    df, formatted_filename, atmospheric_file, targetValue = process_data(subdir, V1, V2, level, resolution)
 
     # plt.show()
     
     # Conditionally plot
     if plot_flag:
-        plot_spectra(df, formatted_filename, atmospheric_file, V1, V2)
+        plot_spectra(df, formatted_filename, atmospheric_file, V1, V2, targetValue)
     else:
         print("Plotting skipped as per the '--plot' flag.")
 
