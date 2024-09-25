@@ -62,13 +62,14 @@ program main
     argc = command_argument_count()
 
     ! Check if the number of arguments is not equal to 8
-    if (argc /= 8) then
-        print *, 'Error: Incorrect number of arguments.'
+    if (argc < 7) then
+        print *, 'Insufficient number of arguments.'
         print *, 'Expected 8 arguments, but received ', argc
-        print *, 'Usage:'
-        print *, '  your_program_name inputMolecule startWV endWV cutOff chiFactorFuncName targetValue atmProfileFile uuid'
+        print *, 'Usage: program_name Molecule StartWV EndWV CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
         stop 1
     end if
+
+    isUUID = .false.
 
     do l = 1, command_argument_count()
         select case (l)
@@ -103,8 +104,14 @@ program main
             call get_command_argument(l, atmProfileFile)
         case (8)
             call get_command_argument(l, uuid)
+            isUUID = .true.
         end select
     end do
+
+        ! Check if uuid is provided; if not, assign default
+    if (.not. isUUID) then
+        uuid = 'default'
+    end if
 
     call date_and_time(values=dateTimeValues)
     year = dateTimeValues(1)

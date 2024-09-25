@@ -2,6 +2,7 @@ module Atmosphere
     use Constants
     implicit none
     character(len=10) :: uuid
+    logical :: isUUID
     integer :: ios
     character(len=20) :: atmProfileFile ! NEW ! ** ! ATM
     character(len=50) :: fullNameAtmProfile
@@ -26,10 +27,10 @@ module Atmosphere
     real :: temperature, pressure, density ! physical parameters of the atmosphere on the current height level
 contains
     subroutine readAtmosphericParameters()
-        if (uuid == 'default') then
+        if (isUUID) then
+            fullNameAtmProfile = 'users/'//trim(adjustl(uuid))//'/'//atmProfileFile
+        else
             fullNameAtmProfile = 'data/Atmospheres/'//atmProfileFile
-        else 
-            fullNameAtmProfile = 'users/'//trim(uuid)//'/'//atmProfileFile
         end if
         ! ---------- reading from the ATM file ------------------ !
         open(atmProfileUnit, file=fullNameAtmProfile, status='old')
