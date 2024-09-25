@@ -56,7 +56,7 @@ Here is a breakdown of the command-line arguments:
 - **`CO2`**: The input molecule
 - **`4000`** and **`4100`**: The boundaries of the desired spectral interval (in cm<sup>-1</sup>)
 - **`125`**: The line cut-off condition (in cm<sup>-1</sup>)
-- **`pollack`**: The name of the chi-factor correction used for CO₂.
+- **`tonkov`**: The name of the chi-factor correction used for CO₂.
 - **`VAC`** Specifies the target calculated value as volume absorption coefficient.
 - **`VenusCO2.dat`** The atmospheric profile file to read pressure, tempareature and molecular density data from.
 
@@ -65,12 +65,12 @@ After running this command, the PT-tables for each level from the `VenusCO2.dat`
 ### Converting to a human-readable output and plotting
 To convert the specific PT-table file to a human-readable format and to plot the spectra, you can use the python script located in the `scripts` directory. 
 
-## Command line parameters
-## Modules overview
-### `MolarMasses.f90`
-Contains molar masses of 124 isotoplogues of 42 gaseous species common for spectroscopic and atmospheric studies.
-### `Constants.f90`
-This module contains the main physical constants and other unchangeable figures used throughout the project. The chosen unit system is cgs (centimeter-gram-second). To ensure high numerical accuracy in line-by-line calculations, double-precision floating-point numbers are used for representing wavenumber related values. The precision and range of real numbers can be specified using the kind parameter `DP` which could be found in the `Constants.f90` module.
+## Command line parameters: overview
+## Atmospheric profile file structure
+## Output PT-table file structure
+## Chi-factors
+## Spectral databases
+## Introducing custom features
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
