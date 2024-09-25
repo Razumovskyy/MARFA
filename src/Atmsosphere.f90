@@ -2,6 +2,7 @@ module Atmosphere
     use Constants
     implicit none
     character(len=10) :: uuid
+    integer :: ios
     character(len=20) :: atmProfileFile ! NEW ! ** ! ATM
     character(len=50) :: fullNameAtmProfile
     character(len=20) :: atmTitle
@@ -45,8 +46,14 @@ contains
         allocate(temperatureArray(levels))
         allocate(densityArray(levels))
         do levelsIdx = 1, levels
-            read(atmProfileUnit, *) heightArray(levelsIdx), pressureArray(levelsIdx), &
-                                    temperatureArray(levelsIdx), densityArray(levelsIdx)
+            read(atmProfileUnit, *, iostat=ios) heightArray(levelsIdx), pressureArray(levelsIdx), &
+            temperatureArray(levelsIdx), densityArray(levelsIdx)
+            if (ios /= 0) then
+                print *, 'Error: Unable to read data from file "', trim(fullNameAtmProfile), '".'
+                print *, 'Check the data format in the atmospheric file'
+                close(atmProfileUnit)
+                stop 1
+            end if
         end do
         close(atmProfileUnit)
     ! ------------------------------------------------------------- !
