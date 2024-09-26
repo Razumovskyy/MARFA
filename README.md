@@ -26,8 +26,10 @@ In addition to using and contributing to the source code, it is recommended to i
 To build and run the source code on your machine, you need to have GFortran (GNU Fortran compiler) and the Fortran Package Manager (fpm) installed. 
 The tool is compatible with macOS, Linux and Windows operating systems. However, installation might be challenging for Windows unexperienced users.
 
-### Gfortran
+### Fortran compiler: Gfortran
 For installing the `gfortran` you can use [GNU Fortran website](https://gcc.gnu.org/fortran/) or use your system's package manager.
+#### Other compilers:
+Other fortran compilers were not tested and checked.
 ### fpm
 Installation instructions ara available on the [official website](https://fpm.fortran-lang.org/install/index.html) or on the [fpm github page](https://github.com/fortran-lang/fpm).
 ### Python3
