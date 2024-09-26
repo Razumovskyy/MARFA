@@ -87,7 +87,7 @@ def process_data(subdir_path, V1, V2, level, resolution):
             print(f"Processing record {record_number} ...")
 
             if seek_position >= os.path.getsize(filename):
-                sys.exit(f"Record number {record_number} exceeds file size.")
+                sys.exit(f"ERROR: Record number {record_number} exceeds file size.")
 
             f.seek(seek_position)
             record_bytes = f.read(record_length)
@@ -221,12 +221,12 @@ def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright, target_value):
     )
     # Plot using Seaborn
     plt.figure(figsize=(12, 6))
-    ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b')
+    ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b', linewidth=0.8)
 
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
     ax.set_ylabel(y_axname)
     ax.set_title(f'{molecule} Absorption Spectrum for the atmosphere: {atmospheric_file}\n'
-                 f'Level {level}: height {height}[km], pressure {pressure:.3E} [atm], temperature {temperature} [K]')
+                 f'Level {level}: height {height} [km], pressure {pressure:.3E} [atm], temperature {temperature} [K]')
     
     ax.set_xlim(Vleft, Vright)
     ax.grid(True)
