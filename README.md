@@ -107,9 +107,65 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 
 ## Command line parameters: overview
 ## Atmospheric profile file structure
+To correctly run the MARFA code, the atmospheric file must adhere to a specific format and be placed in the `data/Atmospheres/` directory. Below is an example of the required format:
+
+```ini
+# Atmospheric file example (Haus2015) CO2                                                                     
+81
+     0.000 0.90918E+02  733.00  0.8694E+26
+     2.000 0.80059E+02  717.00  0.7851E+26
+     4.000 0.70286E+02  701.00  0.7075E+26
+     6.000 0.61599E+02  685.00  0.6366E+26
+```
+### File Format Breakdown
+
+1. **Header (First Line):**
+   - Describes the atmospheric characteristics, such as planet, authors, and gas species.
+   - Example: `# Atmospheric file example (Haus2015) CO2`
+
+2. **Number of Levels (Second Line):**
+   - Contains a single number `N` representing the number of atmospheric levels.
+   - Example: `81` (indicating 81 levels).
+
+3. **Atmospheric Data (Next N Lines):**
+   - Each line contains data in four columns:
+     - **Column 1:** Height [km]
+     - **Column 2:** Total pressure [atm]
+     - **Column 3:** Temperature [K]
+     - **Column 4:** Number density [mol/(cm<sup>2</sup>*km)]
+
+   - Example (Venus lower atmosphere):
+     ``` 
+      0.000 0.90918E+02  733.00  0.8694E+26
+      2.000 0.80059E+02  717.00  0.7851E+26
+      4.000 0.70286E+02  701.00  0.7075E+26
+      6.000 0.61599E+02  685.00  0.6366E+26
+     ```
+
+### Important Notes
+
+- **Units:**
+  - The data uses [km] for height to ensure the total absorption coefficient is in [km<sup>-1</sup>].
+
+- **Density Calculation:**
+  - It is recommended to provide the number density in [mol/(cm<sup>2</sup>*km)] rather than [mol/cm<sup>3</sup>]. This is because the density is also used in calculating the partial pressure of species (for Lorentz HWHM), where the units are fixed. Refer to the `pSelf` calculation in the `app/main.f90` file for more details.
+
+- **Directory Placement:**
+  - Ensure the atmospheric file is stored in the `data/Atmospheres/` directory to be recognized by the MARFA code.
+
 ## Output PT-table file structure
 ## Spectral databases
-## Chi-factors
+## χ-factors
+There is an indication that the far wings of spectral lines tend to diverge from expected Lorentzian or Voigt behavior. To address that χ&#8204;-factor could be applied. 
+
+In MARFA code currently there are several χ&#8204;-factors implemented, which describe sub-Lorentzian behavior of CO<sub>2</sub> rotational lines. They could be found in the `ChiFactors` module. These corrections are primarilly used for **Venus atmosphere conditions**. Below is a reference to the scientific papers from which the analytical expressions were derived (see References section for more details):
+| χ-factor | Reference                  |
+|----------|----------------------------|
+| `tonkov` | Tonkov et al. (1996)       |
+| `pollack`| Pollack et al. (1993)      |
+| `perrin` | Perrin and Hartmann (1989) |
+
+The χ-factors dataset is intended to be expanded through the effort from other contributors.
 ## Performance overview
 ## Introducing custom features
 ## Troubleshooting
@@ -118,4 +174,7 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 This project is licensed under the MIT License. See the LICENSE file for more details.
 
 ## References
-- Fomin, B.A. (1995). _Effective interpolation technique for line-by-line calculations of radiation absorption in gases_. Journal of Quantitative Spectroscopy and Radiative Transfer, 53(6), 663–669.
+- Fomin, B. A. _Effective interpolation technique for line-by-line calculations of radiation absorption in gases._ Journal of Quantitative Spectroscopy and Radiative Transfer 53.6 (1995): 663-669.
+- Tonkov, M. V., et al. _Measurements and empirical modeling of pure CO<sub>2</sub> absorption in the 2.3-μm region at room temperature: far wings, allowed and collision-induced bands._ Applied optics 35.24 (1996): 4863-4870.
+- Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
+- Perrin, M. Y., and J. M. Hartmann. _Temperature-dependent measurements and modeling of absorption by CO<sub>2</sub>-N<sub>2</sub> mixtures in the far line-wings of the 4.3 μm CO<sub>2</sub> band._ Journal of Quantitative Spectroscopy and Radiative Transfer 42.4 (1989): 311-317.
