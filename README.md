@@ -56,7 +56,7 @@ For a quick start you can choose one of the default atmospheric profiles located
 ### Run the project with some command line parameters
 For example:
 ```
-fpm run VenusPT-Tables -- CO2 4000 4100 125 tonkov VAC VenusCO2.dat
+fpm run marfa -- CO2 4000 4100 125 tonkov VAC VenusCO2.dat
 ```
 
 Here is a breakdown of the command-line arguments:
