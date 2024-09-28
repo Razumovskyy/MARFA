@@ -21,6 +21,8 @@ In addition to using and contributing to the source code, it is recommended to i
 - **PT-Tables Generation**: Produces resulting spectra as direct-access files in PT-format (each output PT-file corresponds to one atmospheric level), which can be directly integrated into radiative transfer schemes.
 
 - **Additional Tools**: Provides various scripts for plotting and data processing, facilitating validation and the integration of new data.
+### Note: 
+Continuum absorption is not accounted in this project. This functionality might be later added through the effort from new contributors.
 
 ## Prerequisites
 To build and run the source code on your machine, you need to have GFortran (GNU Fortran compiler) and the Fortran Package Manager (fpm) installed. 
