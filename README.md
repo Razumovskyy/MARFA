@@ -1,4 +1,21 @@
 # MARFA
+## Table of Contents
+- [Introduction](#overview)
+- [Features](#features)
+- [Usage-scenarious-and-limitations](#usage-scenarios-and-limitations)
+- [Prerequisites](#prerequisites)
+- [Quick Start Instructions](#quick-start-instructions)
+- [Command Line Parameters](#command-line-parameters)
+- [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)
+- [Output PT-table structure](#output-pt-table-file-structure)
+- [Spectral Databases](#spectral-databases)
+- [χ-factors](#χ-factors)
+- [Performance Overview](#performance-overview)
+- [Introducing Custom Features](#introducing-custom-features)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+- [References](#references)
+
 ## Overview
 MARFA (Molecular Atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from sources such as the HITRAN and HITEMP databases. With MARFA, users can generate absorption PT-tables (look-up tables) for each atmospheric level simultaneously within seconds. These PT-tables are produced in a binary format, making them easily integrable into radiative transfer codes. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
 
@@ -111,7 +128,7 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 
 ![](images/CO2_40_VAC_4020-4022.png)
 
-## Command line parameters: overview
+## Command line parameters
 ## Atmospheric profile file structure
 To correctly run the MARFA code, the atmospheric file must adhere to a specific format and be placed in the `data/Atmospheres/` directory. Below is an example of the required format:
 
