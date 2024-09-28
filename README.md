@@ -176,7 +176,17 @@ The χ-factors dataset is intended to be expanded through the effort from other 
 #### TIPS
 #### Molar masses
 ## Performance estimations
+Execution time at one atmospheric level largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for Apple M1 chip:
+|species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
+|---------|-----------------|---------------|-----------------|----------------|
+| CO<sub>2</sub>| 4000-4100 |  | 25 | 0.06 |
+| CO<sub>2</sub>|   4000-4100|   | 250 | 0.24 |
+| CO<sub>2</sub> | 10 - 3000 |  | 25 | 4.08 |
+| CO<sub>2</sub> | 10 - 3000 |  | 250 | 25.2 |
 
+Loop over atmospheric levels is currently not parallelized but I plan to do it with OpenMP in near time. So, presently time of processing atmospheric profile is linear to number of atmospheric levels.
+
+Additional room for optimization might be organized with increasing effectiveness of Voigt function estimation algorithm and lastly negliecting weak lines.
 ## Introducing custom features
 ### Custom χ-factors
 To add custom χ-factor function follow the steps:
