@@ -1,6 +1,6 @@
 # MARFA
 ## Overview
-MARFA (Molecular Atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from sources such as the HITRAN and HITEMP databases. With MARFA, users can generate absorption look-up tables for each atmospheric level simultaneously within seconds. These look-up tables are produced in a binary format, making them easily integrable into radiative transfer codes. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
+MARFA (Molecular Atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from sources such as the HITRAN and HITEMP databases. With MARFA, users can generate absorption PT-tables (look-up tables) for each atmospheric level simultaneously within seconds. These PT-tables are produced in a binary format, making them easily integrable into radiative transfer codes. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
 
 In addition to using and contributing to the source code, it is recommended to interact with the web interface of the tool to better understand its capabilities. The web interface can be accessed at: <URL>
 
@@ -170,7 +170,29 @@ In MARFA code currently there are several χ&#8204;-factors implemented, which d
 The χ-factors dataset is intended to be expanded through the effort from other contributors.
 ## Performance overview
 ## Introducing custom features
+### Custom chi-factors
+### Custom line shapes (for advanced users)
+Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `correctedDoppler` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need:
+- provide a Fortran function of a custom line shape at the end of the `Shapes` module. The function must match an abstract interface for the line shape (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision (`DP` selected real kind in the `Constants`) and return only one value of `real` type - the shape function value multiplied by the intensity of the line. Check how the inputs and outputs are organized in predefined functions and adjust accordingly.
+- go to the `LBL` module and assign `shapeFuncPtr` pointer to your line shape instead of the predefined shape and adjust the logic of the choice of line shape accordingly (only for non-standard line shapes)
+
+**Note 1**: If you want to provide your own Voigt line shape, then it is the most straightforward. Add your function to the `Shapes` module and then substitute code lines with `shapeFuncPtr => voigt` with e.g. `shapeFuncPtr => myVoigt`. Don't forget to check matching function interface (see `ShapeFuncInterface` module).
+
+**Note 2** If you want to introduce non-standard (not Voigt, Loretntz, Doppler) line shapes, then you must adjust the logic in `LBL` module yourself. In the current state, line shape function 
+
+**Note 3** Inside the line shape function multiplication on the temperature-dependent intensity must be provided. You can use predefine line intensity function (see e.g. HITRAN documentation) `intensityOfT` in `Spectroscopy` module. Example for predefined `doppler` function:
+```
+    real function doppler(X)
+        real(kind=DP), intent(in) :: X
+        real(kind=DP) :: HWHM ! [cm-1] -- Doppler HWHM
+
+        HWHM = dopplerHWHM(lineWV, temperature, molarMass)      
+        doppler = sqrt(log(2.) / (pi * HWHM**2)) * exp(-(X/HWHM)**2 * log(2.))
+        <span style="background-color: yellow; font-weight: bold;">doppler = doppler * intensityOfT(temperature)</span>
+    end function doppler
+```
 ## Troubleshooting
+Feedback is awaited to populate this section. Most potential issues, such as invalid user inputs, in the Fortran source code and Python scripts are handled with clear error messages to facilitate troubleshooting.
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
