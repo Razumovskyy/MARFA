@@ -21,8 +21,12 @@ In addition to using and contributing to the source code, it is recommended to i
 - **PT-Tables Generation**: Produces resulting spectra as direct-access files in PT-format (each output PT-file corresponds to one atmospheric level), which can be directly integrated into radiative transfer schemes.
 
 - **Additional Tools**: Provides various scripts for plotting and data processing, facilitating validation and the integration of new data.
-### Note: 
+
+## Usage scenarios and limitations
+### Note 1: 
 Continuum absorption is not accounted in this project. This functionality might be later added through the effort from new contributors.
+### Note 2:
+Calculations are perfoemed for one molecular species and for all atmospheric level at one runtime.
 
 ## Prerequisites
 To build and run the source code on your machine, you need to have GFortran (GNU Fortran compiler) and the Fortran Package Manager (fpm) installed. 
@@ -168,31 +172,113 @@ In MARFA code currently there are several χ&#8204;-factors implemented, which d
 | `perrin` | Perrin and Hartmann (1989) |
 
 The χ-factors dataset is intended to be expanded through the effort from other contributors.
-## Performance overview
+## Other spectral data
+#### TIPS
+#### Molar masses
+## Performance estimations
+
 ## Introducing custom features
-### Custom chi-factors
-### Custom line shapes (for advanced users)
-Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `correctedDoppler` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need:
-- provide a Fortran function of a custom line shape at the end of the `Shapes` module. The function must match an abstract interface for the line shape (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision (`DP` selected real kind in the `Constants`) and return only one value of `real` type - the shape function value multiplied by the intensity of the line. Check how the inputs and outputs are organized in predefined functions and adjust accordingly.
-- go to the `LBL` module and assign `shapeFuncPtr` pointer to your line shape instead of the predefined shape and adjust the logic of the choice of line shape accordingly (only for non-standard line shapes)
+### Custom χ-factors
+To add custom χ-factor function follow the steps:
+1. Write a fortran function with χ-factor. Optionally it might be pressure or tempreature dependent. You can use `pressure` and `temperature` parameters inside a function.
+2. Put this function at the end of the `chiFactors` module
+3. Add new case to the `select-case` clause in the `fetchChiFactorFunction()` in the `ChiFactors` module.
+4. Check that in the `LBL` module `chiCorrectedLorentz` line shape is used for the line wing description. There must be a line, like: `shapeFuncPtr => chiCorrectedLorentz`.
 
-**Note 1**: If you want to provide your own Voigt line shape, then it is the most straightforward. Add your function to the `Shapes` module and then substitute code lines with `shapeFuncPtr => voigt` with e.g. `shapeFuncPtr => myVoigt`. Don't forget to check matching function interface (see `ShapeFuncInterface` module).
+**Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
 
-**Note 2** If you want to introduce non-standard (not Voigt, Loretntz, Doppler) line shapes, then you must adjust the logic in `LBL` module yourself. In the current state, line shape function 
-
-**Note 3** Inside the line shape function multiplication on the temperature-dependent intensity must be provided. You can use predefine line intensity function (see e.g. HITRAN documentation) `intensityOfT` in `Spectroscopy` module. Example for predefined `doppler` function:
+#### Example: 
 ```
-    real function doppler(X)
+    real function myChiFactor(X)
         real(kind=DP), intent(in) :: X
-        real(kind=DP) :: HWHM ! [cm-1] -- Doppler HWHM
+        ! -------------------------------------------------------- !
+        real(kind=DP) :: shiftedLineWV
+        
+        myChiFactor = 1. ! default value of the chi-factor
+            if (abs(X) > 4.) then
+                if (abs(X) <= 125.) then
+                    myChiFactor = 1.24 * exp(-0.017*abs(X))
+                else
+                    myChiFactor = 0.31 * exp(-0.036*abs(X))
+                end if
+            end if
+            return
+    end function myChiFactor
+```
+```
+    subroutine fetchChiFactorFunction()
+        select case(trim(adjustl(chiFactorFuncName)))
+        case ('none')
+            chiFactorFuncPtr => noneChi
+        case ('tonkov')
+            chiFactorFuncPtr => tonkov
+        case ('pollack')
+            chiFactorFuncPtr => pollack
+        case ('perrin')
+            chiFactorFuncPtr => perrin
+        ! ADD YOUR CHI-FACTOR HERE:
+        case ('myChiFactor')
+            chiFactorFuncPtr => myChiFactor
+        end select
+    end subroutine fetchChiFactorFunction
+```
+### Custom line shapes (for advanced users)
+Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `correctedDoppler` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need to:
+1. Provide a Fortran function of a custom line shape to the `Shapes` module. 
+2. Go to the `LBL` module and assign `shapeFuncPtr` pointer to your line shape instead of the predefined shape.
+3. Adjust the logic of the choice of line shape accordingly. This is required only for introducing "non-standard" (not Voigt, Lorentz or Doppler) line shapes.
 
-        HWHM = dopplerHWHM(lineWV, temperature, molarMass)      
-        doppler = sqrt(log(2.) / (pi * HWHM**2)) * exp(-(X/HWHM)**2 * log(2.))
-        <span style="background-color: yellow; font-weight: bold;">doppler = doppler * intensityOfT(temperature)</span>
-    end function doppler
+**Note 1:** Essentialy, line shape function in `Shapes` module returns individual cross-section, because multiplication of line profile function to line intensity is included inside the function. Thus, multiplication on the temperature-dependent intensity must be provided. You can use predefined line intensity function `intensityOfT` in `Spectroscopy` module. Example:
+```
+    real function myLineShape(X)
+        real(kind=DP), intent(in) :: X
+
+        !--------- YOUR LOGIC HERE ------!
+        ! ...
+        ! -------------------------------! 
+        myLineShape = myLineShape * intensityOfT(temperature) ! THIS LINE MUST BE PROVIDED
+    end function myLineShape
+```
+If you want to use your own intensities, you must add new intensity function to the `Spectroscopy` module and refer to it.
+
+**Note 2:** Your function must match the abstract interface for the line shape (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined line shape functions and adjust accordingly.
+
+#### Example 1 
+If you want to provide your own Voigt line shape, then it is the most straightforward. 
+1. Add your function to the `Shapes` module.
+2. Go to `src/LBL.f90` module and substitute code lines with `shapeFuncPtr => voigt` with e.g. `shapeFuncPtr => myVoigt`.
+
+#### Example 2
+If you want to introduce non-standard (not Voigt, Loretntz, Doppler) line shapes, then you additionally need to adjust the logic in `LBL` module yourself. In the current state, line shape function for calculation is a specific spectral point depends on how far this point from the center of the spectral line. If it is far enough, the `lorentz` or `chiCorrectedLorentz`, in the middle region `voigt` is applied and in the close vicinity of the line center `doppler` is used. If you want to introduce your own line shape you need to specify where it will be estimated, so adjust this pice of code in `LBL` module:
+```
+if (shapePrevailFactor > BOUNDL) then
+                ! region where Lorentz or chiCorrectedLorentz shape is used
+                if (shiftedLineWV < startDeltaWV) then
+                    shapeFuncPtr => Lorentz
+                    call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
+                ! rest of the logic ...
+else
+                if (shapePrevailFactor > BOUNDD) then
+                ! region where Voigt shape is used
+                    if (shiftedLineWV < startDeltaWV) then
+                        shapeFuncPtr => voigt
+                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                    ! rest of the logic ... 
+                else
+                ! region where the doppler function is used
+                    if (shiftedLineWV < startDeltaWV ) then
+                        shapeFuncPtr => doppler
+                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                        ! rest of the logic ...
+                end if
+end if
 ```
 ## Troubleshooting
 Feedback is awaited to populate this section. Most potential issues, such as invalid user inputs, in the Fortran source code and Python scripts are handled with clear error messages to facilitate troubleshooting.
+
+If you refer to the χ-factor function which doesn't exist, then the `Segmentation Fault` error will be raised during runtime. This would be fixed later.
+
+## How to cite this work
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
