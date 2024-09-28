@@ -7,10 +7,10 @@
 - [Quick Start Instructions](#quick-start-instructions)
 - [Command Line Parameters](#command-line-parameters)
 - [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)
-- [Output PT-table structure](#output-pt-table-file-structure)
+- [Output PT-table structure](#output-pt-table-file)
 - [Spectral Databases](#spectral-databases)
 - [χ-factors](#χ-factors)
-- [Performance Overview](#performance-overview)
+- [Performance Estimations](#performance-estimations)
 - [Introducing Custom Features](#introducing-custom-features)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -176,7 +176,51 @@ To correctly run the MARFA code, the atmospheric file must adhere to a specific 
 - **Directory Placement:**
   - Ensure the atmospheric file is stored in the `data/Atmospheres/` directory to be recognized by the MARFA code.
 
-## Output PT-table file structure
+## Output PT-table file
+### General information
+- PT-table files are generated and placed somwhere inside `output/ptTables` directory. 
+- One PT-table file corresponds to one atmospheric level.
+- Name of the PT-table file contains only level number, e.g. `1__.ptbin, 65_.ptbin`.
+- PT-table file has an extention `.ptbin`.
+
+### PT-file structure
+The file consists of records with data, which could be directly accessed.
+- Each record contains an array `RK` of high-resolution absorption data: either cross-section or absorption coefficient 
+- Each record contains data about 10cm<sup>-1</sup> interval (`deltaWV` parameter in the code).
+- Resolution of the data is defined by: `deltaWV/NT` = 10/20480 ≈ 4.8828×10<sup>-4</sup>cm<sup>-1</sup>.
+- Relation between wavenumber of interest and record number: `record_number = int(WV/10)`. For example, if you want to know the value of absorption at 7560 cm<sup>-1</sup>, than you need to access the 756 record.
+- Each record is of length `NT * 4` = 20481 * 4 bytes = 81924 bytes = 81,924 kilobytes
+
+Schematic python code snippet for accessing data from this file:
+```python
+            import numpy as np
+
+            # assuming you need to know absorption in 756 cm^-1
+            V1 = 756
+
+            # determining record number where this data stored
+            recrod_number = int(V1 / 10.0)
+
+            # number of values in one record
+            NT = 20481
+
+            # record length in bytes
+            record_length = NT * 4
+
+            with open('1__.ptbin', 'rb') as f:
+              # start reading from record with record number "record_number"
+              seek_position = (record_number-1) * record_length
+              f.seek(seek_position)
+  
+              # read one record
+              record_bytes = f.read(record_length)
+  
+              # Unpack an array of data using little-endian
+              RK = np.frombuffer(record_bytes, dtype='<f4')
+  
+              # Converting data to float32 format (optional)
+              RK = RK.astype(np.float32)
+```
 ## Spectral databases
 ## χ-factors
 There is an indication that the far wings of spectral lines tend to diverge from expected Lorentzian or Voigt behavior. To address that χ&#8204;-factor could be applied. 
@@ -215,7 +259,7 @@ To add custom χ-factor function follow the steps:
 **Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
 
 #### Example: 
-```
+```fortran
     real function myChiFactor(X)
         real(kind=DP), intent(in) :: X
         ! -------------------------------------------------------- !
@@ -232,7 +276,7 @@ To add custom χ-factor function follow the steps:
             return
     end function myChiFactor
 ```
-```
+```fortran
     subroutine fetchChiFactorFunction()
         select case(trim(adjustl(chiFactorFuncName)))
         case ('none')
@@ -256,13 +300,12 @@ Currently in the `Shapes` module only standard line shapes are introduced: `lore
 3. Adjust the logic of the choice of line shape accordingly. This is required only for introducing "non-standard" (not Voigt, Lorentz or Doppler) line shapes.
 
 **Note 1:** Essentialy, line shape function in `Shapes` module returns individual cross-section, because multiplication of line profile function to line intensity is included inside the function. Thus, multiplication on the temperature-dependent intensity must be provided. You can use predefined line intensity function `intensityOfT` in `Spectroscopy` module. Example:
-```
+```fortran
     real function myLineShape(X)
         real(kind=DP), intent(in) :: X
 
-        !--------- YOUR LOGIC HERE ------!
-        ! ...
-        ! -------------------------------! 
+        ! ... YOUR LOGIC HERE
+
         myLineShape = myLineShape * intensityOfT(temperature) ! THIS LINE MUST BE PROVIDED
     end function myLineShape
 ```
@@ -277,22 +320,22 @@ If you want to provide your own Voigt line shape, then it is the most straightfo
 
 #### Example 2
 If you want to introduce non-standard (not Voigt, Loretntz, Doppler) line shapes, then you additionally need to adjust the logic in `LBL` module yourself. In the current state, line shape function for calculation is a specific spectral point depends on how far this point from the center of the spectral line. If it is far enough, the `lorentz` or `chiCorrectedLorentz`, in the middle region `voigt` is applied and in the close vicinity of the line center `doppler` is used. If you want to introduce your own line shape you need to specify where it will be estimated, so adjust this pice of code in `LBL` module:
-```
+```fortran
 if (shapePrevailFactor > BOUNDL) then
-                ! region where Lorentz or chiCorrectedLorentz shape is used
+                ! Region utilizing Lorentz or chiCorrectedLorentz shape
                 if (shiftedLineWV < startDeltaWV) then
                     shapeFuncPtr => Lorentz
                     call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
                 ! rest of the logic ...
 else
                 if (shapePrevailFactor > BOUNDD) then
-                ! region where Voigt shape is used
+                ! Region utilizing Voigt shape
                     if (shiftedLineWV < startDeltaWV) then
                         shapeFuncPtr => voigt
                         call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
                     ! rest of the logic ... 
                 else
-                ! region where the doppler function is used
+                ! Region utilizing Doppler shape
                     if (shiftedLineWV < startDeltaWV ) then
                         shapeFuncPtr => doppler
                         call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
