@@ -10,8 +10,11 @@
 - [Output PT-table structure](#output-pt-table-file)
 - [Spectral Databases](#spectral-databases)
 - [χ-factors](#χ-factors)
+- [Other spectroscopic data](#other-spectral-data)
 - [Performance Estimations](#performance-estimations)
 - [Introducing Custom Features](#introducing-custom-features)
+    - [Custom χ-factors](#custom-χ-factors)
+    - [Custom line shapes](#custom-line-shapes-for-advanced-users)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 - [References](#references)
@@ -43,7 +46,7 @@ In addition to using and contributing to the source code, it is recommended to i
 ### Note 1: 
 Continuum absorption is not accounted in this project. This functionality might be later added through the effort from new contributors.
 ### Note 2:
-Calculations are perfoemed for one molecular species and for all atmospheric level at one runtime.
+Calculations are performed for one molecular species and for all atmospheric level at one runtime.
 
 ## Prerequisites
 To build and run the source code on your machine, you need to have GFortran (GNU Fortran compiler) and the Fortran Package Manager (fpm) installed. 
@@ -221,6 +224,9 @@ Schematic python code snippet for accessing data from this file:
               # Converting data to float32 format (optional)
               RK = RK.astype(np.float32)
 ```
+### Note
+
+There is current minor vulnerabilty in the code regarding record numbers, which result in excess of PT-files size with increasing wavenumber. For example, you calculated PT-table for 6500-7000 cm<sup>-1</sup> spectral interval. First non-zero data will populate 650th record, leaving 1-649 records unpopulated. This excess of records may require additional and unnecessary storage. This issue would be resolved soon. But because of it, PT-table caculated for 100-110 cm<sup>-1</sup> will be much smaller in size than one calculated for 6500-6510 cm<sup>-1</sup>.
 ## Spectral databases
 ## χ-factors
 There is an indication that the far wings of spectral lines tend to diverge from expected Lorentzian or Voigt behavior. To address that χ&#8204;-factor could be applied. 
@@ -261,19 +267,17 @@ To add custom χ-factor function follow the steps:
 #### Example: 
 ```fortran
     real function myChiFactor(X)
-        real(kind=DP), intent(in) :: X
-        ! -------------------------------------------------------- !
-        real(kind=DP) :: shiftedLineWV
+    real(kind=DP), intent(in) :: X
         
         myChiFactor = 1. ! default value of the chi-factor
-            if (abs(X) > 4.) then
-                if (abs(X) <= 125.) then
-                    myChiFactor = 1.24 * exp(-0.017*abs(X))
-                else
-                    myChiFactor = 0.31 * exp(-0.036*abs(X))
-                end if
+        if (abs(X) > 4.) then
+            if (abs(X) <= 125.) then
+                myChiFactor = 1.24 * exp(-0.017*abs(X))
+            else
+                myChiFactor = 0.31 * exp(-0.036*abs(X))
             end if
-            return
+        end if
+        return
     end function myChiFactor
 ```
 ```fortran
