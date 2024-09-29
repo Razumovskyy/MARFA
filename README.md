@@ -1,6 +1,28 @@
 # MARFA
+## Table of Contents
+- [Introduction](#overview)
+- [Features](#features)
+- [Usage-scenarious-and-limitations](#usage-scenarios-and-limitations)
+- [Prerequisites](#prerequisites)
+- [Quick Start Instructions](#quick-start-instructions)
+- [Command Line Parameters](#command-line-parameters)
+- [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)
+- [Output PT-table structure](#output-pt-table-file)
+- [Spectral Databases](#spectral-databases)
+- [χ-factors](#χ-factors)
+- [Other spectroscopic data](#other-spectral-or-molecular-data)
+  - [TIPS](#tips)
+  - [Molar masses](#molar-masses)
+- [Performance Estimations](#performance-estimations)
+- [Introducing Custom Features](#introducing-custom-features)
+    - [Custom χ-factors](#custom-χ-factors)
+    - [Custom line shapes](#custom-line-shapes-for-advanced-users)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+- [References](#references)
+
 ## Overview
-MARFA (Molecular Atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from sources such as the HITRAN and HITEMP databases. With MARFA, users can generate absorption look-up tables for each atmospheric level simultaneously within seconds. These look-up tables are produced in a binary format, making them easily integrable into radiative transfer codes. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
+MARFA (Molecular Atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from sources such as the HITRAN and HITEMP databases. With MARFA, users can generate absorption PT-tables (look-up tables) for each atmospheric level simultaneously within seconds. These PT-tables are produced in a binary format, making them easily integrable into radiative transfer codes. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
 
 In addition to using and contributing to the source code, it is recommended to interact with the web interface of the tool to better understand its capabilities. The web interface can be accessed at: <URL>
 
@@ -21,8 +43,12 @@ In addition to using and contributing to the source code, it is recommended to i
 - **PT-Tables Generation**: Produces resulting spectra as direct-access files in PT-format (each output PT-file corresponds to one atmospheric level), which can be directly integrated into radiative transfer schemes.
 
 - **Additional Tools**: Provides various scripts for plotting and data processing, facilitating validation and the integration of new data.
-### Note: 
+
+## Usage scenarios and limitations
+### Note 1: 
 Continuum absorption is not accounted in this project. This functionality might be later added through the effort from new contributors.
+### Note 2:
+Calculations are performed for one molecular species and for all atmospheric level at one runtime.
 
 ## Prerequisites
 To build and run the source code on your machine, you need to have GFortran (GNU Fortran compiler) and the Fortran Package Manager (fpm) installed. 
@@ -107,7 +133,43 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 
 ![](images/CO2_40_VAC_4020-4022.png)
 
-## Command line parameters: overview
+## Command line parameters
+### Parameters for `fpm run marfa` command
+Required syntax: `fpm run marfa -- arg1 arg2 ... arg7 <arg8>`
+| № | Argument      | Description                          | Required | Allowed values |
+|-|---------------|--------------------------------------|----------|---------------|
+|1| Molecule   | Species to calculate absorption features of. More molecules will be added   | Yes      | `CO2`, `H2O`           | 
+|2| `Vstart`       | Left boundary of the spectral interval | Yes   | 10-10000 cm<sup>-1</sup> | 
+|3| `Vend`          | Right boundary of the spectral interval | Yes      | 10-10000 cm<sup>-1</sup>| 
+|4| cut-off condition | Distance from the center of the line from which absorption from this line is neglected | Yes | 10-500 cm<sup>-1</sup>  |
+|5| χ-factor | χ-factor function name. Currently only CO2 corrections are employed. For more details see [χ-factors section](χ-factors)| Yes | `none`, `tonkov`, `pollack`, `perrin` |
+|6| `targetValue` | Absorption feature to be written in the PT-table: volume absorption coefficient (km<sup>-1</sup>) or absorption cross-section (cm<sup>2</sup>/mol)| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
+|7| Atmosphere file name | Atmospheric file name, located in the `data/Atmospheres` directory. For the format of the file see: [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)  | Yes | file names from the `data/Atmospheres` directory |
+|8| `uuid` | ID for user request | No | Optional and is needed for the web-version of the program |
+
+Examples:
+```
+fpm run marfa -- CO2 660 670 25 none ACS Venus1CO2.dat
+fpm run marfa -- H2O 10 3000 250 none VAC VenusH2O.dat
+```
+
+### Parameters for `python scripts/postprocess.py` command
+|Argument|Description|Required|Allowed values|
+|--------|-----------|--------|--------------|
+|subdirectory| Name of the PT-table directory| No, default value is where PT-tables from the latest run are stored. See the `output/ptTables/latest_run.txt` file | Any |
+|`v1` | Start wavenumber from which you want to get processed data | Yes | `Vstart` < v1 < v2 < `Vend` |
+|`v2` | End wavenumber to which you want to get processed data | Yes | `Vstart` < v1 < v2 < `Vend` |
+|level| Atmospheric level at which you want to access data. Essentially means, that you access to the file `<level>.ptbin` | Yes | Normally from 1 to 100 (but see your atmospheric file)|
+|resolution| Resolution at which you want to obtain the data. If you consider large intervals, it is not recommeded to use `high` resolution | Yes | `high` (4.8E-4cm<sup>-1</sup>), `medium` (4.8E-3cm<sup>-1</sup>), `coarse`(4.8E-2cm<sup>-1</sup>) |
+| plot | Plot the data you postprocessed | No | Provide just a flag |
+
+Examples:
+```
+python scripts/postprocess.py --v1 4032 --v2 4038 --level 40 --resolution high --plot
+python scripts/posprocess.py --v1 10 --v2 3000 --level 50 --resolution coarse
+python scripts/postprocess.py directory_name --v1 2500 --v2 --2550 --level 30 --resolution medium
+```
+
 ## Atmospheric profile file structure
 To correctly run the MARFA code, the atmospheric file must adhere to a specific format and be placed in the `data/Atmospheres/` directory. Below is an example of the required format:
 
@@ -155,7 +217,54 @@ To correctly run the MARFA code, the atmospheric file must adhere to a specific 
 - **Directory Placement:**
   - Ensure the atmospheric file is stored in the `data/Atmospheres/` directory to be recognized by the MARFA code.
 
-## Output PT-table file structure
+## Output PT-table file
+### General information
+- PT-table files are generated and placed somwhere inside `output/ptTables` directory. 
+- One PT-table file corresponds to one atmospheric level.
+- Name of the PT-table file contains only level number, e.g. `1__.ptbin, 65_.ptbin`.
+- PT-table file has an extention `.ptbin`.
+
+### PT-file structure
+The file consists of records with data, which could be directly accessed.
+- Each record contains an array `RK` of high-resolution absorption data: either cross-section or absorption coefficient 
+- Each record contains data about 10cm<sup>-1</sup> interval (`deltaWV` parameter in the code).
+- Resolution of the data is defined by: `deltaWV/NT` = 10/20480 ≈ 4.8828×10<sup>-4</sup>cm<sup>-1</sup>.
+- Relation between wavenumber of interest and record number: `record_number = int(WV/10)`. For example, if you want to know the value of absorption at 7560 cm<sup>-1</sup>, than you need to access the 756 record.
+- Each record is of length `NT * 4` = 20481 * 4 bytes = 81924 bytes = 81,924 kilobytes
+
+Schematic python code snippet for accessing data from this file:
+```python
+            import numpy as np
+
+            # assuming you need to know absorption in 756 cm^-1
+            V1 = 756
+
+            # determining record number where this data stored
+            recrod_number = int(V1 / 10.0)
+
+            # number of values in one record
+            NT = 20481
+
+            # record length in bytes
+            record_length = NT * 4
+
+            with open('1__.ptbin', 'rb') as f:
+              # start reading from record with record number "record_number"
+              seek_position = (record_number-1) * record_length
+              f.seek(seek_position)
+  
+              # read one record
+              record_bytes = f.read(record_length)
+  
+              # Unpack an array of data using little-endian
+              RK = np.frombuffer(record_bytes, dtype='<f4')
+  
+              # Converting data to float32 format (optional)
+              RK = RK.astype(np.float32)
+```
+### Note
+
+There is current minor vulnerabilty in the code regarding record numbers, which result in excess of PT-files size with increasing wavenumber. For example, you calculated PT-table for 6500-7000 cm<sup>-1</sup> spectral interval. First non-zero data will populate 650th record, leaving 1-649 records unpopulated. This excess of records may require additional and unnecessary storage. This issue would be resolved soon. But because of it, PT-table caculated for 100-110 cm<sup>-1</sup> will be much smaller in size than one calculated for 6500-6510 cm<sup>-1</sup>.
 ## Spectral databases
 ## χ-factors
 There is an indication that the far wings of spectral lines tend to diverge from expected Lorentzian or Voigt behavior. To address that χ&#8204;-factor could be applied. 
@@ -168,9 +277,130 @@ In MARFA code currently there are several χ&#8204;-factors implemented, which d
 | `perrin` | Perrin and Hartmann (1989) |
 
 The χ-factors dataset is intended to be expanded through the effort from other contributors.
-## Performance overview
+## Other spectral or molecular data
+#### TIPS 
+Total internal partition sums (TIPS) are needed for obtaining temperature-dependent spectral intensities. How the TIPS are implemented in MARFA:
+- TIPS data are taken from Gamache work (Gamache 2017, see [References](#references))
+- Data are available for first 74 isotopologues
+- Covered temperature range is 20 - 1000 K
+- For chosen isotope number TIPS as function of temperature can be accessed through the function: `TIPSofT` located in the `Spectroscopy.f90` module.
+
+##### Outlook
+- I plan to add recent TIPS (Gamache et al. 2021, see [References](#references))
+- It might be better to organize input TIPS as en external subroutine based on Gamache's code Fortran or Python: TIPS_2021_v1p0.for, BD_TIPS_2021_v1p0.for or TIPS_2021_v1p0.py. I will soon return to it.
+#### Molar masses
+Molar masses are available in the `MolarMasses.f90` module. `WISO` array contains molar masses for 124 isotopolouges of first 42 molecules according to HITRAN numbering system.
+## Performance estimations
+Execution time at one atmospheric level largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for Apple M1 chip:
+|species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
+|---------|-----------------|---------------|-----------------|----------------|
+| CO<sub>2</sub>| 4000 - 4100 |  | 25 | 0.06 |
+| CO<sub>2</sub>|   4000 - 4100|   | 250 | 0.24 |
+| CO<sub>2</sub> | 10 - 3000 |  | 25 | 4.08 |
+| CO<sub>2</sub> | 10 - 3000 |  | 250 | 25.2 |
+
+Loop over atmospheric levels is currently not parallelized but I plan to do it with OpenMP in near time. So, presently time of processing atmospheric profile is linear to number of atmospheric levels.
+
+Additional room for optimization might be organized with increasing effectiveness of Voigt function estimation algorithm and lastly negliecting weak lines.
 ## Introducing custom features
+### Custom χ-factors
+To add custom χ-factor function follow the steps:
+1. Write a fortran function with χ-factor. Optionally it might be pressure or tempreature dependent. You can use `pressure` and `temperature` parameters inside a function.
+2. Put this function at the end of the `chiFactors` module
+3. Add new case to the `select-case` clause in the `fetchChiFactorFunction()` in the `ChiFactors` module.
+4. Check that in the `LBL` module `chiCorrectedLorentz` line shape is used for the line wing description. There must be a line, like: `shapeFuncPtr => chiCorrectedLorentz`.
+
+**Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
+
+#### Example: 
+```fortran
+    real function myChiFactor(X)
+    real(kind=DP), intent(in) :: X
+        
+        myChiFactor = 1. ! default value of the chi-factor
+        if (abs(X) > 4.) then
+            if (abs(X) <= 125.) then
+                myChiFactor = 1.24 * exp(-0.017*abs(X))
+            else
+                myChiFactor = 0.31 * exp(-0.036*abs(X))
+            end if
+        end if
+        return
+    end function myChiFactor
+```
+```fortran
+    subroutine fetchChiFactorFunction()
+        select case(trim(adjustl(chiFactorFuncName)))
+        case ('none')
+            chiFactorFuncPtr => noneChi
+        case ('tonkov')
+            chiFactorFuncPtr => tonkov
+        case ('pollack')
+            chiFactorFuncPtr => pollack
+        case ('perrin')
+            chiFactorFuncPtr => perrin
+        ! ADD YOUR CHI-FACTOR HERE:
+        case ('myChiFactor')
+            chiFactorFuncPtr => myChiFactor
+        end select
+    end subroutine fetchChiFactorFunction
+```
+### Custom line shapes (for advanced users)
+Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `correctedDoppler` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need to:
+1. Provide a Fortran function of a custom line shape to the `Shapes` module. 
+2. Go to the `LBL` module and assign `shapeFuncPtr` pointer to your line shape instead of the predefined shape.
+3. Adjust the logic of the choice of line shape accordingly. This is required only for introducing "non-standard" (not Voigt, Lorentz or Doppler) line shapes.
+
+**Note 1:** Essentialy, line shape function in `Shapes` module returns individual cross-section, because multiplication of line profile function to line intensity is included inside the function. Thus, multiplication on the temperature-dependent intensity must be provided. You can use predefined line intensity function `intensityOfT` in `Spectroscopy` module. Example:
+```fortran
+    real function myLineShape(X)
+        real(kind=DP), intent(in) :: X
+
+        ! ... YOUR LOGIC HERE
+
+        myLineShape = myLineShape * intensityOfT(temperature) ! THIS LINE MUST BE PROVIDED
+    end function myLineShape
+```
+If you want to use your own intensities, you must add new intensity function to the `Spectroscopy` module and refer to it.
+
+**Note 2:** Your function must match the abstract interface for the line shape (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined line shape functions and adjust accordingly.
+
+#### Example 1 
+If you want to provide your own Voigt line shape, then it is the most straightforward. 
+1. Add your function to the `Shapes` module.
+2. Go to `src/LBL.f90` module and substitute code lines with `shapeFuncPtr => voigt` with e.g. `shapeFuncPtr => myVoigt`.
+
+#### Example 2
+If you want to introduce non-standard (not Voigt, Loretntz, Doppler) line shapes, then you additionally need to adjust the logic in `LBL` module yourself. In the current state, line shape function for calculation is a specific spectral point depends on how far this point from the center of the spectral line. If it is far enough, the `lorentz` or `chiCorrectedLorentz`, in the middle region `voigt` is applied and in the close vicinity of the line center `doppler` is used. If you want to introduce your own line shape you need to specify where it will be estimated, so adjust this pice of code in `LBL` module:
+```fortran
+if (shapePrevailFactor > BOUNDL) then
+                ! Region utilizing Lorentz or chiCorrectedLorentz shape
+                if (shiftedLineWV < startDeltaWV) then
+                    shapeFuncPtr => Lorentz
+                    call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
+                ! rest of the logic ...
+else
+                if (shapePrevailFactor > BOUNDD) then
+                ! Region utilizing Voigt shape
+                    if (shiftedLineWV < startDeltaWV) then
+                        shapeFuncPtr => voigt
+                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                    ! rest of the logic ... 
+                else
+                ! Region utilizing Doppler shape
+                    if (shiftedLineWV < startDeltaWV ) then
+                        shapeFuncPtr => doppler
+                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                        ! rest of the logic ...
+                end if
+end if
+```
 ## Troubleshooting
+Feedback is awaited to populate this section. Most potential issues, such as invalid user inputs, in the Fortran source code and Python scripts are handled with clear error messages to facilitate troubleshooting.
+
+If you refer to the χ-factor function which doesn't exist, then the `Segmentation Fault` error will be raised during runtime. This would be fixed later.
+
+## How to cite this work
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
@@ -180,3 +410,6 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 - Tonkov, M. V., et al. _Measurements and empirical modeling of pure CO<sub>2</sub> absorption in the 2.3-μm region at room temperature: far wings, allowed and collision-induced bands._ Applied optics 35.24 (1996): 4863-4870.
 - Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
 - Perrin, M. Y., and J. M. Hartmann. _Temperature-dependent measurements and modeling of absorption by CO<sub>2</sub>-N<sub>2</sub> mixtures in the far line-wings of the 4.3 μm CO<sub>2</sub> band._ Journal of Quantitative Spectroscopy and Radiative Transfer 42.4 (1989): 311-317.
+- Gamache, Robert R., et al. _Total internal partition sums for 166 isotopologues of 51 molecules important in planetary atmospheres: Application to HITRAN2016 and beyond._ Journal of Quantitative Spectroscopy and Radiative Transfer 203 (2017): 70-87.
+- Gordon, Iouli E., et al. _The HITRAN2020 molecular spectroscopic database._ Journal of quantitative spectroscopy and radiative transfer 277 (2022): 107949.
+- Gamache, Robert R., et al. "Total internal partition sums for the HITRAN2020 database." Journal of Quantitative Spectroscopy and Radiative Transfer 271 (2021): 107713.
