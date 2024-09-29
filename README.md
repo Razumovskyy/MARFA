@@ -133,16 +133,40 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 
 ## Command line parameters
 ### Parameters for `fpm run marfa` command
-Required syntax: `fpm run marfa -- arg1 arg2 ... arg7`
+Required syntax: `fpm run marfa -- arg1 arg2 ... arg7 <arg8>`
 | № | Argument      | Description                          | Required | Allowed values |
 |-|---------------|--------------------------------------|----------|---------------|
-|1| Molecule      | Species to calculate absorption features of   | Yes      | `CO2`, `H2O`           | 
-|2| Vstart        | Left boundary of the spectral interval | Yes   | 10-10000 cm<sup>-1</sup> | 
-|3| Vend          | Right boundary of the spectral interval | Yes      | 10-10000 cm<sup>-1</sup>| 
+|1| Molecule   | Species to calculate absorption features of. Main istopologue is considered. More molecules will be added   | Yes      | `CO2`, `H2O`           | 
+|2| `Vstart`       | Left boundary of the spectral interval | Yes   | 10-10000 cm<sup>-1</sup> | 
+|3| `Vend`          | Right boundary of the spectral interval | Yes      | 10-10000 cm<sup>-1</sup>| 
 |4| cut-off condition | Distance from the center of the line from which absorption from this line is neglected | Yes | 10-500 cm<sup>-1</sup>  |
-|5| χ-factor | χ-factor function name | Yes | `none`, `tonkov`, `pollack`, `perrin` |
-|6| targetValue | Absorption feature to be written in the PT-table| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
-|7| uuid | ID for user request | No | Optional and is needed for web-version of the program |
+|5| χ-factor | χ-factor function name. Currently only CO2 corrections are employed. For more details see [χ-factors section](χ-factors)| Yes | `none`, `tonkov`, `pollack`, `perrin` |
+|6| `targetValue` | Absorption feature to be written in the PT-table: volume absorption coefficient (km<sup>-1</sup>) or absorption cross-section (cm<sup>2</sup>/mol)| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
+|7| Atmosphere file name | Atmospheric file name, located in the `data/Atmospheres` directory. For the format of the file see: [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)  | Yes | file names from the `data/Atmospheres` directory |
+|8| `uuid` | ID for user request | No | Optional and is needed for the web-version of the program |
+
+Examples:
+```
+fpm run marfa -- CO2 660 670 25 none ACS Venus1CO2.dat
+fpm run marfa -- H2O 10 3000 250 none VAC VenusH2O.dat
+```
+
+### Parameters for `python scripts/postprocess.py` command
+|Argument|Description|Required|Allowed values|
+|--------|-----------|--------|--------------|
+|subdirectory| Name of the PT-table directory| No, default value is where PT-tables from the latest run are stored. See the `output/ptTables/latest_run.txt` file | Any |
+|`v1` | Start wavenumber from which you want to process data | Yes | `Vstart` < v1 < v2 < `Vend` |
+|`v2` | Start wavenumber from which you want to process data | Yes | `Vstart` < v1 < v2 < `Vend` |
+|level| Atmospheric level at which you want to access data. Essentially means, that you access to the file `<level>.ptbin` | Yes | Normally from 1 to 100 (but see your atmospheric file)|
+|resolution| Resolution at which you want to obtain the data. If you consider large intervals, it is not recommeded to use `high` resolution | Yes | `high` (4.8E-4cm<sup>-1</sup>), `medium` (4.8E-3cm<sup>-1</sup>), `coarse`(4.8E-2cm<sup>-1</sup>) |
+| plot | Plot the data you postprocessed | No | Provide just a flag |
+
+Examples:
+```
+python scripts/postprocess.py --v1 4032 --v2 4038 --level 40 --resolution high --plot
+python scripts/posprocess.py --v1 10 --v2 3000 --level 50 --resolution coarse
+python scripts/postprocess.py directory_name --v1 2500 --v2 --2550 --level 30 --resolution medium
+```
 
 ## Atmospheric profile file structure
 To correctly run the MARFA code, the atmospheric file must adhere to a specific format and be placed in the `data/Atmospheres/` directory. Below is an example of the required format:
@@ -258,8 +282,8 @@ The χ-factors dataset is intended to be expanded through the effort from other 
 Execution time at one atmospheric level largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for Apple M1 chip:
 |species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
 |---------|-----------------|---------------|-----------------|----------------|
-| CO<sub>2</sub>| 4000-4100 |  | 25 | 0.06 |
-| CO<sub>2</sub>|   4000-4100|   | 250 | 0.24 |
+| CO<sub>2</sub>| 4000 - 4100 |  | 25 | 0.06 |
+| CO<sub>2</sub>|   4000 - 4100|   | 250 | 0.24 |
 | CO<sub>2</sub> | 10 - 3000 |  | 25 | 4.08 |
 | CO<sub>2</sub> | 10 - 3000 |  | 250 | 25.2 |
 
