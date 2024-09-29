@@ -157,8 +157,8 @@ fpm run marfa -- H2O 10 3000 250 none VAC VenusH2O.dat
 |Argument|Description|Required|Allowed values|
 |--------|-----------|--------|--------------|
 |subdirectory| Name of the PT-table directory| No, default value is where PT-tables from the latest run are stored. See the `output/ptTables/latest_run.txt` file | Any |
-|`v1` | Start wavenumber from which you want to process data | Yes | `Vstart` < v1 < v2 < `Vend` |
-|`v2` | Start wavenumber from which you want to process data | Yes | `Vstart` < v1 < v2 < `Vend` |
+|`v1` | Start wavenumber from which you want to get processed data | Yes | `Vstart` < v1 < v2 < `Vend` |
+|`v2` | End wavenumber to which you want to get processed data | Yes | `Vstart` < v1 < v2 < `Vend` |
 |level| Atmospheric level at which you want to access data. Essentially means, that you access to the file `<level>.ptbin` | Yes | Normally from 1 to 100 (but see your atmospheric file)|
 |resolution| Resolution at which you want to obtain the data. If you consider large intervals, it is not recommeded to use `high` resolution | Yes | `high` (4.8E-4cm<sup>-1</sup>), `medium` (4.8E-3cm<sup>-1</sup>), `coarse`(4.8E-2cm<sup>-1</sup>) |
 | plot | Plot the data you postprocessed | No | Provide just a flag |
@@ -279,7 +279,15 @@ In MARFA code currently there are several χ&#8204;-factors implemented, which d
 The χ-factors dataset is intended to be expanded through the effort from other contributors.
 ## Other spectral or molecular data
 #### TIPS 
-Total internal partition sums (TIPS) are used for obtaining temperature-dependent spectral intensities. TIPS data are taken from Gamache work (Gamache 2017, see references). TIPS file is located in `data/TIPS/TIPS.dat` and organized in a following way:
+Total internal partition sums (TIPS) are needed for obtaining temperature-dependent spectral intensities. How the TIPS are implemented in MARFA:
+- TIPS data are taken from Gamache work (Gamache 2017, see [References](#references))
+- Data are available for first 74 isotopologues
+- Covered temperature range is 20 - 1000 K
+- For chosen isotope number TIPS as function of temperature can be accessed through the function: `TIPSofT` located in the `Spectroscopy.f90` module.
+
+##### Outlook
+- I plan to add recent TIPS (Gamache et al. 2021, see [References](#references))
+- It might be better to organize input TIPS as en external subroutine based on Gamache's code Fortran or Python: TIPS_2021_v1p0.for, BD_TIPS_2021_v1p0.for or TIPS_2021_v1p0.py. I will soon return to it.
 #### Molar masses
 Molar masses are available in the `MolarMasses.f90` module. `WISO` array contains molar masses for 124 isotopolouges of first 42 molecules according to HITRAN numbering system.
 ## Performance estimations
@@ -403,3 +411,5 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 - Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
 - Perrin, M. Y., and J. M. Hartmann. _Temperature-dependent measurements and modeling of absorption by CO<sub>2</sub>-N<sub>2</sub> mixtures in the far line-wings of the 4.3 μm CO<sub>2</sub> band._ Journal of Quantitative Spectroscopy and Radiative Transfer 42.4 (1989): 311-317.
 - Gamache, Robert R., et al. _Total internal partition sums for 166 isotopologues of 51 molecules important in planetary atmospheres: Application to HITRAN2016 and beyond._ Journal of Quantitative Spectroscopy and Radiative Transfer 203 (2017): 70-87.
+- Gordon, Iouli E., et al. _The HITRAN2020 molecular spectroscopic database._ Journal of quantitative spectroscopy and radiative transfer 277 (2022): 107949.
+- Gamache, Robert R., et al. "Total internal partition sums for the HITRAN2020 database." Journal of Quantitative Spectroscopy and Radiative Transfer 271 (2021): 107713.
