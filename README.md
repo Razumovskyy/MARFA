@@ -132,6 +132,18 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 ![](images/CO2_40_VAC_4020-4022.png)
 
 ## Command line parameters
+### Parameters for `fpm run marfa` command
+Required syntax: `fpm run marfa -- arg1 arg2 ... arg7`
+| № | Argument      | Description                          | Required | Allowed values |
+|-|---------------|--------------------------------------|----------|---------------|
+|1| Molecule      | Species to calculate absorption features of   | Yes      | `CO2`, `H2O`           | 
+|2| Vstart        | Left boundary of the spectral interval | Yes   | 10-10000 cm<sup>-1</sup> | 
+|3| Vend          | Right boundary of the spectral interval | Yes      | 10-10000 cm<sup>-1</sup>| 
+|4| cut-off condition | Distance from the center of the line from which absorption from this line is neglected | Yes | 10-500 cm<sup>-1</sup>  |
+|5| χ-factor | χ-factor function name | Yes | `none`, `tonkov`, `pollack`, `perrin` |
+|6| targetValue | Absorption feature to be written in the PT-table| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
+|7| uuid | ID for user request | No | Optional and is needed for web-version of the program |
+
 ## Atmospheric profile file structure
 To correctly run the MARFA code, the atmospheric file must adhere to a specific format and be placed in the `data/Atmospheres/` directory. Below is an example of the required format:
 
