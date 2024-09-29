@@ -10,7 +10,9 @@
 - [Output PT-table structure](#output-pt-table-file)
 - [Spectral Databases](#spectral-databases)
 - [χ-factors](#χ-factors)
-- [Other spectroscopic data](#other-spectral-data)
+- [Other spectroscopic data](#other-spectral-or-molecular-data)
+  - [TIPS](#tips)
+  - [Molar masses](#molar-masses)
 - [Performance Estimations](#performance-estimations)
 - [Introducing Custom Features](#introducing-custom-features)
     - [Custom χ-factors](#custom-χ-factors)
@@ -136,7 +138,7 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 Required syntax: `fpm run marfa -- arg1 arg2 ... arg7 <arg8>`
 | № | Argument      | Description                          | Required | Allowed values |
 |-|---------------|--------------------------------------|----------|---------------|
-|1| Molecule   | Species to calculate absorption features of. Main istopologue is considered. More molecules will be added   | Yes      | `CO2`, `H2O`           | 
+|1| Molecule   | Species to calculate absorption features of. More molecules will be added   | Yes      | `CO2`, `H2O`           | 
 |2| `Vstart`       | Left boundary of the spectral interval | Yes   | 10-10000 cm<sup>-1</sup> | 
 |3| `Vend`          | Right boundary of the spectral interval | Yes      | 10-10000 cm<sup>-1</sup>| 
 |4| cut-off condition | Distance from the center of the line from which absorption from this line is neglected | Yes | 10-500 cm<sup>-1</sup>  |
@@ -275,9 +277,11 @@ In MARFA code currently there are several χ&#8204;-factors implemented, which d
 | `perrin` | Perrin and Hartmann (1989) |
 
 The χ-factors dataset is intended to be expanded through the effort from other contributors.
-## Other spectral data
-#### TIPS
+## Other spectral or molecular data
+#### TIPS 
+Total internal partition sums (TIPS) are used for obtaining temperature-dependent spectral intensities. TIPS data are taken from Gamache work (Gamache 2017, see references). TIPS file is located in `data/TIPS/TIPS.dat` and organized in a following way:
 #### Molar masses
+Molar masses are available in the `MolarMasses.f90` module. `WISO` array contains molar masses for 124 isotopolouges of first 42 molecules according to HITRAN numbering system.
 ## Performance estimations
 Execution time at one atmospheric level largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for Apple M1 chip:
 |species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
@@ -398,3 +402,4 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 - Tonkov, M. V., et al. _Measurements and empirical modeling of pure CO<sub>2</sub> absorption in the 2.3-μm region at room temperature: far wings, allowed and collision-induced bands._ Applied optics 35.24 (1996): 4863-4870.
 - Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
 - Perrin, M. Y., and J. M. Hartmann. _Temperature-dependent measurements and modeling of absorption by CO<sub>2</sub>-N<sub>2</sub> mixtures in the far line-wings of the 4.3 μm CO<sub>2</sub> band._ Journal of Quantitative Spectroscopy and Radiative Transfer 42.4 (1989): 311-317.
+- Gamache, Robert R., et al. _Total internal partition sums for 166 isotopologues of 51 molecules important in planetary atmospheres: Application to HITRAN2016 and beyond._ Journal of Quantitative Spectroscopy and Radiative Transfer 203 (2017): 70-87.
