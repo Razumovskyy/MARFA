@@ -48,14 +48,14 @@ In addition to using and contributing to the source code, it is recommended to i
 
 The codes are well-suited for calculating absorption features in scenarios where spectral and atmospheric data are uncertain, such as for terrestrial planets or exoplanets. They can efficiently handle long cut-off conditions without a significant increase in computational time. Additionally, the codes are designed to allow users to introduce their own functionality. Therefore, if you have your own functions but lack a computational core, you can use these codes to calculate absorption features over a wide range of input values.
 
-These codes can be applied to calculate absorption features across the far, mid, and near infrared (IR) regions, as well as the visible spectrum, roughly covering the range from 10 to 20,000 cm<sup>-1</sup>. However, you must verify which spectral range is covered by the database you are using. 
+These codes can be applied to calculate absorption features across the far, mid, and near infrared (IR) regions, as well as the visible spectrum, roughly covering the range from 10 to 20000 cm<sup>-1</sup>. However, you must verify which spectral range is covered by the database you are using. 
 
 The microwave region can also be considered, but certain adjustments must be made, including applying the Van-Vleck-Weisskopf correction and addressing the issue of "negative wavenumbers" in the line-by-line algorithm.
 
 The recommended number of atmospheric levels is around 100. It is not advised to use atmospheres with more than 200 levels, as high-resolution atmospheres in terms of altitude will result in extended computational times, reducing the efficiency of the codes.
 
 ### Note 0:
-The current resolution at which PT tables are calculated is fixed and determined by the Doppler half-width in the far-IR. The resolution is `deltaWV/NT = 10/20480 ≈ 5 * 10<sup>-4</sup>`. Such resolution is excessive for calculations in the near-IR. A dynamic resolution based on the spectral interval considered will soon be implemented, allowing it to be set as user input.
+The current resolution at which PT tables are calculated is fixed and determined by the Doppler half-width in the far-IR. The resolution is `deltaWV/NT` = 10/20480 ≈ 5 * 10<sup>-4</sup>cm<sup>-1</sup>. Such resolution is excessive for calculations in the near-IR. A dynamic resolution based on the spectral interval considered will soon be implemented, allowing it to be set as user input.
 
 ### Note 1:
 Continuum absorption is not accounted for in this project. This functionality may be added later with contributions from new collaborators.
