@@ -1,8 +1,8 @@
 # MARFA
 ## Table of Contents
-- [Introduction](#overview)
+- [Overview](#overview)
 - [Features](#features)
-- [Usage-scenarious-and-limitations](#usage-scenarios-and-limitations)
+- [Usage scenarious and limitations](#usage-scenarios-and-limitations)
 - [Prerequisites](#prerequisites)
 - [Quick Start Instructions](#quick-start-instructions)
 - [Command Line Parameters](#command-line-parameters)
@@ -22,49 +22,40 @@
 - [References](#references)
 
 ## Overview
-MARFA (Molecular Atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from sources such as the HITRAN and HITEMP databases. With MARFA, users can generate absorption PT-tables (look-up tables) for each atmospheric level simultaneously within seconds. These PT-tables are produced in a binary format, making them easily integrable into radiative transfer codes. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
+MARFA (Molecular atmospheric Absorption with Rapid and Flexible Analysis) is a versatile tool designed to calculate volume absorption coefficients or monochromatic absorption cross-sections using initial spectroscopic data from spectral lines databases and atmospheric data from an external file. With MARFA, users can generate absorption PT-tables (look-up tables) for each atmospheric level simultaneously in seconds time. These PT-tables are produced in a binary format (unformatted files), making them easily integrable into radiative transfer codes. Users have a high degree of control, with the ability to set line cut-off parameter and introduce custom spectroscopic features. Originally developed to facilitate the modeling of radiative transfer in Venus's atmosphere, MARFA's flexible design allows it to be adapted to a wide range of spectroscopic and atmospheric scenarios.
 
 In addition to using and contributing to the source code, it is recommended to interact with the web interface of the tool to better understand its capabilities. The web interface can be accessed at: <URL>
 
 ## Features
 
-- **Efficient Line-by-Line Technique**: Utilizes an effective interpolation method [Fomin, 1995] with nine grids to accelerate the summation of contributions from a large number of spectral lines.
+- **Spectral coverage**: Applicable for high-resolution line-by-line calculations in far-, mid-, near-IR and visible spectral regions. It roughly covers 10-20000 cm<sup>-1</sup> range.
+
+- **Efficient Line-by-Line Technique**: Utilizes an effective interpolation method [Fomin, 1995] with nine grids to accelerate the summation of contributions from a large number of spectral lines. Nine grids are optimal for handling large cut-off conditions.
 
 - **Atmospheric Profile Handling**: Computes output absorption spectra for all atmospheric levels in a single runtime.
 
-- **Line Shapes Support**: Supports standard line shapes, including Doppler, Lorentz, and Voigt (default). Additional line shapes can be manually added.
+- **Line Databases Support**: Includes adapted HITRAN-2016 databases for CO₂ and H₂O within the source code. Other spectral databases can be incorporated manually by processing them into the required format.
 
-- **Line Wings Corrections**: Implements various chi-factors to accommodate sub-Lorentzian behavior of spectral line wings. Currently chi-factors are implemented for CO₂ used for Venus atmosphere. Custom chi-factors can be manually added.
+- **Line Shapes Support**: Supports standard line shapes, including Doppler, Lorentz, and Voigt (default). Additional line shapes can be manually added by following given instructions.
 
-- **Line Cut-Off Criterion**: Allows users to set input parameters to control accuracy and align with continuum parameters.
+- **Line Wings Corrections**: Implements various χ-factors to accommodate sub-Lorentzian behavior of spectral line wings of CO<sub>2</sub>. Custom χ-factors can be manually added.
 
-- **Line Databases Support**: Includes HITRAN2016 databases for CO₂ and H₂O within the source code. Other spectral databases can be incorporated by preprocessing them into the required format.
-
-- **PT-Tables Generation**: Produces resulting spectra as direct-access files in PT-format (each output PT-file corresponds to one atmospheric level), which can be directly integrated into radiative transfer schemes.
+- **PT-Tables Generation**: Produces spectra as unformatted files in PT-format, directly integrable into radiative transfer schemes.
 
 - **Additional Tools**: Provides various scripts for plotting and data processing, facilitating validation and the integration of new data.
 
 ## Usage Scenarios and Limitations
 
-The codes are well-suited for calculating absorption features in scenarios where spectral and atmospheric data are uncertain, such as for terrestrial planets or exoplanets. They can efficiently handle long cut-off conditions without a significant increase in computational time. Additionally, the codes are designed to allow users to introduce their own functionality. Therefore, if you have your own functions but lack a computational core, you can use these codes to calculate absorption features over a wide range of input values.
+The codes are well-suited for calculating absorption features in scenarios where spectral and atmospheric data are uncertain, such as for terrestrial planets of Solar System (excluding Earth) or exoplanets. They can efficiently handle long cut-off conditions without a significant increase in computational time. Additionally, the codes are designed to allow users to introduce their own functionality. Therefore, if you have your own functions but lack a computational core, you can use these codes to calculate absorption features over a wide range of input values.
 
-These codes can be applied to calculate absorption features across the far, mid, and near infrared (IR) regions, as well as the visible spectrum, roughly covering the range from 10 to 20000 cm<sup>-1</sup>. However, you must verify which spectral range is covered by the database you are using. 
+### Important notes:
+- Calculations are performed for one molecular species across all atmospheric levels in a single runtime.
+  
+- The current resolution at which PT tables are calculated is fixed and determined by the Doppler half-width in the far-IR. The resolution is `deltaWV`/`NT` = 10/20480 ≈ 5 * 10<sup>-4</sup>cm<sup>-1</sup>. Such resolution is excessive for calculations in the near-IR. A dynamic resolution based on the inspected spectral interval will soon be implemented, allowing it to be set as user input.
 
-The microwave region can also be considered, but certain adjustments must be made, including applying the Van-Vleck-Weisskopf correction and addressing the issue of "negative wavenumbers" in the line-by-line algorithm.
+- Continuum absorption is not accounted for in this project. This functionality may be added later with contributions from new collaborators.
 
-The recommended number of atmospheric levels is around 100. It is not advised to use atmospheres with more than 200 levels, as high-resolution atmospheres in terms of altitude will result in extended computational times, reducing the efficiency of the codes.
-
-### Note 0:
-The current resolution at which PT tables are calculated is fixed and determined by the Doppler half-width in the far-IR. The resolution is `deltaWV/NT` = 10/20480 ≈ 5 * 10<sup>-4</sup>cm<sup>-1</sup>. Such resolution is excessive for calculations in the near-IR. A dynamic resolution based on the spectral interval considered will soon be implemented, allowing it to be set as user input.
-
-### Note 1:
-Continuum absorption is not accounted for in this project. This functionality may be added later with contributions from new collaborators.
-
-### Note 2:
-Calculations are performed for one molecular species across all atmospheric levels in a single runtime.
-
-### Note 3:
-Field of View (FoV) functions are not implemented (see HAPI for reference).
+- The microwave region can also be considered, but certain adjustments must be made, including applying the Van-Vleck-Weisskopf correction and addressing the issue of "negative wavenumbers" in the line-by-line algorithm.
 
 
 ## Prerequisites
@@ -224,7 +215,7 @@ To correctly run the MARFA code, the atmospheric file must adhere to a specific 
      ```
 
 ### Important Notes
-
+- **Number of levels:** The recommended number of atmospheric levels is around 100. It is not advised to use atmospheres with more than 200 levels, as this will result in extended computational times, reducing the efficiency of the codes.
 - **Units:**
   - The data uses [km] for height to ensure the total absorption coefficient is in [km<sup>-1</sup>].
 
