@@ -26,6 +26,7 @@ program main
     implicit none
 
     ! MAIN OUTPUT FILE !
+    real(kind=DP) startTime, endTime
     integer, parameter :: outputUnit = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
     integer, parameter :: infoUnit = 67
     integer, parameter :: latestRunUnit = 87
@@ -59,6 +60,9 @@ program main
     integer :: l ! loop variable
 
         ! Get the number of command-line arguments
+
+    call cpu_time(startTime)
+
     argc = command_argument_count()
 
     ! Check if the number of arguments is not equal to 8
@@ -274,6 +278,8 @@ program main
     deallocate(densityArray)
     deallocate(temperatureArray)
     deallocate(TIPS)
+    call cpu_time(endTime)
+    write(*,*) "Took: ", endTime - startTime, " seconds"
 contains
 
     subroutine processSpectra(molecule, loopLevel)
