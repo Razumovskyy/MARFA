@@ -10,6 +10,7 @@ module Spectroscopy
     real :: lineLowerState ! [cm-1] -- lower state energy of the transition
     real :: foreignTempCoeff ! [dimensionless] (coefficient for temperature dependence of gammaForeign)
     integer :: jointMolIso ! [dimensionless] custom variable: joined reference to Molecule number (MOL) and Isotopologue number (ISO)
+    integer :: isotopeNum
     real :: deltaForeign ! [cm-1/atm] (pressure shift of the line position at 296 K and 1 atm)
     real :: molarMass ! [g/mol] -- current species molar mass
     integer :: molType ! to define type of the molecule : 2 -CO2, 1 -H2O, 0 -other
@@ -85,6 +86,19 @@ contains
         end if
     end function lorentzHWHM
 
+    real function TIPSofT(temperatureParameter)
+        real, intent(in) :: temperatureParameter
+        integer :: NTAB_G
+        real :: C_G1, C_G2
+        real :: t_G1
+        isotopeNum = jointMolIso / 100
+        NTAB_G = (temperatureParameter - 20.0) / 2 + 1
+        t_G1 = NTAB_G * 2.0 + 18.
+        C_G2 = (temperatureParameter - t_G1)/2.
+        C_G1 = 1. - C_G2
+        TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
+    end function TIPSOfT
+
     real function intensityOfT(temperatureParameter)
         real, intent(in) :: temperatureParameter ! [K] -- temperature at the current atmospheric level
         ! real(kind=DP), intent(in) :: nu ! [cm-1],  gridWV -- spectral point where absorption coefficitent will be calculated
@@ -92,24 +106,15 @@ contains
         ! --------------------------------------------------- !
         real(kind=DP) :: shiftedLineWV
         real :: TIPSFactor, boltzmannFactor, emissionFactor
-        real :: TIPSOfT
         real :: TIPSOfRefT
-        integer :: NTAB_G
-        real :: C_G1, C_G2
-        real :: t_G1
-        integer :: isotopeNum
+
 
         shiftedLineWV = shiftedLinePosition(lineWV, pressure)
 
         isotopeNum = jointMolIso / 100
-        NTAB_G = (temperatureParameter - 20.0) / 2 + 1
-        t_G1 = NTAB_G * 2.0 + 18.
-        C_G2 = (temperatureParameter - t_G1)/2.
-        C_G1 = 1. - C_G2
-        TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
         TIPSOfRefT = TIPS(isotopeNum, 139)
 
-        TIPSFactor = TIPSOfRefT / TIPSOfT
+        TIPSFactor = TIPSOfRefT / TIPSOfT(temperatureParameter)
         boltzmannFactor = exp(-C2*lineLowerState/temperatureParameter) / exp(-C2*lineLowerState/refTemperature)
         emissionFactor = (1 - exp(-C2*lineWV/temperatureParameter)) / (1 - exp(-C2*lineWV/refTemperature))
 

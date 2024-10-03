@@ -37,7 +37,7 @@ contains
         ! Appears in the denominator of the Lorentzian line profile L(\nu)
         real(kind=DP) :: shiftedLineWV ! VI ! shifted line position under the current atmospheric pressure
 
-        integer :: isotopeNum ! N_MOLIS ! for categorizing isotopolouges in more broader group
+        ! integer :: isotopeNum ! N_MOLIS ! for categorizing isotopolouges in more broader group
         
         ! real :: alphaT ! ADD ! The half-width at half-maximum (HWHM) of the Doppler-broadened component
 
