@@ -419,5 +419,5 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 - Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
 - Perrin, M. Y., and J. M. Hartmann. _Temperature-dependent measurements and modeling of absorption by CO<sub>2</sub>-N<sub>2</sub> mixtures in the far line-wings of the 4.3 μm CO<sub>2</sub> band._ Journal of Quantitative Spectroscopy and Radiative Transfer 42.4 (1989): 311-317.
 - Gamache, Robert R., et al. _Total internal partition sums for 166 isotopologues of 51 molecules important in planetary atmospheres: Application to HITRAN2016 and beyond._ Journal of Quantitative Spectroscopy and Radiative Transfer 203 (2017): 70-87.
-- Gordon, Iouli E., et al. _The HITRAN2020 molecular spectroscopic database._ Journal of quantitative spectroscopy and radiative transfer 277 (2022): 107949.
+- I. E. Gordon, L. S. Rothman, R. J. Hargreaves, R. Hashemi, E. V. Karlovets, F. M. Skinner, et al., "The HITRAN2020 molecular spectroscopic database", J. Quant. Spectrosc. Radiat. Transfer   277, 107949 (2022). [doi:10.1016/j.jqsrt.2021.107949]
 - Gamache, Robert R., et al. "Total internal partition sums for the HITRAN2020 database." Journal of Quantitative Spectroscopy and Radiative Transfer 271 (2021): 107713.
