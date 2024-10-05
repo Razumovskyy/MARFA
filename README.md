@@ -289,7 +289,7 @@ The χ-factors dataset is intended to be expanded through the effort from other 
 #### TIPS 
 Total internal partition sums (TIPS) are needed for obtaining temperature-dependent spectral intensities. How the TIPS are implemented in MARFA:
 - TIPS data are taken from Gamache work (Gamache 2017, see [References](#references))
-- Data are available for first 74 isotopologues
+- Data are available for first 74 isotopologues (first 12 molecules: H2O, CO2, O3, N2O, CO, CH4, O2, NO, SO2, NO2, NH3, HNO3)
 - Covered temperature range is 20 - 1000 K
 - For chosen isotope number TIPS as function of temperature can be accessed through the function: `TIPSofT` located in the `Spectroscopy.f90` module.
 
