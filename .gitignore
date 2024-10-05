@@ -55,3 +55,7 @@ test/simpleSpectra.dat
 /test/calc
 /src/mySpectra/calc
 SPECTR*
+
+# venv
+venv/
+.venv
