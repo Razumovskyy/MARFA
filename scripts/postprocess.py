@@ -7,11 +7,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def process_data(full_subdir_path, V1, V2, level, resolution):
-    root = os.path.split(full_subdir_path)[0]
-    # root_list = full_subdir_path.split("/")[:2]
-    # print(root_list)
-    # root = os.path.join(*root_list)
-    print(root)
+    print("Full path:", full_subdir_path)
+
+    # Split the path based on 'ptTables' to get the part before it
+    parts = full_subdir_path.split(os.sep)
+    try:
+        idx = parts.index('ptTables')
+        root = os.path.join(*parts[:idx])
+    except ValueError:
+        # Handle if 'ptTables' does not exist in the path
+        root = os.path.dirname(full_subdir_path)
+
+    print("Root:", root)
     print('Processing started')
     NT = 20481
     extention = 'ptbin'
@@ -41,6 +48,8 @@ def process_data(full_subdir_path, V1, V2, level, resolution):
             target_value = line.split("Target Value:")[1].strip()
         elif "Atmospheric Profile File:" in line:
             atmospheric_file = line.split("Atmospheric Profile File:")[1].strip()
+
+    
     
     if not molecule or not target_value:
         sys.exit("Error: Unable to extract 'Input Molecule' or 'Target Value' from 'info.txt'.")
