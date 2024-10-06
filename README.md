@@ -170,7 +170,7 @@ fpm run marfa -- H2O 10 3000 250 none VAC VenusH2O.dat
 |level| Atmospheric level at which you want to access data. Essentially means, that you access to the file `<level>.ptbin` | Yes | Normally from 1 to 100 (but see your atmospheric file)|
 |resolution| Resolution at which you want to obtain the data. If you consider large intervals, it is not recommeded to use `high` resolution | Yes | `high` (4.8E-4cm<sup>-1</sup>), `medium` (4.8E-3cm<sup>-1</sup>), `coarse`(4.8E-2cm<sup>-1</sup>) |
 | plot | Plot the data you postprocessed | No | Provide just a flag |
-| uuid | Needed only for web app. If set `subdirectory` is ignored and data saved inside `users` folder | No | ID of a request |
+| uuid | Needed only for web app. If set, `subdirectory` is ignored and data saved inside `users` folder | No | ID of a request |
 
 Examples:
 ```
