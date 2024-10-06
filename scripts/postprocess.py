@@ -7,7 +7,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def process_data(full_subdir_path, V1, V2, level, resolution):
-    root = full_subdir_path.rsplit('/ptTables', 1)[0]
+    root = os.path.split(full_subdir_path)[0]
+    # root_list = full_subdir_path.split("/")[:2]
+    # print(root_list)
+    # root = os.path.join(*root_list)
+    print(root)
     print('Processing started')
     NT = 20481
     extention = 'ptbin'
