@@ -181,8 +181,6 @@ program main
     else
         latestRunFilePath = trim(adjustl(rootDirName)) // '/' // 'latest_run.txt'
     end if
-    write(*,*) latestRunFilePath
-    pause
 
     open(unit=latestRunUnit, file=trim(latestRunFilePath), status='replace', action='write', iostat=status)
 
