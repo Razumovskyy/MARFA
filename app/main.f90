@@ -47,6 +47,7 @@ program main
 
     ! Construct the subdirectory name
     character(len=300) :: subDirName
+    character(len=200) :: rootDirName
     character(len=100) :: formattedStartWV, formattedEndWV
     character(len=200) :: parentDir
     ! Full path for the new subdirectory
@@ -112,9 +113,12 @@ program main
         end select
     end do
 
-        ! Check if uuid is provided; if not, assign default
+    ! Check if uuid is provided; if not, assign default
     if (.not. isUUID) then
         uuid = 'default'
+        rootDirName = 'output'
+    else
+        rootDirName = 'users' // "/" // uuid
     end if
 
     call date_and_time(values=dateTimeValues)
@@ -132,18 +136,22 @@ program main
 
     ! Assemble the subdirectory name: Molecule_StartWV-EndWV_Timestamp
     subDirName = trim(inputMolecule) // "_" // trim(formattedStartWV) // "-" // trim(formattedEndWV) // "_" // trim(timestamp)
-    parentDir = 'output/ptTables/'
-    fullSubDirPath = trim(parentDir) // trim(subDirName)
-
-    mkdirCommand = 'mkdir "' // trim(fullSubDirPath) // '"'
-    call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
-
-    if (status /= 0) then
-        print *, "Error: Failed to create directory ", trim(fullSubDirPath)
-        stop 1
-    else
-        print *, "Directory created: ", trim(fullSubDirPath)
+    parentDir = trim(adjustl(rootDirName)) // "/ptTables/"
+    if (.not. isUUID) then
+        fullSubDirPath = trim(adjustl(parentDir)) // trim(adjustl(subDirName))
+        mkdirCommand = 'mkdir "' // trim(fullSubDirPath) // '"'
+        call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
+        if (status /= 0) then
+            print *, "Error: Failed to create directory ", trim(fullSubDirPath)
+            stop 1
+        else
+            print *, "Directory created: ", trim(fullSubDirPath)
+        end if
+    else 
+        fullSubDirPath = trim(adjustl(parentDir))
     end if
+    ! write(*,*) fullSubDirPath
+    ! pause
 
     infoFilePath = trim(fullSubDirPath) // '/info.txt'
     open(infoUnit, file=infoFilePath, status='replace', action='write', iostat=status)
@@ -153,7 +161,7 @@ program main
         stop 1
     end if
 
-        ! Write command-line arguments to the info file
+    ! Write command-line arguments to the info file
     write(infoUnit, '(A)') 'Command-Line Arguments:'
     write(infoUnit, '(A,A)') 'Input Molecule: ', trim(inputMolecule)
     write(infoUnit, '(A,A)') 'Start Wavenumber: ', trim(startWVclaTrimmed)
@@ -168,7 +176,13 @@ program main
     close(infoUnit)
     print *, "Info file created at: ", trim(infoFilePath)
 
-    latestRunFilePath = 'output/ptTables/latest_run.txt'
+    if (.not. isUUID) then
+        latestRunFilePath = trim(adjustl(parentDir)) // 'latest_run.txt'
+    else
+        latestRunFilePath = trim(adjustl(rootDirName)) // '/' // 'latest_run.txt'
+    end if
+    write(*,*) latestRunFilePath
+    pause
 
     open(unit=latestRunUnit, file=trim(latestRunFilePath), status='replace', action='write', iostat=status)
 
@@ -418,7 +432,6 @@ contains
         ! modifying it as per the specific requirements of the program.
 
         !*--------------------------------------------------------------
-        ! write(*,*) 'lineIdx before LBL2023: ', lineIdx
         call modernLBL(lineIdx, capWV)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
         ! pause

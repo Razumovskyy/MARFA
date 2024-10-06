@@ -6,11 +6,11 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def process_data(subdir_path, V1, V2, level, resolution):
+def process_data(full_subdir_path, V1, V2, level, resolution):
+    root = full_subdir_path.rsplit('/ptTables', 1)[0]
     print('Processing started')
     NT = 20481
     extention = 'ptbin'
-    full_subdir_path = os.path.join('output', 'ptTables', subdir_path)
 
     # Verify the directory exists
     if not os.path.isdir(full_subdir_path):
@@ -119,7 +119,7 @@ def process_data(subdir_path, V1, V2, level, resolution):
     df = pd.DataFrame(data, columns=['Wavenumber', 'Log Absorption Coefficient'])
 
     # Write to file with formatted output
-    formatted_filename = os.path.join('output', 'processedData', f'{molecule}_{level}_{target_value}_{int(V1)}-{int(V2)}.dat')
+    formatted_filename = os.path.join(root, 'processedData', f'{molecule}_{level}_{target_value}_{int(V1)}-{int(V2)}.dat')
     with open(formatted_filename, 'w') as f_out:
         # Write header lines
         # Filter out unwanted lines from info.txt
@@ -221,7 +221,7 @@ def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright, target_value):
     )
     # Plot using Seaborn
     plt.figure(figsize=(12, 6))
-    ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b', linewidth=0.8)
+    ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b', linewidth=2)
 
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
     ax.set_ylabel(y_axname)
@@ -245,6 +245,7 @@ def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright, target_value):
 def main():
     parser = argparse.ArgumentParser(description='Process and plot PT-table data.')
     parser.add_argument('subdir', type=str, nargs='?', help="Subdirectory name (e.g., CO2_7500-7600_20240922_015244). If omitted, the latest run will be used.")
+    parser.add_argument('--uuid', type=str, required=False, help='UUID of a request for web app')
     parser.add_argument('--v1', type=float, required=True, help='Starting wavenumber V1')
     parser.add_argument('--v2', type=float, required=True, help='Ending wavenumber V2')
     parser.add_argument('--level', type=int, required=True, help='Atmospheric level')
@@ -262,19 +263,23 @@ def main():
     )
     args = parser.parse_args()
 
-    # Determine subdirectory path
-    if args.subdir:
-        subdir = args.subdir
+    if not args.uuid:
+        # Determine subdirectory path
+        if args.subdir:
+            subdir = args.subdir
+        else:
+            # Read the latest_run.txt to get the latest subdirectory
+            latest_run_file = os.path.join('output', 'ptTables', 'latest_run.txt')
+            if not os.path.isfile(latest_run_file):
+                sys.exit("Error: No subdirectory provided and latest_run.txt not found.")
+            with open(latest_run_file, 'r') as f:
+                subdir = f.read().strip()
+            if not subdir:
+                sys.exit("Error: latest_run.txt is empty.")  
+        full_subdir_path = os.path.join('output', 'ptTables', subdir) 
     else:
-        # Read the latest_run.txt to get the latest subdirectory
-        latest_run_file = os.path.join('output', 'ptTables', 'latest_run.txt')
-        if not os.path.isfile(latest_run_file):
-            sys.exit("Error: No subdirectory provided and latest_run.txt not found.")
-        with open(latest_run_file, 'r') as f:
-            subdir = f.read().strip()
-        if not subdir:
-            sys.exit("Error: latest_run.txt is empty.")
-
+        full_subdir_path = os.path.join('users', args.uuid, 'ptTables')
+    
     V1 = args.v1
     V2 = args.v2
     level = args.level
@@ -289,8 +294,9 @@ def main():
     if level <= 0:
         sys.exit("Error: Atmospheric level must be a positive integer.")
 
+    
     # Process data
-    df, formatted_filename, atmospheric_file, targetValue = process_data(subdir, V1, V2, level, resolution)
+    df, formatted_filename, atmospheric_file, targetValue = process_data(full_subdir_path, V1, V2, level, resolution)
 
     # plt.show()
     

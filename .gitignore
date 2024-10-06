@@ -47,6 +47,9 @@ output/plots/*
 output/ptTables/*
 !output/ptTables/.gitkeep
 
+users/*
+!users/.gitkeep
+
 # input data
 simConfig.ini
 src/LBL2023_with_comments.f90
