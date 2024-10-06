@@ -49,7 +49,13 @@ def process_data(full_subdir_path, V1, V2, level, resolution):
         elif "Atmospheric Profile File:" in line:
             atmospheric_file = line.split("Atmospheric Profile File:")[1].strip()
 
+    # Generating atmospheric_file_path based on the value of root
+    if root.startswith('output'):
+        atmospheric_file_path = os.path.join('data', 'Atmospheres', atmospheric_file)
+    else:
+        atmospheric_file_path = os.path.join(root, atmospheric_file)
     
+    print('ATM FILE PATH:', atmospheric_file_path)
     
     if not molecule or not target_value:
         sys.exit("Error: Unable to extract 'Input Molecule' or 'Target Value' from 'info.txt'.")
@@ -158,23 +164,20 @@ def process_data(full_subdir_path, V1, V2, level, resolution):
             f_out.write(f"{VV:15.5f} {log_RK:17.7f}\n")
 
     print("Data processing complete. Output written to " + formatted_filename)
-    return df, formatted_filename, atmospheric_file, target_value
+    return df, formatted_filename, atmospheric_file_path, target_value
 
-def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright, target_value):
+def plot_spectra(df, file_name, atmospheric_file_path, Vleft, Vright, target_value):
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['text.usetex'] = False
     sns.set(style="whitegrid", context='talk')
 
     level = int(file_name.split('_')[1])
 
-    # read data from the atmospheric file to match pressure, temperature and level
-    atmospheric_file_fullname = os.path.join('data', 'atmospheres', atmospheric_file)
-
-    if os.path.isfile(atmospheric_file_fullname):
-        with open(atmospheric_file_fullname, 'r') as atmosphere:
+    if os.path.isfile(atmospheric_file_path):
+        with open(atmospheric_file_path, 'r') as atmosphere:
             lines = atmosphere.readlines()
     else:
-        sys.exit(f"Error: Atmospheric file {atmospheric_file_fullname} not found")
+        sys.exit(f"Error: Atmospheric file {atmospheric_file_path} not found")
 
     # Ensure the file has at least two lines (title and N)
     if len(lines) < 2:
@@ -236,6 +239,7 @@ def plot_spectra(df, file_name, atmospheric_file, Vleft, Vright, target_value):
     plt.figure(figsize=(12, 6))
     ax = sns.lineplot(x='Wavenumber', y='Log Absorption Coefficient', data=df, color='b', linewidth=2)
 
+    atmospheric_file = os.path.split(atmospheric_file_path)[1]
     ax.set_xlabel('Wavenumber [cm$^{-1}$]')
     ax.set_ylabel(y_axname)
     ax.set_title(f'{molecule} Absorption Spectrum for the atmosphere: {atmospheric_file}\n'
