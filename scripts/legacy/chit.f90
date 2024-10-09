@@ -1,4 +1,3 @@
-! legacy fortran script for plotting and data processing !
 program chit
 implicit none
 integer, parameter :: NT=20481

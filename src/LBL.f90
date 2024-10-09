@@ -9,6 +9,7 @@ module LBL
     use Shapes
     use LineGridCalc
     implicit none
+    integer, parameter :: hitranFileUnit = 7777
 contains
 
     subroutine modernLBL(LINBEG, capWV)
@@ -18,6 +19,7 @@ contains
         integer :: I ! loop variable for accessing the record in direct access file
         ! integer :: loopLevel
         ! integer, save :: currentLevel
+        integer :: ios2
 
         ! this variable serves as a cap in the loop to stop increasing the lineIdx
         ! it is the value as when there is the next step over the DeltaWV, hitran reading will from the correct record number
@@ -46,9 +48,17 @@ contains
 
         ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
 
-        do I = LINBEG, totalLines
-            read(7777, rec=I) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
+        I = LINBEG - 1
+        ios2 = 0
+        do while (.not. is_iostat_end(ios))
+            I = I + 1
+            read(hitranFileUnit, rec=I, iostat=ios2) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
                                 jointMolIso, deltaForeign
+
+            if (ios2 > 0) then
+                print *, 'ERROR: when reading file with spectral data.'
+                stop 9
+            end if
 
             if  (lineWV >= extEndDeltaWV) exit
 
