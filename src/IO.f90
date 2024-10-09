@@ -17,7 +17,7 @@ module IO
     procedure(shape), pointer :: shapeFuncPtr ! pointer for implementing different line shapes functions
 
     integer :: totalLines ! number of lines in one HITRAN file (e.g. H16.01) 
-    character(len=20) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
+    character(len=100) :: hitranFile ! file names with HITRAN raw data (one file per molecule)
     
     ! Input config file !
     !real(kind=DP) :: startWV, endWV

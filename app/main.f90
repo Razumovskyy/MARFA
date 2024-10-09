@@ -1,21 +1,3 @@
-!*******************************************************************************
-! main.f90
-!*******************************************************************************
-!
-! Legacy code: Boris Fomin
-! Rework and new features: Mikhail Razumovskii
-!
-! Program Description:
-! This program calculates PT-TABLE (Pressure-Temperature Table) for Venus Atmosphere,
-! specifically designed to handle temperatures up to 1000 K. The current version focuses
-! on line-by-line spectroscopic analysis for a single gas species at a time,
-! supporting H2O, CO2, or SO2. It does not incorporate continuum models.
-!
-! Principal Features:
-! 1. 9 internal grids for detailed spectral analysis.
-! 2. Adapted for high-resolution spectroscopic data from HITRAN database.
-!*******************************************************************************
-
 program main
     use Constants
     use IO
@@ -58,6 +40,8 @@ program main
     character(len=300) :: infoFilePath
     character(len=300) :: latestRunFilePath
 
+    character(len=20) :: databaseSlug
+
     integer :: l ! loop variable
 
         ! Get the number of command-line arguments
@@ -67,10 +51,10 @@ program main
     argc = command_argument_count()
 
     ! Check if the number of arguments is not equal to 8
-    if (argc < 7) then
+    if (argc < 8) then
         print *, 'Insufficient number of arguments.'
-        print *, 'Expected 8 arguments, but received ', argc
-        print *, 'Usage: program_name Molecule StartWV EndWV CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
+        print *, 'Expected at least 8 arguments, but received ', argc
+        print *, 'Usage: program_name Molecule StartWV EndWV DatabaseSlug CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
         stop 1
     end if
 
@@ -89,12 +73,14 @@ program main
             endWVclaTrimmed = trim(endWVcla)
             read(endWVclaTrimmed, *) endWV
         case (4)
+            call get_command_argument(l, databaseSlug)
+        case (5)
             call get_command_argument(l, cutOffcla)
             cutOffclaTrimmed = trim(cutOffcla)
             read(cutOffclaTrimmed, *) cutOff
-        case (5)
-            call get_command_argument(l, chiFactorFuncName)
         case (6)
+            call get_command_argument(l, chiFactorFuncName)
+        case (7)
             call get_command_argument(l, targetValuecla)
             ! Set ACS or VAC with validation
             targetValue = trim(targetValuecla)  ! Trim any leading/trailing spaces
@@ -103,11 +89,11 @@ program main
                 ! Valid targetValue; proceed as normal
             case default
                 write(*,*) 'Error: Invalid targetValue "', targetValue, '". Must be either "ACS" or "VAC".'
-                stop 1  ! Exit the program with a non-zero status to indicate an error
+                stop 2  ! Exit the program with a non-zero status to indicate an error
             end select
-        case (7)
-            call get_command_argument(l, atmProfileFile)
         case (8)
+            call get_command_argument(l, atmProfileFile)
+        case (9)
             call get_command_argument(l, uuid)
             isUUID = .true.
         end select
@@ -143,22 +129,20 @@ program main
         call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
         if (status /= 0) then
             print *, "Error: Failed to create directory ", trim(fullSubDirPath)
-            stop 1
+            stop 3
         else
             print *, "Directory created: ", trim(fullSubDirPath)
         end if
     else 
         fullSubDirPath = trim(adjustl(parentDir))
     end if
-    ! write(*,*) fullSubDirPath
-    ! pause
 
     infoFilePath = trim(fullSubDirPath) // '/info.txt'
     open(infoUnit, file=infoFilePath, status='replace', action='write', iostat=status)
 
     if (status /= 0) then
         print *, "Error: Unable to create info file at ", trim(infoFilePath)
-        stop 1
+        stop 4
     end if
 
     ! Write command-line arguments to the info file
@@ -186,7 +170,7 @@ program main
 
     if (status /= 0) then
         print *, "Error: Unable to create latest run file at ", trim(latestRunFilePath)
-        stop 1
+        stop 5
     end if
 
     write(latestRunUnit, '(A)') subDirName
@@ -268,7 +252,7 @@ program main
             ! end if
 
             ! *** calculation inside 10.0 cm^-1 *** !
-            call processSpectra(inputMolecule, levelsIdx)
+            call processSpectra(inputMolecule, databaseSlug, levelsIdx)
 
             if (targetValue == 'VAC') then
                 write(outputUnit, rec=outputRecNum) density * RK
@@ -294,12 +278,12 @@ program main
     write(*,*) "Took: ", endTime - startTime, " seconds"
 contains
 
-    subroutine processSpectra(molecule, loopLevel)
+    subroutine processSpectra(molecule, slug, loopLevel)
         implicit none
         character(len=5), intent(in) :: molecule
         integer, intent(in) :: loopLevel
-        
-        integer, parameter :: hitranFileUnit = 7777 ! Unit of file with HITRAN data
+        character(len=20), intent(in) :: slug
+        character(len=2) :: DBfileExtension
 
         ! this save is to decouple the logic run only for the first call
         logical, save :: isFirstCall = .true.
@@ -337,10 +321,6 @@ contains
         ! TODO: deal with `totalLines` (now it is from HITEMP, but it seems that any large number is sufficient)
 
         ! TODO: deal with `molType`
-        
-        ! write(*,*) 'loopLevel: ', loopLevel
-        ! write(*,*) 'startDeltaWV: ', startDeltaWV
-        ! pause
 
         ! The first call operations:
         ! 1. Fetch the molecule name and its molType
@@ -354,27 +334,16 @@ contains
             startingLineIdx = 1
             currentLevel = 0
             lineIdx = 0
-            select case (molecule)
-            case ('H2O')
-                molType = 1
-                hitranFile = 'data/HITRAN16/H16.01'
-                totalLines = 3892633
-            case ('CO2')
-                molType = 2
-                hitranFile = 'data/HITRAN16/H16.02'
-                totalLines = 10868410
-            case ('SO2')
-                molType = 1
-                hitranFile = 'data/HITRAN16/H16.09'
-                totalLines = 95120
-            case default
-                write(*,*) 'Molecule = ', molecule
-                write(*,*) 'Unsupported type of the molecule !'
-                ! stopping the calculation because of the unknown type of the molecule
-                stop
-            end select
+            call get_species_code(molecule, molType, DBfileExtension)
 
-            open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=hitranFile)
+            if (molType == 0) then
+                print *, 'ERROR: unsupported molecule: ', trim(adjustl(molecule))
+                stop 8
+            end if
+
+            hitranFile = 'data'//'/'//'databases'//'/'//trim(adjustl(slug))//'.'//DBfileExtension
+
+            open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=trim(hitranFile))
             ! Uncomment if the direct access file was created under Windows
             ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=hitranFile)
 
@@ -400,7 +369,6 @@ contains
             ! write(*,*) 'Level change !'
             ! write(*,*) 'current Level: ', currentLevel
             ! write(*,*) 'loop Level: ', loopLevel
-            ! pause
             currentLevel = loopLevel
             lineIdx = startingLineIdx
         end if
@@ -430,9 +398,10 @@ contains
         ! modifying it as per the specific requirements of the program.
 
         !*--------------------------------------------------------------
+        ! print *, lineIdx
+        ! print *, capWV
         call modernLBL(lineIdx, capWV)
         ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
-        ! pause
         ! ------------ END OF THE FIRST PART ---------------------------------- !
         
         ! ----------------------SECOND PART ----------------------------------- !
@@ -550,4 +519,54 @@ contains
             RK(I) = RK(I) + RK9L(J)
         end do
     end subroutine processSpectra
+
+    subroutine get_species_code(species, code_int, code_str)
+        ! Subroutine to map species to both integer and string codes
+        implicit none
+        character(len=*), intent(in) :: species
+        integer, intent(out) :: code_int
+        character(len=2), intent(out) :: code_str
+
+        select case (trim(adjustl(species)))
+            case ("H2O")
+                code_int = 1
+                code_str = "01"
+            case ("CO2")
+                code_int = 2
+                code_str = "02"
+            case ("O3")
+                code_int = 3
+                code_str = "03"
+            case ("N2O")
+                code_int = 4
+                code_str = "04"
+            case ("CO")
+                code_int = 5
+                code_str = "05"
+            case ("CH4")
+                code_int = 6
+                code_str = "06"
+            case ("O2")
+                code_int = 7
+                code_str = "07"
+            case ("NO")
+                code_int = 8
+                code_str = "08"
+            case ("SO2")
+                code_int = 9
+                code_str = "09"
+            case ("NO2")
+                code_int = 10
+                code_str = "10"
+            case ("NH3")
+                code_int = 11
+                code_str = "11"
+            case ("HNO3")
+                code_int = 12
+                code_str = "12"
+            case default
+                code_int = 0
+                code_str = "00"  ! Species not found
+        end select
+    end subroutine get_species_code
 end program main
