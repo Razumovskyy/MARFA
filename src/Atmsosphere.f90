@@ -39,7 +39,7 @@ contains
         if (levels > 200) then
             write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is &
                                     bigger than ', levelsThreshold, '. WARNING message here.'
-            stop
+            stop 6
         endif
 
         allocate(heightArray(levels))
@@ -53,7 +53,7 @@ contains
                 print *, 'Error: Unable to read data from file "', trim(fullNameAtmProfile), '".'
                 print *, 'Check the data format in the atmospheric file'
                 close(atmProfileUnit)
-                stop 1
+                stop 7
             end if
         end do
         close(atmProfileUnit)
