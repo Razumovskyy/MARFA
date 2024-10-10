@@ -90,20 +90,21 @@ pip install -r requirements.txt
 ### Choose the atmospheric file
 For a quick start you can choose one of the default atmospheric profiles located in the `data/Atmospheres` folder. For example `data/Atmospheres/VenusCO2.dat` which reflects the carbon dioxide profile in the Venus nightside atmosphere.
 ### Run the project with some command line parameters
-For example:
+For example, to calculate absorption coefficient of carbon dioxide in typical Venus's nightside atmosphere in 4000-4100 cm<sup>-1</sup>:
 ```
-fpm run marfa -- CO2 4000 4100 125 tonkov VAC VenusCO2.dat
+fpm run marfa -- CO2 4000 4100 H16 125 tonkov VAC VenusCO2.dat
 ```
 
-Here is a breakdown of the command-line arguments:
+Here is a breakdown of the command-line arguments (for more detailed explanation of parameters see [this section](command-line-paramaters)):
 - **`CO2`**: The input molecule
 - **`4000`** and **`4100`**: The boundaries of the spectral interval of interest (in cm<sup>-1</sup>)
+- **`H16`**: basefilename for the spectral database
 - **`125`**: The line cut-off condition (in cm<sup>-1</sup>)
 - **`tonkov`**: The name of the chi-factor correction used for CO₂.
 - **`VAC`** Specifies the target calculated value as volume absorption coefficient.
 - **`VenusCO2.dat`** The atmospheric profile file to read pressure, tempareature and molecular density data from.
 
-After running this command, the PT-tables for each level from the `VenusCO2.dat` file will be generated in the `output/ptTables` folder. The output files are created in binary format (direct access files) to facilitate faster integration with radiative transfer models.
+After running this command, the PT-tables for each level from the `VenusCO2.dat` file will be generated in the `output/ptTables` folder. The output files are created in a binary format (unformatted files or so called direct access files) to facilitate faster integration with radiative transfer models.
 
 ### Converting to a human-readable output and plotting
 To convert a specific PT-table file to a human-readable format and plot the spectra, use the Python script located in the scripts directory. Execute the following command:
@@ -134,7 +135,7 @@ If the `--plot` flag is enabled, a plot of the data set is generated and saved t
 
 ![](images/CO2_40_VAC_4000-4100.png)
 
-The `V1` and `V2` values do not necessarily need to match the initial boundaries of the spectral interval used to calculate the PT-table. Instead, you can examine a narrower interval with higher resolution to gain more detailed insights:
+The `V1` and `V2` values do not necessarily need to match the initial boundaries `Vstart` and `Vend`  used to calculate the PT-table. Instead, you can examine a narrower interval with higher resolution to gain more detailed insights:
 ```
 python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high --plot
 ```
@@ -143,22 +144,23 @@ python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high -
 
 ## Command line parameters
 ### Parameters for `fpm run marfa` command
-Required syntax: `fpm run marfa -- arg1 arg2 ... arg7 <arg8>`
+Required syntax: `fpm run marfa -- arg1 arg2 ... arg8 <arg9>`
 | № | Argument      | Description                          | Required | Allowed values |
 |-|---------------|--------------------------------------|----------|---------------|
-|1| Molecule   | Species to calculate absorption features of. More molecules will be added   | Yes      | `CO2`, `H2O`           | 
-|2| `Vstart`       | Left boundary of the spectral interval | Yes   | 10-10000 cm<sup>-1</sup> | 
-|3| `Vend`          | Right boundary of the spectral interval | Yes      | 10-10000 cm<sup>-1</sup>| 
-|4| cut-off condition | Distance from the center of the line from which absorption from this line is neglected | Yes | 10-500 cm<sup>-1</sup>  |
-|5| χ-factor | χ-factor function name. Currently only CO2 corrections are employed. For more details see [χ-factors section](χ-factors)| Yes | `none`, `tonkov`, `pollack`, `perrin` |
-|6| `targetValue` | Absorption feature to be written in the PT-table: volume absorption coefficient (km<sup>-1</sup>) or absorption cross-section (cm<sup>2</sup>/mol)| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
-|7| Atmosphere file name | Atmospheric file name, located in the `data/Atmospheres` directory. For the format of the file see: [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)  | Yes | file names from the `data/Atmospheres` directory |
-|8| `uuid` | ID for user request | No | Optional and is needed for the web-version of the program |
+|1| `inputMolecule`   | Species to calculate absorption features of.       | Yes      | First 12 molecules from the HITRAN [molecule metadata list](https://hitran.org/docs/molec-meta/). Molecule must be provided in a text form, e.g. CO2, CH4, O2  | 
+|2| `Vstart`       | Left boundary of the spectral interval | Yes   | roughly 10-20000 cm<sup>-1</sup>, but should align with database you take data from | 
+|3| `Vend`          | Right boundary of the spectral interval | Yes      | roughly 10-20000 cm<sup>-1</sup>, but should align with database you take data from| 
+|4| `databaseSlug` | Title of the spectral database to be used. For more details see the [spectral databases section](spectral-databases)  | Yes | Base file names from the `data/databases` directory |
+|5| `cutOff` | Distance from the center of the line from which absorption from this line is neglected | Yes | recommended values: 10-500 cm<sup>-1</sup>  |
+|6| χ-factor | χ-factor function name. Currently only CO2 corrections are available. For more details see [χ-factors section](χ-factors)| Yes | Titles of functions in the `ChiFactors.f90` module. Provide `none` to avoid using correction |
+|7| `targetValue` | Absorption feature to be written in the PT-table: volume absorption coefficient (km<sup>-1</sup>) or absorption cross-section (cm<sup>2</sup>/mol)| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
+|8| Atmosphere file name | Atmospheric file name, located in the `data/Atmospheres` directory. For the format of the file see: [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)  | Yes | file names from the `data/Atmospheres` directory |
+|9| `uuid` | ID for user request | No | Optional and is needed for the web-version of the program |
 
 Examples:
 ```
-fpm run marfa -- CO2 660 670 25 none ACS Venus1CO2.dat
-fpm run marfa -- H2O 10 3000 250 none VAC VenusH2O.dat
+fpm run marfa -- CO2 660 670 HITRAN2016 25 tonkov ACS CO2_profile.dat
+fpm run marfa -- H2O 10 3000 HITEMPVenus 250 none VAC VenusH2O.dat
 ```
 
 ### Parameters for `python scripts/postprocess.py` command
@@ -167,10 +169,10 @@ fpm run marfa -- H2O 10 3000 250 none VAC VenusH2O.dat
 |subdirectory| Name of the PT-table directory| No, default value is where PT-tables from the latest run are stored. See the `output/ptTables/latest_run.txt` file | Any |
 |`v1` | Start wavenumber from which you want to get processed data | Yes | `Vstart` < v1 < v2 < `Vend` |
 |`v2` | End wavenumber to which you want to get processed data | Yes | `Vstart` < v1 < v2 < `Vend` |
-|level| Atmospheric level at which you want to access data. Essentially means, that you access to the file `<level>.ptbin` | Yes | Normally from 1 to 100 (but see your atmospheric file)|
-|resolution| Resolution at which you want to obtain the data. If you consider large intervals, it is not recommeded to use `high` resolution | Yes | `high` (4.8E-4cm<sup>-1</sup>), `medium` (4.8E-3cm<sup>-1</sup>), `coarse`(4.8E-2cm<sup>-1</sup>) |
+|`level`| Atmospheric level at which you want to access data. Essentially means, that you access to the file `<level>.ptbin` | Yes | Normally from 1 to 100 (but see your atmospheric file)|
+|`resolution`| Resolution at which you want to obtain the data. If you consider large intervals, it is not recommeded to use `high` resolution | Yes | `high` (4.8E-4cm<sup>-1</sup>), `medium` (4.8E-3cm<sup>-1</sup>), `coarse`(4.8E-2cm<sup>-1</sup>) |
 | plot | Plot the data you postprocessed | No | Provide just a flag |
-| uuid | Needed only for web app. If set, `subdirectory` is ignored and data saved inside `users` folder | No | ID of a request |
+| `uuid` | Needed only for the web app. If set, `subdirectory` is ignored and data saved inside `users` folder | No | ID of a request |
 
 Examples:
 ```
@@ -193,19 +195,19 @@ To correctly run the MARFA code, the atmospheric file must adhere to a specific 
 ### File Format Breakdown
 
 1. **Header (First Line):**
-   - Describes the atmospheric characteristics, such as planet, authors, and gas species.
-   - Example: `# Atmospheric file example (Haus2015) CO2`
+   - Can be used for keeping infof about atmospheric characteristics, such as planet, authors of the source paper, and gas species. This header is ignored during runtime.
+   - Example: `# Atmospheric file example (VIRA2) CO2`
 
 2. **Number of Levels (Second Line):**
    - Contains a single number `N` representing the number of atmospheric levels.
    - Example: `81` (indicating 81 levels).
 
 3. **Atmospheric Data (Next N Lines):**
-   - Each line contains data in four columns:
+   - Each line contains level-dependent data in four columns:
      - **Column 1:** Height [km]
      - **Column 2:** Total pressure [atm]
      - **Column 3:** Temperature [K]
-     - **Column 4:** Number density [mol/(cm<sup>2</sup>*km)]
+     - **Column 4:** Number density [mol/(cm<sup>2</sup>*km)] of the given species
 
    - Example (Venus lower atmosphere):
      ``` 
@@ -273,12 +275,52 @@ Schematic python code snippet for accessing data from this file:
 ```
 ### Note
 
-There is current minor vulnerabilty in the code regarding record numbers, which result in excess of PT-files size with increasing wavenumber. For example, you calculated PT-table for 6500-7000 cm<sup>-1</sup> spectral interval. First non-zero data will populate 650th record, leaving 1-649 records unpopulated. This excess of records may require additional and unnecessary storage. This issue would be resolved soon. But because of it, PT-table caculated for 100-110 cm<sup>-1</sup> will be much smaller in size than one calculated for 6500-6510 cm<sup>-1</sup>.
+There is a current minor vulnerabilty in the code regarding record numbers, which result in excess of PT-files size with increasing wavenumber. For example, you calculated PT-table for 6500-7000 cm<sup>-1</sup> spectral interval. First non-zero data will populate 650th record, leaving 1-649 records unpopulated. This excess of records may require additional and unnecessary storage. This issue would be resolved soon. But because of it, PT-table caculated for 100-110 cm<sup>-1</sup> will be much smaller in size than one calculated for 6500-6510 cm<sup>-1</sup>. There is currently an open [issue](https://github.com/Razumovskyy/MARFA/issues/9) on it.
 ## Spectral databases
+To calculate absorption cross-sections, line-by-line approach is used which requires a presence of spectral database files. These files must match a specific format, follow a naming rule and be placed in the `data/databases` directory. Normally, bank of spectral parameters is compiled in a `.par` by means of HITRAN web site or from other sources. 
+
+Before running marfa, to speed up reading operations, `.par` file must be preprocessed into unformatted file (direct access file). The source code provides built-in functionality for users to perform this preprocessing.
+
+Additionaly, the codebase contains three files lready preprocessed to the required format: `H16.01`, `H16.02` and `H16.09`. These files are direct access files with all necessary spectral data for three molecules (according to HITRAN convention, also see `get_species_code` subroutine in `main.f90` file): 01 - H<sub>2</sub>O, 02 - CO<sub>2</sub>, 09 - SO<sub>2</sub>. These files are produced from initial `.par` files generated from the HITRAN 2016 database.
+
+When running marfa, database slug (base filename) must be provided as a command line argument, so to make the executable aware of where to access line-by-line data from. For example:
+```
+fpm run marfa -- H2O 1200 1600 H16 <other parameters>
+```
+This command implies that the executable will try to access spectral data for the file: `/data/databases/H16.01`. 
+
+### Required parameters
+The titles are taken from HITRAN web site for clarity and compatiblity. In brackets the variable name in the codebase:
+- (`lineWV`) The wavenumber of the spectral line transition (cm<sup>-1</sup>) in vacuum
+- (`refLineIntensity`) The spectral line intensity (cm<sup>-1</sup>/(molecule * cm<sup>-2</sup>)) at reference temperature T = 296 K
+- (`gammaForeign`) The air-broadened half width at half maximum (HWHM) (cm<sup>−1</sup>/atm) at reference temperature T = 296K and reference pressure p = 1 atm.
+- (`gammaSelf`) The self-broadened half width at half maximum (HWHM) (cm<sup>−1</sup>/atm) at reference temperature T = 296K and reference pressure p = 1 atm.
+- (`lineLowerState`) The lower-state energy of the transition (cm<sup>-1</sup>)
+- (`foreignTempCoeff`) The coefficient of the temperature dependence of the air-broadened half width
+- (`jointMolIso`) **CUSTOM**: Integer number containing information about both `Mol` (The molecular species identification (ID) number) and `Iso` (The isotopologue ID number). 
+- (`deltaForeign`) The pressure shift (cm<sup>-1</sup>/atm) at reference temperature T = 296 K and pressure p = 1 atm of the line position with respect to the vacuum transition wavenumber. 
+
+**Note:** `jointMolIso` is customized because of linear structure of the files with TIPS and molecular mass data (linear on isotope numbers). In the `app/processParFile.f90` file there is an `N_MOL_ISO` array which is needed for smooth access to the isotope by one number. I address you to check this implementation there and in those parts of code where TIPS and molecular masses are accessed.
+
+### Preprocessing user's .par file
+For that you can use `app/processParFile.f90` program, for example:
+```
+fpm run processParFile -- HNO3 HITRAN2020 path/to/file.par
+```
+After running this command `HITRAN2020.12` file will be saved in the `data/databases` directory and could be accessed when running the main program:
+```
+fpm run marfa -- HNO3 <VStart> <VEnd> HITRAN2020 <other parameters>
+```
+
+### Structure of the database files
+Each direct access file in the `data/databases` folder has the following structure:
+- File consists of records, each record contains data related to one spectral line
+- Each record contains required parameters from the above section.
+- Parameter `LineWV` is stored in double precision, 8 bytes are required for it. For other 7 parameters, 4 bytes are allocated apiece. Thus, the total length of a record is 36 bytes.
 ## χ-factors
 There is an indication that the far wings of spectral lines tend to diverge from expected Lorentzian or Voigt behavior. To address that χ&#8204;-factor could be applied. 
 
-In MARFA code currently there are several χ&#8204;-factors implemented, which describe sub-Lorentzian behavior of CO<sub>2</sub> rotational lines. They could be found in the `ChiFactors` module. These corrections are primarilly used for **Venus atmosphere conditions**. Below is a reference to the scientific papers from which the analytical expressions were derived (see References section for more details):
+In MARFA code currently there are several χ&#8204;-factors implemented, which describe sub-Lorentzian behavior of CO<sub>2</sub> rotational lines. They could be found in the `ChiFactors.f90` module. These corrections are primarilly used for **Venus atmosphere conditions**. Below is a reference to the scientific papers from which the analytical expressions were derived (see References section for more details):
 | χ-factor | Reference                  |
 |----------|----------------------------|
 | `tonkov` | Tonkov et al. (1996)       |
@@ -308,7 +350,7 @@ Execution time at one atmospheric level largerly depends on number of spectral l
 | CO<sub>2</sub> | 10 - 3000 |  | 25 | 4.08 |
 | CO<sub>2</sub> | 10 - 3000 |  | 250 | 25.2 |
 
-Loop over atmospheric levels is currently not parallelized but I plan to do it with OpenMP in near time. So, presently time of processing atmospheric profile is linear to number of atmospheric levels.
+Loop over atmospheric levels is currently not parallelized but I plan to do it with OpenMP in near time. Thus, currently the time of processing a full atmospheric profile is linear to number of levels.
 
 Additional room for optimization might be organized with increasing effectiveness of Voigt function estimation algorithm and lastly negliecting weak lines.
 ## Introducing custom features
@@ -316,8 +358,8 @@ Additional room for optimization might be organized with increasing effectivenes
 To add custom χ-factor function follow the steps:
 1. Write a fortran function with χ-factor. Optionally it might be pressure or tempreature dependent. You can use `pressure` and `temperature` parameters inside a function.
 2. Put this function at the end of the `chiFactors` module
-3. Add new case to the `select-case` clause in the `fetchChiFactorFunction()` in the `ChiFactors` module.
-4. Check that in the `LBL` module `chiCorrectedLorentz` line shape is used for the line wing description. There must be a line, like: `shapeFuncPtr => chiCorrectedLorentz`.
+3. Add new case to the `select-case` clause in the `fetchChiFactorFunction()` in the `ChiFactors.f90` module.
+4. Check that in the `LBL.f90` module `chiCorrectedLorentz` line shape function is used for the line wing description. There must be a line, like: `shapeFuncPtr => chiCorrectedLorentz`.
 
 **Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
 
@@ -354,7 +396,7 @@ To add custom χ-factor function follow the steps:
         end select
     end subroutine fetchChiFactorFunction
 ```
-### Custom line shapes (for advanced users)
+### Custom line shapes (for advanced usage)
 Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `correctedDoppler` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need to:
 1. Provide a Fortran function of a custom line shape to the `Shapes` module. 
 2. Go to the `LBL` module and assign `shapeFuncPtr` pointer to your line shape instead of the predefined shape.
@@ -419,6 +461,8 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 - Tonkov, M. V., et al. _Measurements and empirical modeling of pure CO<sub>2</sub> absorption in the 2.3-μm region at room temperature: far wings, allowed and collision-induced bands._ Applied optics 35.24 (1996): 4863-4870.
 - Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
 - Perrin, M. Y., and J. M. Hartmann. _Temperature-dependent measurements and modeling of absorption by CO<sub>2</sub>-N<sub>2</sub> mixtures in the far line-wings of the 4.3 μm CO<sub>2</sub> band._ Journal of Quantitative Spectroscopy and Radiative Transfer 42.4 (1989): 311-317.
-- Gamache, Robert R., et al. _Total internal partition sums for 166 isotopologues of 51 molecules important in planetary atmospheres: Application to HITRAN2016 and beyond._ Journal of Quantitative Spectroscopy and Radiative Transfer 203 (2017): 70-87.
-- I. E. Gordon, L. S. Rothman, R. J. Hargreaves, R. Hashemi, E. V. Karlovets, F. M. Skinner, et al., "The HITRAN2020 molecular spectroscopic database", J. Quant. Spectrosc. Radiat. Transfer   277, 107949 (2022). [doi:10.1016/j.jqsrt.2021.107949]
-- Gamache, Robert R., et al. "Total internal partition sums for the HITRAN2020 database." Journal of Quantitative Spectroscopy and Radiative Transfer 271 (2021): 107713.
+- Gamache, Robert R., et al. _Total internal partition sums for 166 isotopologues of 51 molecules important in planetary atmospheres: Application to HITRAN2016 and beyond._ 
+- Gamache, Robert R., et al. _Total internal partition sums for the HITRAN2020 database._ Journal of Quantitative Spectroscopy and Radiative Transfer 271 (2021): 107713.
+- Gordon, Iouli E., et al. _The HITRAN2016 molecular spectroscopic database._ Journal of quantitative spectroscopy and radiative transfer 203 (2017): 3-69.
+Journal of Quantitative Spectroscopy and Radiative Transfer 203 (2017): 70-87.
+- I. E. Gordon, L. S. Rothman, R. J. Hargreaves, R. Hashemi, E. V. Karlovets, F. M. Skinner, et al., _The HITRAN2020 molecular spectroscopic database_, J. Quant. Spectrosc. Radiat. Transfer   277, 107949 (2022). [doi:10.1016/j.jqsrt.2021.107949]
