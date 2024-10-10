@@ -281,7 +281,7 @@ To calculate absorption cross-sections, line-by-line approach is used which requ
 
 Before running marfa, to speed up reading operations, `.par` file must be preprocessed into unformatted file (direct access file). The source code provides built-in functionality for users to perform this preprocessing.
 
-Additionaly, the codebase contains three files lready preprocessed to the required format: `H16.01`, `H16.02` and `H16.09`. These files are direct access files with all necessary spectral data for three molecules (according to HITRAN convention, also see `get_species_code` subroutine in `main.f90` file): 01 - H<sub>2</sub>O, 02 - CO<sub>2</sub>, 09 - SO<sub>2</sub>. These files are produced from initial `.par` files generated from the HITRAN 2016 database.
+Additionaly, the codebase contains three files already preprocessed to the required format: `H16.01`, `H16.02` and `H16.09`. These files are direct access files with all necessary spectral data for three molecules (according to HITRAN convention, also see `get_species_code` subroutine in `main.f90` file): 01 - H<sub>2</sub>O, 02 - CO<sub>2</sub>, 09 - SO<sub>2</sub>. These files are produced from initial `.par` files generated from the HITRAN 2016 database.
 
 When running marfa, database slug (base filename) must be provided as a command line argument, so to make the executable aware of where to access line-by-line data from. For example:
 ```
