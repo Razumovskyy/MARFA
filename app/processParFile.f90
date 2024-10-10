@@ -139,7 +139,7 @@ program processParFile
     ! and open this file:
     record_length = 36 ! 4 * 7 bytes + 8 bytes (for DP lineWV)
     open(outputFileUnit, access='DIRECT', form='UNFORMATTED', recl=record_length, &
-            file=trim(adjustl(databaseSlug))//"."//nameSuffix)
+            file="data"//"/"//"databases"//"/"//trim(adjustl(databaseSlug))//"."//nameSuffix)
 
     ! open output file where data would be stored in human-readable format
     open(outputHumanReadableFileUnit, file=trim(adjustl(databaseSlug))//'.'//nameSuffix//'.dat')
