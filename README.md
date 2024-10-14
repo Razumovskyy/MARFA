@@ -150,17 +150,17 @@ Required syntax: `fpm run marfa -- arg1 arg2 ... arg8 <arg9>`
 |1| `inputMolecule`   | Species to calculate absorption features of.       | Yes      | First 12 molecules from the HITRAN [molecule metadata list](https://hitran.org/docs/molec-meta/). Molecule must be provided in a text form, e.g. CO2, CH4, O2  | 
 |2| `Vstart`       | Left boundary of the spectral interval | Yes   | roughly 10-20000 cm<sup>-1</sup>, but should align with database you take data from | 
 |3| `Vend`          | Right boundary of the spectral interval | Yes      | roughly 10-20000 cm<sup>-1</sup>, but should align with database you take data from| 
-|4| `databaseSlug` | Title of the spectral database to be used. For more details see the [spectral databases section](spectral-databases)  | Yes | Base file names from the `data/databases` directory |
+|4| `databaseSlug` | Title of the spectral database to be used. For more details see the [spectral databases section](#spectral-databases)  | Yes | Base file names from the `data/databases` directory |
 |5| `cutOff` | Distance from the center of the line from which absorption from this line is neglected | Yes | recommended values: 10-500 cm<sup>-1</sup>  |
-|6| χ-factor | χ-factor function name. Currently only CO2 corrections are available. For more details see [χ-factors section](χ-factors)| Yes | Titles of functions in the `ChiFactors.f90` module. Provide `none` to avoid using correction |
+|6| χ-factor | χ-factor function name. Currently only CO2 corrections are available. For more details see [χ-factors section](#χ-factors)| Yes | Titles of functions in the `ChiFactors.f90` module. Provide `none` to avoid using correction |
 |7| `targetValue` | Absorption feature to be written in the PT-table: volume absorption coefficient (km<sup>-1</sup>) or absorption cross-section (cm<sup>2</sup>/mol)| Yes       | `VAC` (volume absorption coefficient), `ACS` (absorption cross-section) |
 |8| Atmosphere file name | Atmospheric file name, located in the `data/Atmospheres` directory. For the format of the file see: [Atmospheric Profile File Structure](#atmospheric-profile-file-structure)  | Yes | file names from the `data/Atmospheres` directory |
 |9| `uuid` | ID for user request | No | Optional and is needed for the web-version of the program |
 
 Examples:
 ```
-fpm run marfa -- CO2 660 670 HITRAN2016 25 tonkov ACS CO2_profile.dat
-fpm run marfa -- H2O 10 3000 HITEMPVenus 250 none VAC VenusH2O.dat
+fpm run marfa -- CO2 660 670 H16 25 tonkov ACS VenusCO2.dat
+fpm run marfa -- H2O 10 3000 H16 250 none VAC VenusH2O.dat
 ```
 
 ### Parameters for `python scripts/postprocess.py` command
