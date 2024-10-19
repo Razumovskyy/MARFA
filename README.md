@@ -331,6 +331,7 @@ The χ-factors dataset is intended to be expanded through the effort from other 
 ## Other spectral or molecular data
 #### TIPS 
 Total internal partition sums (TIPS) are needed for obtaining temperature-dependent spectral intensities. How the TIPS are implemented in MARFA:
+- TIPS values could be found in the file inside `data/TIPS/` directory
 - TIPS data are taken from Gamache work (Gamache 2017, see [References](#references))
 - Data are available for first 74 isotopologues (first 12 molecules: H2O, CO2, O3, N2O, CO, CH4, O2, NO, SO2, NO2, NH3, HNO3)
 - Covered temperature range is 20 - 1000 K
@@ -339,8 +340,8 @@ Total internal partition sums (TIPS) are needed for obtaining temperature-depend
 ##### Outlook
 - I plan to add recent TIPS (Gamache et al. 2021, see [References](#references))
 - It might be better to organize input TIPS as en external subroutine based on Gamache's code Fortran or Python: TIPS_2021_v1p0.for, BD_TIPS_2021_v1p0.for or TIPS_2021_v1p0.py. I will soon return to it.
-#### Molar masses
-Molar masses are available in the `MolarMasses.f90` module. `WISO` array contains molar masses for 124 isotopolouges of first 42 molecules according to HITRAN numbering system.
+#### Molecluar weights
+Molecular weights are available in the `MolarMasses.f90` module. `WISO` array contains weights data for 124 isotopolouges of first 42 molecules according to HITRAN molecules numbering system.
 ## Performance estimations
 Execution time at one atmospheric level largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for Apple M1 chip:
 |species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
