@@ -173,8 +173,10 @@ program processParFile
 
         jointMolIso = isotopeNumber*100 + MO    ! [isotop number*100 + molecular number]
 
-        write(outputFileUnit, rec=lineCounter)  lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign
-        write(outputHumanReadableFileUnit, *)  lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, jointMolIso, deltaForeign
+        write(outputFileUnit, rec=lineCounter)  lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, &
+                                                 foreignTempCoeff, jointMolIso, deltaForeign
+        write(outputHumanReadableFileUnit, *)  lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, & 
+                                                 foreignTempCoeff, jointMolIso, deltaForeign
     end do
     
     close(outputFileUnit)

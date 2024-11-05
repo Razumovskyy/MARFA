@@ -54,7 +54,8 @@ program main
     if (argc < 8) then
         print *, 'Insufficient number of arguments.'
         print *, 'Expected at least 8 arguments, but received ', argc
-        print *, 'Usage: program_name Molecule StartWV EndWV DatabaseSlug CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
+        print *, 'Usage: program_name Molecule StartWV EndWV DatabaseSlug & 
+                    CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
         stop 1
     end if
 
