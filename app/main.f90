@@ -137,7 +137,11 @@ program main
         fullSubDirPath = trim(adjustl(parentDir))
     end if
 
-    infoFilePath = trim(fullSubDirPath) // '/info.txt'
+    if (.not. isUUID) then
+        infoFilePath = trim(fullSubDirPath) // '/info.txt'
+    else 
+        infoFilePath = trim(fullSubDirPath) // 'info.txt'
+    end if
     open(infoUnit, file=infoFilePath, status='replace', action='write', iostat=status)
 
     if (status /= 0) then
