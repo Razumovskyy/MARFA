@@ -122,9 +122,9 @@ program main
 
     ! Assemble the subdirectory name: Molecule_StartWV-EndWV_Timestamp
     subDirName = trim(inputMolecule) // "_" // trim(formattedStartWV) // "-" // trim(formattedEndWV) // "_" // trim(timestamp)
-    parentDir = trim(adjustl(rootDirName)) // "/ptTables/"
+    parentDir = trim(adjustl(rootDirName)) // "/ptTables"
     if (.not. isUUID) then
-        fullSubDirPath = trim(adjustl(parentDir)) // trim(adjustl(subDirName))
+        fullSubDirPath = trim(adjustl(parentDir)) // "/" // trim(adjustl(subDirName))
         mkdirCommand = 'mkdir "' // trim(fullSubDirPath) // '"'
         call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
         if (status /= 0) then
@@ -134,7 +134,11 @@ program main
             print *, "Directory created: ", trim(fullSubDirPath)
         end if
     else 
+        mkdirCommand = 'mkdir "' // trim(adjustl(rootDirName)) // '"'
+        call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
         fullSubDirPath = trim(adjustl(parentDir))
+        mkdirCommand = 'mkdir "' // trim(adjustl(fullSubDirPath)) // '"'
+        call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
     end if
 
     infoFilePath = trim(fullSubDirPath) // '/info.txt'
