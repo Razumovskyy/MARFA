@@ -54,7 +54,8 @@ program main
     if (argc < 8) then
         print *, 'Insufficient number of arguments.'
         print *, 'Expected at least 8 arguments, but received ', argc
-        print *, 'Usage: program_name Molecule StartWV EndWV DatabaseSlug CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
+        print *, 'Usage: program_name Molecule StartWV EndWV DatabaseSlug & 
+                    CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
         stop 1
     end if
 
@@ -137,7 +138,11 @@ program main
         fullSubDirPath = trim(adjustl(parentDir))
     end if
 
-    infoFilePath = trim(fullSubDirPath) // '/info.txt'
+    if (.not. isUUID) then
+        infoFilePath = trim(fullSubDirPath) // '/info.txt'
+    else 
+        infoFilePath = trim(fullSubDirPath) // 'info.txt'
+    end if
     open(infoUnit, file=infoFilePath, status='replace', action='write', iostat=status)
 
     if (status /= 0) then

@@ -52,8 +52,8 @@ contains
         ios2 = 0
         do while (.not. is_iostat_end(ios))
             I = I + 1
-            read(hitranFileUnit, rec=I, iostat=ios2) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, foreignTempCoeff, &
-                                jointMolIso, deltaForeign
+            read(hitranFileUnit, rec=I, iostat=ios2) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, & 
+                                                    foreignTempCoeff, jointMolIso, deltaForeign
 
             if (ios2 > 0) then
                 print *, 'ERROR: when reading file with spectral data.'
