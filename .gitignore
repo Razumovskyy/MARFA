@@ -62,3 +62,4 @@ SPECTR*
 # venv
 venv/
 .venv
+*.par
