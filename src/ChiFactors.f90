@@ -1,6 +1,6 @@
 module ChiFactors
     use Constants
-    use ShapeFuncInterface
+    use Interfaces
     use Atmosphere
     use Spectroscopy
     implicit none

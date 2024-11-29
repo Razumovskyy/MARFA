@@ -1,10 +1,13 @@
 module LineGridCalc
     use Constants
     use Mesh
-    use ShapeFuncInterface
+    use Interfaces
     implicit none
 contains
     subroutine leftLBL(FREQ, UL, FSHAPE)
+        ! calculation contributions to the subinterval on each grid
+        ! FROM the LEFT PART of the extended subinterval: [startDeltaWV-cutOff; startDeltaWV]
+
         IMPLICIT INTEGER*4 (I-N)
         real(kind=DP) :: FREQ
         real(kind=DP) :: UL, UU
@@ -12,8 +15,7 @@ contains
         real(kind=DP) :: XXX
         real :: FF
         procedure(shape), pointer :: FSHAPE
-    !* ---------------------------------------------
-    !*
+
         UU=UL-FREQ
                             IF(UU >= 0.)RETURN
         IF(-UU>cutOff)RETURN
@@ -175,6 +177,9 @@ contains
     end subroutine leftLBL
     
     subroutine centerLBL(FREQ, UL, FSHAPE)
+        ! calculation contributions to the subinterval on each grid
+        ! FROM the CENTRAL PART of the extended subinterval: [startDeltaWV; endDeltaWV]
+        
         IMPLICIT INTEGER*4 (I-N)
         real(kind=DP) :: FREQ
         real(kind=DP) :: UL, UU, CONSER, UUU
@@ -185,7 +190,7 @@ contains
 		IF(UU >= deltaWV)		GOTO 40
 	FF=FSHAPE(0.D0)
 		IF(FF < EPS)		RETURN
-!*							* left-wright side *
+!*							* left-right side *
 		NPOINT=1
 		CONSER=UU-H
 		FA=FSHAPE(UU)
@@ -332,7 +337,7 @@ contains
 				END DO
 									GOTO 11
  490				NPOINT=ICON
-!*							* wright-LEFT side *
+!*							* right-LEFT side *
  211	NPOINT=NPOINT+1
 		UUU=deltaWV-UU
 		FA=FSHAPE(UUU)
@@ -487,6 +492,9 @@ contains
     end subroutine centerLBL
 
     subroutine rightLBL(FREQ, UL, FSHAPE)
+        ! calculation contributions to the subinterval on each grid
+        ! FROM the RIGHT PART of the extended subinterval: [endDeltaWV; endDeltaWV+cutOff]
+
         IMPLICIT INTEGER*4 (I-N)
         real(kind=DP) :: FREQ
         real(kind=DP) :: UL, UU

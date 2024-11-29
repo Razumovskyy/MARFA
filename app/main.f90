@@ -7,60 +7,71 @@ program main
     use Mesh
     implicit none
 
-    ! MAIN OUTPUT FILE !
-    real(kind=DP) startTime, endTime
-    integer, parameter :: outputUnit = 47 ! IOUT ! ** ! output file unit where spectral PT-tables will be stored for each atmospheric level
+    !------------------------------------------------------------------------------------------------------------------!
+    ! Output files units !
+    integer, parameter :: outputUnit = 47 ! output file unit where PT-tables are stored
     integer, parameter :: infoUnit = 67
     integer, parameter :: latestRunUnit = 87
-    integer :: outputRecNum ! NW ! ** ! record number in the output file
+    
+    ! Record number in the output file
+    integer :: outputRecNum 
 
-    ! CONTROL AND DEBUG FILES !
-    integer, parameter :: atmControlUnit = 5555 ! NEW ! ** !
-    integer :: argc
-    integer :: dateTimeValues(8)
-    integer :: year, month, day, hour, minute, second
-    integer :: status
-
-    ! Other variables !
-    character(len=3) :: levelLabel ! unique identifier for each Zj level: ('1__','2__',...,'100',...)
-    character(len=10) :: startWVcla, endWVcla, cutOffcla, startWVclaTrimmed, endWVclaTrimmed, cutOffclaTrimmed
+    ! Input command line arguments and their trimmed values as strings !
+    character(len=20) :: databaseSlug
+    character(len=10) :: startWVcla, endWVcla, startWVclaTrimmed, endWVclaTrimmed
+    character(len=10) :: cutOffcla, cutOffclaTrimmed
     character(len=30) :: targetValue, targetValuecla
-    character(len=20) :: timestamp
-
-    ! Construct the subdirectory name
+    character(len=10) :: inputMolecule   
+    
+    ! Parameters and variables for constructing directories names !
+    character(len=200), parameter :: rootDirName = 'output'
     character(len=300) :: subDirName
-    character(len=200) :: rootDirName
     character(len=100) :: formattedStartWV, formattedEndWV
     character(len=200) :: parentDir
-    ! Full path for the new subdirectory
     character(len=300) :: fullSubDirPath
     character(len=500) :: mkdirCommand
-    ! character(len=1) :: pathSep
-    ! Define the info file path
     character(len=300) :: infoFilePath
     character(len=300) :: latestRunFilePath
-
-    character(len=20) :: databaseSlug
-
+    
+    ! Technical variables !
+    integer :: argc ! number of the passed command line arguments
+    integer :: dateTimeValues(8)
+    integer :: year, month, day, hour, minute, second
+    real(kind=DP) startTime, endTime ! times for measuring a machine time of the run
+    character(len=20) :: timestamp ! 
+    integer :: status
+    character(len=3) :: levelLabel ! unique identifier for each atmospheric level: ('1__','2__',...,'100',...)
     integer :: l ! loop variable
 
-        ! Get the number of command-line arguments
+    !------------------------------------------------------------------------------------------------------------------!
 
+    ! Start a timer to track the machine time
     call cpu_time(startTime)
 
+    ! Get a number of command-line arguments
     argc = command_argument_count()
 
-    ! Check if the number of arguments is not equal to 8
+    ! Check if the number of arguments is not sufficient
     if (argc < 8) then
         print *, 'Insufficient number of arguments.'
         print *, 'Expected at least 8 arguments, but received ', argc
-        print *, 'Usage: program_name Molecule StartWV EndWV DatabaseSlug & 
-                    CutOff ChiFactorFuncName TargetValue AtmProfileFile [UUID]'
+        print *, 'Usage: marfa Molecule StartWV EndWV DatabaseSlug & 
+                    CutOff ChiFactorFuncName TargetValue AtmProfileFile'
+        print *, 'Molecule: CO2, H2O'
+        print *, 'StartWV: 10 - 20000'
+        print *, 'EndWV: 10 - 20000, and greater than StartWV'
+        print *, 'DatabaseSlug: basefilenames from the data/databases folder'
+        print *, 'CutOff: integer value of a line cutoff condition in cm-1'
+        print *, 'ChiFactorFuncName: name of the wing correction function from &
+                     the ChiFactors.f90 module'
+        print *, 'TargetValue: ACS (for cross-section in cm^2/molecule) or &
+                     VAC (for volume absorption coefficient in km-1)'
         stop 1
     end if
 
-    isUUID = .false.
+    !------------------------------------------------------------------------------------------------------------------!
 
+    ! Establishing input parameters based on command line arguments
     do l = 1, command_argument_count()
         select case (l)
         case (1)
@@ -81,33 +92,32 @@ program main
             read(cutOffclaTrimmed, *) cutOff
         case (6)
             call get_command_argument(l, chiFactorFuncName)
+            call fetchChiFactorFunction
         case (7)
             call get_command_argument(l, targetValuecla)
             ! Set ACS or VAC with validation
-            targetValue = trim(targetValuecla)  ! Trim any leading/trailing spaces
+            targetValue = trim(targetValuecla)
             select case (targetValue)
             case ('ACS', 'VAC')
                 ! Valid targetValue; proceed as normal
             case default
-                write(*,*) 'Error: Invalid targetValue "', targetValue, '". Must be either "ACS" or "VAC".'
-                stop 2  ! Exit the program with a non-zero status to indicate an error
+                print *, 'Error: Invalid targetValue "', targetValue, '". & 
+                            Must be either "ACS" (Absorption cross-section) or &
+                             "VAC" (Volume absorption coefficient).'
+                stop 2
             end select
         case (8)
             call get_command_argument(l, atmProfileFile)
-        case (9)
-            call get_command_argument(l, uuid)
-            isUUID = .true.
+            call readAtmosphericParameters
         end select
     end do
 
-    ! Check if uuid is provided; if not, assign default
-    if (.not. isUUID) then
-        uuid = 'default'
-        rootDirName = 'output'
-    else
-        rootDirName = 'users' // "/" // uuid
-    end if
+    ! reads and initializes the TIPS array
+    call readTIPS
 
+    !------------------------------------------------------------------------------------------------------------------!
+
+    ! Directory where the PT-tables are stored is generated automatcally and contains a timestamp in its name
     call date_and_time(values=dateTimeValues)
     year = dateTimeValues(1)
     month = dateTimeValues(2)
@@ -115,34 +125,31 @@ program main
     hour = dateTimeValues(5)
     minute = dateTimeValues(6)
     second = dateTimeValues(7)
-
-    write(timestamp, '(I4, I2.2, I2.2, "_", I2.2, I2.2, I2.2, I2.2)') year, month, day, hour, minute, second
+    write(timestamp, '(I4, I2.2, I2.2, "_", I2.2, I2.2, I2.2, I2.2)') & 
+                        year, month, day, hour, minute, second
+    
     ! Format numeric parameters to remove decimal points and convert to integers
     write(formattedStartWV, '(I0)') int(startWV)
     write(formattedEndWV, '(I0)') int(endWV)
 
-    ! Assemble the subdirectory name: Molecule_StartWV-EndWV_Timestamp
-    subDirName = trim(inputMolecule) // "_" // trim(formattedStartWV) // "-" // trim(formattedEndWV) // "_" // trim(timestamp)
+    ! Assemble a subdirectory name: Molecule_StartWV-EndWV_Timestamp, absolute and relative paths
+    subDirName = trim(inputMolecule) // "_" // trim(formattedStartWV) // "-" //&
+                     trim(formattedEndWV) // "_" // trim(timestamp)
     parentDir = trim(adjustl(rootDirName)) // "/ptTables/"
-    if (.not. isUUID) then
-        fullSubDirPath = trim(adjustl(parentDir)) // trim(adjustl(subDirName))
-        mkdirCommand = 'mkdir "' // trim(fullSubDirPath) // '"'
-        call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
-        if (status /= 0) then
-            print *, "Error: Failed to create directory ", trim(fullSubDirPath)
-            stop 3
-        else
-            print *, "Directory created: ", trim(fullSubDirPath)
-        end if
-    else 
-        fullSubDirPath = trim(adjustl(parentDir))
+    fullSubDirPath = trim(adjustl(parentDir)) // trim(adjustl(subDirName))
+    
+    ! Running a makedir command to create directories
+    mkdirCommand = 'mkdir "' // trim(fullSubDirPath) // '"'
+    call execute_command_line(mkdirCommand, wait=.true., exitstat=status)
+    if (status /= 0) then
+        print *, "Error: Failed to create directory ", trim(fullSubDirPath)
+        stop 3
+    else
+        print *, "Directory created for storing PT-tables is created: ", trim(fullSubDirPath)
     end if
 
-    if (.not. isUUID) then
-        infoFilePath = trim(fullSubDirPath) // '/info.txt'
-    else 
-        infoFilePath = trim(fullSubDirPath) // 'info.txt'
-    end if
+    ! Establishing technical infoFile for storin information about the parameters of the run
+    infoFilePath = trim(fullSubDirPath) // '/info.txt'
     open(infoUnit, file=infoFilePath, status='replace', action='write', iostat=status)
 
     if (status /= 0) then
@@ -159,42 +166,38 @@ program main
     write(infoUnit, '(A,A)') 'Chi Factor Function Name: ', trim(chiFactorFuncName)
     write(infoUnit, '(A,A)') 'Target Value: ', trim(targetValue)
     write(infoUnit, '(A,A)') 'Atmospheric Profile File: ', trim(atmProfileFile)
-    write(infoUnit, '(A,A)') 'UUID: ', trim(uuid)
-
-    ! Close the info file
     close(infoUnit)
     print *, "Info file created at: ", trim(infoFilePath)
 
-    if (.not. isUUID) then
-        latestRunFilePath = trim(adjustl(parentDir)) // 'latest_run.txt'
-    else
-        latestRunFilePath = trim(adjustl(rootDirName)) // '/' // 'latest_run.txt'
-    end if
-
-    open(unit=latestRunUnit, file=trim(latestRunFilePath), status='replace', action='write', iostat=status)
-
+    ! Storing information about the time of a last calculation (needed for python scripts to save the processed data and plots)
+    latestRunFilePath = trim(adjustl(parentDir)) // 'latest_run.txt'
+    open(unit=latestRunUnit, file=trim(latestRunFilePath), &
+                status='replace', action='write', iostat=status)
     if (status /= 0) then
         print *, "Error: Unable to create latest run file at ", trim(latestRunFilePath)
         stop 5
     end if
-
     write(latestRunUnit, '(A)') subDirName
-    ! Close the latest run file
     close(latestRunUnit)
-    print *, "Latest run recorded at: ", trim(latestRunFilePath)
 
-    ! TODO: optimization proposition. Reduce reading operations because of highly overlaping intervals: [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
+    !------------------------------------------------------------------------------------------------------------------!
+
+    ! TODO:(?) optimization proposition. Reduce reading operations because of highly overlaping intervals: 
+    !       [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
-    ! write(*,*) inputMolecule
-    ! write(*,*) startWV
-    ! write(*,*) endWV
-    ! write(*,*) cutOff
-    ! write(*,*) chiFactorFuncName
-    ! write(*,*) targetValue
-    ! write(*,*) atmProfileFile
+    ! DEBUG SECTION !
+    ! print *, inputMolecule
+    ! print *, startWV
+    ! print *, endWV
+    ! print *, cutOff
+    ! print *, chiFactorFuncName
+    ! print *, targetValue
+    ! print *, atmProfileFile
 
+    ! Defining the grid constants (see the Mesh.f90 module)
+    ! TODO:(?) move out from the main.f90 file, it initialized only once
     EPS = 0.0
-    H0 = STEP ! STEP = 1.0
+    H0 = STEP
     H1 = H0/2.
     H2 = H1/2.
     H3 = H2/2.
@@ -206,29 +209,22 @@ program main
     H9 = H8/2. 
     H = H9/4.
 
-    ! reads the input config file with: startWV, endWV, file name with atmospheric profile and line shape function name
-    ! call readInputParameters
-    
-    ! initializes the chi-factor function from the input config
-    call fetchChiFactorFunction
-    
-    ! reads atmospheric profile arrays: height, pressure, temperature and density
-    call readAtmosphericParameters
-    
-    ! reads and initializes the TIPS array
-    call readTIPS
-    
-    ! open(atmControlUnit, file='control/PT-Protocol')
-
-    do levelsIdx = 1, levels
-        write(*,*) levelsIdx, levels ! for real time tracking how many levels has been processed
+    ATMOSPHERIC_LEVELS_LOOP: do levelsIdx = 1, levels
+        ! OUTER LOOP: over the atmospheric levels. After each iteration, PT-table file is generated for
+        ! the levelsIdx level
+        
+        ! Initializing the pressure (total), temperature and density (of the species) at current atm level
         pressure = pressureArray(levelsIdx)
         temperature = temperatureArray(levelsIdx)
         density = densityArray(levelsIdx)
-        unitlessT = refTemperature/temperature
+        
+        ! Calculation of the self and foreign pressures based on the Loschmidt formula
+        ! Alternative -- using Dalton's law and Mendeleev equation
+        unitlessT = refTemperature / temperature
         pSelf = density * 10. / LOSCHMIDT * temperature/stTemperature
         pForeign = pressure - pSelf
 
+        ! Construction of the extenstion for the PT-table output file, reflecting an atmospheric level
         levelLabel = '___'
         if ( levelsIdx < 10 ) then
             write(levelLabel(1:1), '(I1)') levelsIdx
@@ -240,54 +236,72 @@ program main
             end if
         end if
         
+        ! Direct access files section: be aware about the OS compatability
         open(outputUnit, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
             file=trim(fullSubDirPath)//'/'//levelLabel//'.ptbin')
-        ! RECL = NT for Windows Fortrans !
+        ! RECL = NT for old Windows Fortrans !
 
-        startDeltaWV = startWV
-        endDeltaWV = startDeltaWV + deltaWV
-        do while (startDeltaWV < endWV)
-            ! loop over 10 cm intervals accross the whole range !
+        
+        ! the whole interval [startWV, endWV] is separated into subintervals of the same length of deltaWV
+        ! each record in the output file corresponds to the one subinterval
+        startDeltaWV = startWV ! left boundary of the first subinterval
+        endDeltaWV = startDeltaWV + deltaWV ! right boundary of the first subinterval
+        SUBINTERVALS_LOOP: do while (startDeltaWV < endWV)
+            ! loop over subintervals !
 
-            !! It considers that startWV, endWV and deltaWV should be multiples of 10
+            ! Relation between record number and left boundary of a subinterval
+            ! TODO:(!) rewrite when working on introducing the dynamic resolution and fixing file sizes issue
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
 
+            ! TODO:(!) that couldn't happen -- remove
             ! if ( extStartDeltaWV < startWV ) then
             !     extStartDeltaWV = startDeltaWV
             ! end if
 
-            ! *** calculation inside 10.0 cm^-1 *** !
+            ! Proceed to calculation inside subinterval !
             call processSpectra(inputMolecule, databaseSlug, levelsIdx)
 
+            ! WRITE OPERATION OF THE ABSORPTION SIGNATURES TO THE OUTPUT FILE !
             if (targetValue == 'VAC') then
+                ! Multiply on density if want to calculate a volume absorption coefficient
                 write(outputUnit, rec=outputRecNum) density * RK
             elseif (targetValue == 'ACS') then
                 write(outputUnit, rec=outputRecNum) RK
             end if
 
+            ! switching to the next subinterval
             startDeltaWV = startDeltaWV + deltaWV
             endDeltaWV = startDeltaWV + deltaWV
             
-            ! *** end of the calculation inside 10.0 cm^-1 *** !
-        end do
+        end do SUBINTERVALS_LOOP
+        
         close(outputUnit)
-    end do
-    ! close(atmControlUnit)
-    write(*,*) ' *** Congratulations! PT-table is READY! ***'
+        
+        ! for real time tracking how many levels has been processed:
+        print *, levelsIdx, ' of ', levels, ' atmospheric levels are processed' 
+    end do ATMOSPHERIC_LEVELS_LOOP
+    print *, ' *** Congratulations! PT-tables have been calculated! ***'
     deallocate(heightArray)
     deallocate(pressureArray)
     deallocate(densityArray)
     deallocate(temperatureArray)
     deallocate(TIPS)
+    
     call cpu_time(endTime)
-    write(*,*) "Took: ", endTime - startTime, " seconds"
+    print *, "Took: ", endTime - startTime, " seconds"
 contains
 
-    subroutine processSpectra(molecule, slug, loopLevel)
+    subroutine processSpectra(molecule, slug, atmosphericLoopLevel)
+        ! TODO: (!) remove `molecule` from input arguments (used only in first call) 
         implicit none
-        character(len=5), intent(in) :: molecule
-        integer, intent(in) :: loopLevel
+        character(len=5), intent(in) :: molecule ! inputMolecule as a string
+        integer, intent(in) :: atmosphericLoopLevel ! atmospheric level number as passed from the outer loop
+        
+        ! database file basename (e.g. "HITRAN2020"), see `data/databases/` directory
         character(len=20), intent(in) :: slug
+        
+        ! ---------------------------------------------------------------------------- !
+        ! database file extension based on the species title (input molecule), see `data/databases/` directory
         character(len=2) :: DBfileExtension
 
         ! this save is to decouple the logic run only for the first call
@@ -295,50 +309,55 @@ contains
         
         ! this save is for the keeping the current level. 
         ! It is calculated on the first call and then updates if the level changes in the calling procedure
+        ! current atmospheric level at previous subroutine call, used to fix when the atmospheric level changes
         integer, save :: currentLevel ! JOLD
         
         ! this save is for the loop over height levels
         ! after the step into the new level, LBL starts from startingLineIdx
+        ! Index (record number in database file) from which the whole calculation goes
+        ! Determined by startWV and cutOff
         integer, save :: startingLineIdx ! LINBEG0
         
-        ! this save is for the loop over deltas (deltaWV)
-        ! after the step into the next delta interval , we need to keep the lineIdx from the LBL calc
-        integer, save :: lineIdx ! LINBEG 
+        ! Transition wavenumber of a spectral line at index `startingLineIdx ! VAA0
+        ! Mostly it is used to determine capWV
+        real(kind=DP), save :: startingLineWV 
 
-        real(kind=DP), save :: startingLineWV ! VAA0
+        ! this save is for the loop over subintervals
+        ! after the step into the next delta interval, we need to keep the lineIdx from the LBL calc
+        ! `lineIdx` is used as an iterator over spectral lines in SUBINTERVALS_LOOP
+        integer, save :: lineIdx ! record number in direct access file corresonding to specific line ! LINBEG 
 
-        ! this save is for
+        ! two extended subsequent subintervals: 
+        ! [extStartDeltaWV1; extEndDeltaWV1] and [extStartDeltaWV2, extEndDeltaWV2] are highly overlap
+        ! so when going through the first interval, it is needed to set at which lineIdx the next interval starts.
+        ! capWV is used to determine this, see the implementation of it in the modernLBL subroutine
         real(kind=DP), save :: capWV
+
+        ! auxillary variables
+        integer :: iterRecNum ! loop variable
+        real(kind=DP) :: iterLineWV ! loop dummy variable
+        integer :: I, J, M ! loop variables mainly for grid calculations
         
+        ! TODO:(!) moving `ifFirstCall` part to the separate subroutine, because
+        ! it is only for reading from the spectral file and must be done only once. Do it during
+        ! implementing parallelization with OpenMP
+
+        ! TODO:(!) deal with `molType`
+         
+        ! DEBUG SECTION !
         ! real(kind=DP) :: VFISH ! *** ! extEndDeltaWV
         ! real(kind=DP) :: VA ! *** ! extStartDeltaWV
         ! real(kind=DP) :: VS ! the same as startDeltaWV
         ! real(kind=DP) :: VR4 ! the same as startDeltaWV
-
-        integer :: iterRecNum
-        real(kind=DP) :: iterLineWV
-
-        integer :: I, J, M ! loop variables mainly for grid calculations
         
-        ! TODO: moving `ifFirstCall` part to the separate subroutine, because
-        ! it is only for reading from the HITRAN file and must be done only at once.
-
-        ! TODO: deal with `totalLines` (now it is from HITEMP, but it seems that any large number is sufficient)
-
-        ! TODO: deal with `molType`
-
-        ! The first call operations:
-        ! 1. Fetch the molecule name and its molType
-        ! 2. Fetch corresponding HITRAN file and a total number of lines in this file
-        ! 3. Interrupt if unsuported molecule
-        ! 4. Establish starting position of the line in HITRAN file and the value of transition for this line -- for global interval from conifig: [startWV, endWV] interval
-        !    cutOff -- included.
-
         if (isFirstCall) then
+            
             isFirstCall = .false.
             startingLineIdx = 1
             currentLevel = 0
             lineIdx = 0
+            
+            ! TODO: (!) move out from this subroutine (do it when moving the first call) 
             call get_species_code(molecule, molType, DBfileExtension)
 
             if (molType == 0) then
@@ -346,44 +365,82 @@ contains
                 stop 8
             end if
 
-            hitranFile = 'data'//'/'//'databases'//'/'//trim(adjustl(slug))//'.'//DBfileExtension
+            databaseFile = 'data'//'/'//'databases'//'/'//trim(adjustl(slug))//'.'//DBfileExtension
 
-            open(hitranFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=trim(hitranFile))
-            ! Uncomment if the direct access file was created under Windows
-            ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=hitranFile)
+            ! Reading the direct access files (Linux, MacOS, modern Windows(?)). 
+            ! Comment out this line for old Windows
+            open(databaseFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=trim(databaseFile))
+            
+            ! Uncomment if the direct access file was created under old Windows(?)
+            ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=databaseFile)
 
-            read(hitranFileUnit, rec=startingLineIdx) startingLineWV
+            ! This section identifies a starting spectral line from which to proceed with line-by-line scheme
+            ! based on the left boundary of the initial spectral interval [startWV, endWV]
+            ! TODO: optimize this block and startingLineIdx and startingLineWV variables
+            read(databaseFileUnit, rec=startingLineIdx) startingLineWV
+
+            
+            ! This `if` block is needed to determine from which spectral line in database to start calculation !
+            ! See the `startingLineIdx` and `startingLineWv` variables
             if (startWV > cutOff) then
+                ! if the startWV is e.g. 300 cm-1 and the cutOff is e.g. 25 cm-1, then
+                ! the first spectral line to be counted must be the first line with transition 
+                ! wavenumber bigger than extStartWV = 300 - 25 = 275 cm-1
                 extStartWV = startWV - cutOff
                 iterRecNum = startingLineIdx
                 iterLineWV = startingLineWV
                 do while(iterLineWV <= extStartWV)
                     iterRecNum = iterRecNum + 1
-                    read(hitranFileUnit, rec=iterRecNum) iterLineWV
+                    read(databaseFileUnit, rec=iterRecNum) iterLineWV
                 end do
                 startingLineIdx = iterRecNum
                 startingLineWV = iterLineWV
+            else 
+                ! if the startWV is e.g. 20 cm-1, but cutOff is 125 cm-1, then
+                ! proceed calculation from the first spectral line presented in the database file
+                ! startingLineWV and startingLineIdx are set to initial values
+            end if
+
+            ! simple check for consistency of the database file
+            if (abs(startWV - cutOff - startingLineWV) > 25.) then
+                print *, "ATTENTION: database file might be insufficient for input spectral interval:"
+                print *, "Your input left boundary - cutOff condition: ", startWV - cutOff, " cm-1"
+                print *, "Line-by-line scheme starts from: ", startingLineWV, " cm-1"
             end if
         end if
 
-        ! TODO: move to the main.f90 file in the inner loop
-        extStartDeltaWV = startDeltaWV - cutOff
-        extEndDeltaWV = startDeltaWV + deltaWV + cutOff
-
-        if ( currentLevel /= loopLevel ) then
+        ! When the ATMOSPHERIC_LOOP steps onto the new atmospheric level, then the lineIdx must be reset 
+        ! to the the startingLineIdx value calculated in the firstCall section, because when it is new
+        ! atmospheric level, calculation goes again from startWV.
+        if ( currentLevel /= atmosphericLoopLevel ) then
+            ! DEBUG SECTION !
             ! write(*,*) 'Level change !'
             ! write(*,*) 'current Level: ', currentLevel
-            ! write(*,*) 'loop Level: ', loopLevel
-            currentLevel = loopLevel
+            ! write(*,*) 'loop Level: ', atmosphericLoopLevel
+            currentLevel = atmosphericLoopLevel
             lineIdx = startingLineIdx
         end if
 
+        ! TODO:(?) move to the main.f90 file in the inner loop
+        
+        ! Defining the boundaries of extended subinterval (add cutOff) 
+        extStartDeltaWV = startDeltaWV - cutOff
+        extEndDeltaWV = startDeltaWV + deltaWV + cutOff
+        
+        ! Defining capWV: wavenumber to determine from which spectral line to start calculation
+        ! of the next subinterval
+        ! TODO:(?) introduce pointers logic for that
         capWV = extStartDeltaWV + deltaWV
-        if (capWV <= startingLineWV) capWV = startingLineWV
+        ! The same is:
+        ! capWV = endDeltaWV - cutOff
+        if (capWV <= startingLineWV) capWV = startingLineWV ! for consistency, because cutOff might be large
 
-        ! VS = startDeltaWV
-        !*-------------------------------------------------------------
-
+        !------------------------------------------------------------------------------------------------------------------!
+        
+        ! Note: Grid arrays for storing absorption values on all grids
+        ! are initialized to zero at the beginning of each calculation inside subinterval.
+        
+        ! TODO:(?) consider moving this section to inner subroutines
         RK = 0.0
         RK0 = 0.0; RK0L = 0.0; RK0P = 0.0
         RK1 = 0.0; RK1L = 0.0; RK1P = 0.0
@@ -396,141 +453,147 @@ contains
         RK8 = 0.0; RK8L = 0.0; RK8P = 0.0
         RK9 = 0.0; RK9L = 0.0; RK9P = 0.0
 
-        !! Note: Arrays are initialized to zero at the beginning of each subroutine call.
-        ! This approach ensures that the arrays have a clean state for each calculation.
-        ! If the subroutine is called multiple times and the arrays do not need to be
-        ! reset every time, consider optimizing by removing this initialization or
-        ! modifying it as per the specific requirements of the program.
+        !------------------------------------------------------------------------------------------------------------------!
 
-        !*--------------------------------------------------------------
+        ! DEBUG SECTION !
         ! print *, lineIdx
         ! print *, capWV
+        
+        ! Proceed to this subroutine for reading of spctral features and line summation in the subinterval
         call modernLBL(lineIdx, capWV)
-        ! write(*,*) 'lineIdx after LBL2023: ', lineIdx
-        ! ------------ END OF THE FIRST PART ---------------------------------- !
         
-        ! ----------------------SECOND PART ----------------------------------- !
-        ! TODO: CREATE SUBROUTINE TO REMOVE REPETITIONS !
-        ! be careful that last loop differs from NT0-NT8!
+        ! DEBUG SECTION !
+        ! write(*,*) 'lineIdx after moderLBL: ', lineIdx
         
+        !------------------------------------------------------------------------------------------------------------------!
+        
+        ! Final interpolation scheme (?)
+
+        ! TODO:(!) Create subroutine to remove repetitions
+        ! (be careful that last loop differs from NT0-NT8) 
+        
+        ! TODO:(?) consider moving this section to inner subroutines
+        ! TODO:(?) establish block and define loop variables there
         do J = 1, NT0
-            I = J * 2 - 1
+            I = J*2 - 1
             RK1P(I) = RK1P(I) + RK0P(J)
-            RK1(I) = RK1(I) + RK0P(J) * 0.375 + RK0(J) * 0.75 - RK0L(J) * 0.125
+            RK1(I) = RK1(I) + RK0P(J)*0.375 + RK0(J)*0.75 - RK0L(J)*0.125
             RK1L(I) = RK1L(I) + RK0(J)
             M = I + 1
             RK1P(M) = RK1P(M) + RK0(J)
-            RK1(M) = RK1(M) + RK0L(J) * 0.375 + RK0(J) * 0.75 - RK0P(J) * 0.125
+            RK1(M) = RK1(M) + RK0L(J)*0.375 + RK0(J)*0.75 - RK0P(J)*0.125
             RK1L(M) = RK1L(M) + RK0L(J)
         end do
 
         do J = 1, NT1
-            I = J * 2 - 1
+            I = J*2 - 1
             RK2P(I) = RK2P(I) + RK1P(J)
-            RK2(I) = RK2(I) + RK1P(J) * 0.375 + RK1(J) * 0.75 - RK1L(J) * 0.125
+            RK2(I) = RK2(I) + RK1P(J)*0.375 + RK1(J)*0.75 - RK1L(J)*0.125
             RK2L(I) = RK2L(I) + RK1(J)
             M = I + 1
             RK2P(M) = RK2P(M) + RK1(J)
-            RK2(M) = RK2(M) + RK1L(J) * 0.375 + RK1(J) * 0.75 - RK1P(J) * 0.125
+            RK2(M) = RK2(M) + RK1L(J)*0.375 + RK1(J)*0.75 - RK1P(J)*0.125
             RK2L(M) = RK2L(M) + RK1L(J)
         end do
 
         do J = 1, NT2
-            I = J * 2 - 1
+            I = J*2 - 1
             RK3P(I) = RK3P(I) + RK2P(J)
-            RK3(I) = RK3(I) + RK2P(J) * 0.375 + RK2(J) * 0.75 - RK2L(J) * 0.125
+            RK3(I) = RK3(I) + RK2P(J)*0.375 + RK2(J)*0.75 - RK2L(J)*0.125
             RK3L(I) = RK3L(I) + RK2(J)
             M = I + 1
             RK3P(M) = RK3P(M) + RK2(J)
-            RK3(M) = RK3(M) + RK2L(J) * 0.375 + RK2(J) * 0.75 - RK2P(J) * 0.125
+            RK3(M) = RK3(M) + RK2L(J)*0.375 + RK2(J)*0.75 - RK2P(J)*0.125
             RK3L(M) = RK3L(M) + RK2L(J)
         end do
 
         do J = 1, NT3
-            I = J * 2 - 1
+            I = J*2 - 1
             RK4P(I) = RK4P(I) + RK3P(J)
-            RK4(I) = RK4(I) + RK3P(J) * 0.375 + RK3(J) * 0.75 - RK3L(J) * 0.125
+            RK4(I) = RK4(I) + RK3P(J)*0.375 + RK3(J)*0.75 - RK3L(J)*0.125
             RK4L(I) = RK4L(I) + RK3(J)
             M = I + 1
             RK4P(M) = RK4P(M) + RK3(J)
-            RK4(M) = RK4(M) + RK3L(J) * 0.375 + RK3(J) * 0.75 - RK3P(J) * 0.125
+            RK4(M) = RK4(M) + RK3L(J)*0.375 + RK3(J)*0.75 - RK3P(J)*0.125
             RK4L(M) = RK4L(M) + RK3L(J)
         end do
 
         do J = 1, NT4
-            I = J * 2 - 1
+            I = J*2 - 1
             RK5P(I) = RK5P(I) + RK4P(J)
-            RK5(I) = RK5(I) + RK4P(J) * 0.375 + RK4(J) * 0.75 - RK4L(J) * 0.125
+            RK5(I) = RK5(I) + RK4P(J)*0.375 + RK4(J)*0.75 - RK4L(J)*0.125
             RK5L(I) = RK5L(I) + RK4(J)
             M = I + 1
             RK5P(M) = RK5P(M) + RK4(J)
-            RK5(M) = RK5(M) + RK4L(J) * 0.375 + RK4(J) * 0.75 - RK4P(J) * 0.125
+            RK5(M) = RK5(M) + RK4L(J)*0.375 + RK4(J)*0.75 - RK4P(J)*0.125
             RK5L(M) = RK5L(M) + RK4L(J)
         end do
 
         do J = 1, NT5
-            I = J * 2 - 1
+            I = J*2 - 1
             RK6P(I) = RK6P(I) + RK5P(J)
-            RK6(I) = RK6(I) + RK5P(J) * 0.375 + RK5(J) * 0.75 - RK5L(J) * 0.125
+            RK6(I) = RK6(I) + RK5P(J)*0.375 + RK5(J)*0.75 - RK5L(J)*0.125
             RK6L(I) = RK6L(I) + RK5(J)
             M = I + 1
             RK6P(M) = RK6P(M) + RK5(J)
-            RK6(M) = RK6(M) + RK5L(J) * 0.375 + RK5(J) * 0.75 - RK5P(J) * 0.125
+            RK6(M) = RK6(M) + RK5L(J)*0.375 + RK5(J)*0.75 - RK5P(J)*0.125
             RK6L(M) = RK6L(M) + RK5L(J)
         end do
         
         do J = 1, NT6
-            I = J * 2 - 1
+            I = J*2 - 1
             RK7P(I) = RK7P(I) + RK6P(J)
-            RK7(I) = RK7(I) + RK6P(J) * 0.375 + RK6(J) * 0.75 - RK6L(J) * 0.125
+            RK7(I) = RK7(I) + RK6P(J)*0.375 + RK6(J)*0.75 - RK6L(J)*0.125
             RK7L(I) = RK7L(I) + RK6(J)
             M = I + 1
             RK7P(M) = RK7P(M) + RK6(J)
-            RK7(M) = RK7(M) + RK6L(J) * 0.375 + RK6(J) * 0.75 - RK6P(J) * 0.125
+            RK7(M) = RK7(M) + RK6L(J)*0.375 + RK6(J)*0.75 - RK6P(J)*0.125
             RK7L(M) = RK7L(M) + RK6L(J)
         end do
 
         do J = 1, NT7
-            I = J * 2 - 1
+            I = J*2 - 1
             RK8P(I) = RK8P(I) + RK7P(J)
-            RK8(I) = RK8(I) + RK7P(J) * 0.375 + RK7(J) * 0.75 - RK7L(J) * 0.125
+            RK8(I) = RK8(I) + RK7P(J)*0.375 + RK7(J)*0.75 - RK7L(J)*0.125
             RK8L(I) = RK8L(I) + RK7(J)
             M = I + 1
             RK8P(M) = RK8P(M) + RK7(J)
-            RK8(M) = RK8(M) + RK7L(J) * 0.375 + RK7(J) * 0.75 - RK7P(J) * 0.125
+            RK8(M) = RK8(M) + RK7L(J)*0.375 + RK7(J)*0.75 - RK7P(J)*0.125
             RK8L(M) = RK8L(M) + RK7L(J)
         end do
 
         do J = 1, NT8
-            I = J * 2 - 1
+            I = J*2 - 1
             RK9P(I) = RK9P(I) + RK8P(J)
-            RK9(I) = RK9(I) + RK8P(J) * 0.375 + RK8(J) * 0.75 - RK8L(J) * 0.125
+            RK9(I) = RK9(I) + RK8P(J)*0.375 + RK8(J)*0.75 - RK8L(J)*0.125
             RK9L(I)= RK9L(I) + RK8(J)
             M = I + 1
             RK9P(M) = RK9P(M) + RK8(J)
-            RK9(M) = RK9(M) + RK8L(J) * 0.375 + RK8(J) * 0.75 - RK8P(J) * 0.125
+            RK9(M) = RK9(M) + RK8L(J)*0.375 + RK8(J)*0.75 - RK8P(J)*0.125
             RK9L(M)= RK9L(M) + RK8L(J)
         end do
 
         I=1
         do J = 1, NT9
-            I = I+1
-            RK(I) = RK(I) + (RK9P(J) * 0.375 + RK9(J) * 0.75 - RK9L(J) * 0.125)
-            I = I+1
+            I = I + 1
+            RK(I) = RK(I) + (RK9P(J)*0.375 + RK9(J)*0.75 - RK9L(J)*0.125)
+            I = I + 1
             RK(I) = RK(I) + RK9(J)
-            I = I+1
-            RK(I) = RK(I) + (RK9L(J) * 0.375 + RK9(J) * 0.75 - RK9P(J) * 0.125)
+            I = I + 1
+            RK(I) = RK(I) + (RK9L(J)*0.375 + RK9(J)*0.75 - RK9P(J)*0.125)
             I = I + 1
             RK(I) = RK(I) + RK9L(J)
         end do
+
+        !------------------------------------------------------------------------------------------------------------------!
     end subroutine processSpectra
 
     subroutine get_species_code(species, code_int, code_str)
-        ! Subroutine to map species to both integer and string codes
+        ! Subroutine to map species to both integer and string codes accordnig to the HITRAN coding system
         implicit none
-        character(len=*), intent(in) :: species
-        integer, intent(out) :: code_int
-        character(len=2), intent(out) :: code_str
+        character(len=*), intent(in) :: species  ! molecule title as string
+        integer, intent(out) :: code_int ! output code as an integer
+        character(len=2), intent(out) :: code_str ! output code as a string
 
         select case (trim(adjustl(species)))
             case ("H2O")

@@ -1,7 +1,11 @@
 module MolarMasses
     implicit none
+    
+    ! isotope number in the internal database (index in the WISO array, see below)
+    integer :: isotopeNum 
+    
     ! Molecular masses (isotopes as in GAMACHE's 2017data for 12 gases)
-    ! Double-check this !
+    ! WISO = Weights of ISOtopes !
     real, parameter :: WISO_H2O(9) = [ &
         18.010565, 20.014811, 19.014780, 19.016740, 21.020985, 20.020956, 20.0, 22.0, 21.0 &
     ]
@@ -9,7 +13,7 @@ module MolarMasses
         43.989830, 44.993185, 45.994076, 44.994045, 46.997431, 45.99740, 47.998322, 46.998291, &
         46.0, 49.001675, 48.0, 47.0, 44.0 &
     ]
-    ! why duplicates ??
+    
     real, parameter :: WISO_O3(18) = [ & 
         47.984745, 49.988991, 49.988991, 48.988960, 48.988960, &
         52., 52., 51., 51., 51., 50., 50., 54., 53., 53., 52., 52., 51. &
@@ -133,7 +137,6 @@ module MolarMasses
         87.993616 &
     ]
     
-    ! 125 len array in the legacy code but 124 factually
     real, parameter :: WISO(124) = [ &
         WISO_H2O, WISO_CO2, WISO_O3, WISO_N2O, WISO_CO, WISO_CH4, WISO_O2, WISO_NO, WISO_SO2, WISO_NO2, WISO_NH3, &
         WISO_HNO3, WISO_OH, WISO_HCl, WISO_HBr, WISO_HI, WISO_ClO, WISO_OCS, WISO_H2CO, WISO_HOCl, WISO_N2, WISO_HCN, &

@@ -341,7 +341,7 @@ Total internal partition sums (TIPS) are needed for obtaining temperature-depend
 - I plan to add recent TIPS (Gamache et al. 2021, see [References](#references))
 - It might be better to organize input TIPS as en external subroutine based on Gamache's code Fortran or Python: TIPS_2021_v1p0.for, BD_TIPS_2021_v1p0.for or TIPS_2021_v1p0.py. I will soon return to it.
 #### Molecluar weights
-Molecular weights are available in the `MolarMasses.f90` module. `WISO` array contains weights data for 124 isotopolouges of first 42 molecules according to HITRAN molecules numbering system.
+Molecular weights are available in the `MolecularMasses.f90` module. `WISO` array contains weights data for 124 isotopolouges of first 42 molecules according to HITRAN molecules numbering system.
 ## Performance estimations
 Execution time at one atmospheric level largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for Apple M1 chip:
 |species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
@@ -362,7 +362,7 @@ To add custom χ-factor function follow the steps:
 3. Add new case to the `select-case` clause in the `fetchChiFactorFunction()` in the `ChiFactors.f90` module.
 4. Check that in the `LBL.f90` module `chiCorrectedLorentz` line shape function is used for the line wing description. There must be a line, like: `shapeFuncPtr => chiCorrectedLorentz`.
 
-**Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
+**Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `Interfaces` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
 
 #### Example: 
 ```fortran
@@ -398,7 +398,7 @@ To add custom χ-factor function follow the steps:
     end subroutine fetchChiFactorFunction
 ```
 ### Custom line shapes (for advanced usage)
-Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `correctedDoppler` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need to:
+Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `combinedDopplerLorentz` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need to:
 1. Provide a Fortran function of a custom line shape to the `Shapes` module. 
 2. Go to the `LBL` module and assign `shapeFuncPtr` pointer to your line shape instead of the predefined shape.
 3. Adjust the logic of the choice of line shape accordingly. This is required only for introducing "non-standard" (not Voigt, Lorentz or Doppler) line shapes.
@@ -415,7 +415,7 @@ Currently in the `Shapes` module only standard line shapes are introduced: `lore
 ```
 If you want to use your own intensities, you must add new intensity function to the `Spectroscopy` module and refer to it.
 
-**Note 2:** Your function must match the abstract interface for the line shape (see `ShapeFuncInterface` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined line shape functions and adjust accordingly.
+**Note 2:** Your function must match the abstract interface for the line shape (see `Interfaces` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined line shape functions and adjust accordingly.
 
 #### Example 1 
 If you want to provide your own Voigt line shape, then it is the most straightforward. 
