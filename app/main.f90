@@ -147,7 +147,7 @@ program main
         print *, "Error: Failed to create directory ", trim(fullSubDirPath)
         stop 3
     else
-        print *, "Directory created for storing PT-tables is created: ", trim(fullSubDirPath)
+        print *, "Directory for storing PT-tables is created: ", trim(fullSubDirPath)
     end if
 
     ! Establishing technical infoFile for storin information about the parameters of the run
@@ -280,7 +280,7 @@ program main
         close(outputUnit)
         
         ! for real time tracking how many levels has been processed:
-        print *, levelsIdx, ' of ', levels, ' atmospheric levels are processed' 
+        print *, levelsIdx, ' of ', levels, ' atmospheric levels is being processed ...' 
     end do ATMOSPHERIC_LEVELS_LOOP
     print *, ' *** Congratulations! PT-tables have been calculated! ***'
     deallocate(heightArray)
