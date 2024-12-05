@@ -402,7 +402,7 @@ contains
             end if
 
             ! simple check for consistency of the database file
-            if (abs(startWV - cutOff - startingLineWV) > 25.) then
+            if ((abs(startWV - cutOff - startingLineWV) > 25.) .and. (startWV > cutOff)) then
                 print *, "ATTENTION: database file might be insufficient for input spectral interval:"
                 print *, "Your input left boundary - cutOff condition: ", startWV - cutOff, " cm-1"
                 print *, "Line-by-line scheme starts from: ", startingLineWV, " cm-1"
