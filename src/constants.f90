@@ -1,5 +1,6 @@
 module Constants
     implicit none
+    
     integer, parameter :: DP = selected_real_kind(15,  307) ! selected kind for double precision
     
     real, parameter :: PI = 3.1415926
@@ -19,7 +20,6 @@ module Constants
 
     real, parameter :: refTemperature = 296. ! [K] -- refrence temperature for HITRAN data 
 
-    ! ------------------------------------------ !
     real, parameter :: C1 = 2 * PI * PLANCK * (SPL**2) ! SOMETIMES PI is omitted
     real, parameter :: redPLANCK = PLANCK / (2 * PI) ! reduced planck constant
 

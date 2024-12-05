@@ -1,47 +1,47 @@
 module Atmosphere
     use Constants
     implicit none
-    character(len=10) :: uuid
-    logical :: isUUID
-    integer :: ios
-    character(len=20) :: atmProfileFile ! NEW ! ** ! ATM
-    character(len=50) :: fullNameAtmProfile
-    character(len=20) :: atmTitle
-    integer, parameter :: atmProfileUnit = 777
-    integer :: numGasSpecies ! NGS ! ** ! number of species in the analysis
-    integer :: levels ! JMAX ! ** ! number of levels in the header of the atmospheric profile file
-    real, allocatable :: heightArray(:), pressureArray(:), temperatureArray(:), densityArray(:) ! NEW ! ** ! PPP, TTT, RORO
-    integer, parameter :: levelsThreshold = 200 ! NEW ! ** !
-    character(len=7) :: inputMolecule ! is read in the IO module
-    ! character(len=7) :: inputMoleculeDEPR
-    integer :: levelsIdx ! JJJ ! ** ! index for loop over levels
-    ! ----------------------------------------------------------- !
-    ! real :: pressure ! [atm] -- pressure on the current atmospheric level
-    real :: pSelf ! [atm] -- partial pressure of the considered gaseous species
-    real :: pForeign ! [atm] -- foreign pressure ( p - pSelf)
-    real :: unitlessT
-    ! real :: temperature ! [K] -- temperauture on the current atmospheric level
-    ! real :: density ! [molecule/(cm^2 * km)] -- such density units are needed for having absorption coefficient in km-1
+    
+    integer, parameter :: atmProfileUnit = 777 ! unit for the atmospheric file
+    character(len=300) :: atmProfileFile ! title of the file with atmospheric data located in `data/Atmospheres`
+    character(len=300) :: fullNameAtmProfile ! full path to the atmospheric file
+    character(len=100) :: atmTitle ! specific atmosphere title (in the header of the atmospheric file)
+    integer :: levels ! number of levels of the considered atmosphere ( located in a file header )
+    real, allocatable :: heightArray(:), pressureArray(:), temperatureArray(:), densityArray(:) ! PPP, TTT, RORO (legacy)
+    integer, parameter :: levelsThreshold = 200 
 
-    ! TODO: consider moving loop over atmospheric levels here
-    real :: temperature, pressure, density ! physical parameters of the atmosphere on the current height level
+    ! macroscopic parameters on the current atmospheric level !
+    ! temperature: temperauture on the current atmospheric level [K]
+    ! pressure: total pressure on the current atmospheric level [atm]
+    ! density: number density of the considered species: [(number of molecules)/(cm^2 * km)]
+    !           such number density units are needed for having volume absorption coefficient in km-1
+    real :: temperature, pressure, density
+
+    real :: pSelf ! [atm] -- partial pressure of considered gaseous species
+    real :: pForeign ! [atm] -- foreign pressure (p(total) - pSelf)
+    real :: unitlessT ! see the main.f90 implementation
+    
+    ! Technical variables
+    integer :: ios
+    integer :: levelsIdx ! loop index
+
 contains
+    ! TODO:(?) consider moving loop over atmospheric levels here
     subroutine readAtmosphericParameters()
-        if (isUUID) then
-            fullNameAtmProfile = 'users/'//trim(adjustl(uuid))//'/'//atmProfileFile
-        else
-            fullNameAtmProfile = 'data/Atmospheres/'//atmProfileFile
-        end if
-        ! ---------- reading from the ATM file ------------------ !
+        
+        fullNameAtmProfile = 'data/Atmospheres/'//atmProfileFile
+
+        ! Reading the header of the atmospheric file: atmTitle, levels !
         open(atmProfileUnit, file=fullNameAtmProfile, status='old')
         read(atmProfileUnit, '(A20)') atmTitle
         read(atmProfileUnit, *) levels
         if (levels > 200) then
             write(*, '(A, I3, A)') 'WARNING: input number of atmospheric levels is &
-                                    bigger than ', levelsThreshold, '. WARNING message here.'
+                                    bigger than ', levelsThreshold
             stop 6
-        endif
+        end if
 
+        ! Allocation and population of arrays for macroscopic parameters !
         allocate(heightArray(levels))
         allocate(pressureArray(levels))
         allocate(temperatureArray(levels))
@@ -57,6 +57,6 @@ contains
             end if
         end do
         close(atmProfileUnit)
-    ! ------------------------------------------------------------- !
+
     end subroutine readAtmosphericParameters
 end module Atmosphere
