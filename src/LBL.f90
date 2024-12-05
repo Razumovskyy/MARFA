@@ -17,17 +17,7 @@ contains
         integer, intent(inout) :: lineIdxParameter ! integer line label used for locating record in direct access file
         real(kind=DP), intent(inout) :: capWVParameter ! inout parameter for capWV. For definition see main.f90 file
 
-        ! TODO:(?) move these boundary parameters to mesh.f90
-        ! boundary parameter
-        real, parameter :: BOUNDL = 10.
-        ! boundary value related to Doppler broadening, given its small value
-        real, parameter :: BOUNDD = 0.01
-
         real(kind=DP) :: shiftedLineWV ! VI ! pressure-induced shifted line transition wavenumber
-
-        ! `shapePrevailFactor` characterizes the relative contributions of Lorentzian and Doppler broadening 
-        ! to the overall shape of the spectral line
-        real(kind=DP) :: shapePrevailFactor ! ALAD !
 
         ! techincal variables
         integer :: I ! loop variable for accessing the record in direct access file
@@ -59,32 +49,8 @@ contains
             isotopeNum = jointMolIso/100
             molarMass = WISO(isotopeNum)
 
-            ! Calculation of half-widthes based on read data
-            LorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, & 
-                                 temperatureParameter=temperature)
-            DopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
-
-            ! ratio to see which effect (Doppler or Lorentz prevails)
-            shapePrevailFactor = LorHWHM / (DopHWHM/sqln2)
-
             ! calculation of pressure-induced shift
             shiftedLineWV = shiftedLinePosition(lineWV, pressure)
-            
-            ! ! TO SPEED UP, BUT SOME FALL IN ACCURACY:
-            ! ! calculate pure doppler in the center and lorentz on the wing:
-            ! if (shapePrevailFactor > BOUNDL) then
-            !     ! FAR WING SECTION (χ-corrected Lorentz wing) !
-            !     ! to apply no χ-correction: choose chi-function to `none`: see ChiFactors.f90
-            !     shapeFuncPtr => chiCorrectedLorentz
-            ! else if (shapePrevailFactor > BOUNDD) then
-            !     ! INTERMEDIATE SECTION: Voigt
-            !     shapeFuncPtr => voigt
-            ! else
-            !     ! CENTER OF THE LINE SECTION: Doppler
-            !     shapeFuncPtr => doppler
-            ! end if
-
-            shapeFuncPtr => voigt
             
             if (shiftedLineWV < startDeltaWV) then
                 ! in this case current LBL_LOOP spectral line falls into the interval: 

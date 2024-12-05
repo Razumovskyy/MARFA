@@ -115,6 +115,8 @@ program main
     ! reads and initializes the TIPS array
     call readTIPS
 
+    ! setting a line shape function
+    shapeFuncPtr => voigt
     !------------------------------------------------------------------------------------------------------------------!
 
     ! Directory where the PT-tables are stored is generated automatcally and contains a timestamp in its name
@@ -182,7 +184,7 @@ program main
 
     !------------------------------------------------------------------------------------------------------------------!
 
-    ! TODO:(?) optimization proposition. Reduce reading operations because of highly overlaping intervals: 
+    ! TODO:(!) optimization proposition. Reduce reading operations because of highly overlaping intervals: 
     !       [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
     ! DEBUG SECTION !
@@ -341,8 +343,6 @@ contains
         ! TODO:(!) moving `ifFirstCall` part to the separate subroutine, because
         ! it is only for reading from the spectral file and must be done only once. Do it during
         ! implementing parallelization with OpenMP
-
-        ! TODO:(!) deal with `molType`
          
         ! DEBUG SECTION !
         ! real(kind=DP) :: VFISH ! *** ! extEndDeltaWV
@@ -358,9 +358,9 @@ contains
             lineIdx = 0
             
             ! TODO: (!) move out from this subroutine (do it when moving the first call) 
-            call get_species_code(molecule, molType, DBfileExtension)
+            call get_species_code(molecule, moleculeIntCode, DBfileExtension)
 
-            if (molType == 0) then
+            if (moleculeIntCode == 0) then
                 print *, 'ERROR: unsupported molecule: ', trim(adjustl(molecule))
                 stop 8
             end if

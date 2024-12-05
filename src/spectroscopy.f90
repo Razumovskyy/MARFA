@@ -2,12 +2,14 @@ module Spectroscopy
     ! This module contains calculation of spectroscopic features:
     ! pressure-induced shifted line positions, half-widths for various broadening mechanisms,
     ! establishing TIPS as a function of temperature and calculation of temprerature-dependent
-    ! line intensities
+    ! line intensities, simple line shapes, wing-correction functions and asymptotics for Voigt
+    ! functions
 
-    ! Add custom spectroscopic functions here in this module after the `contains` statement !
+    ! Line shape functions for self-consistent calculations are located in Shapes.f90 module
     
     use Constants
     use Atmosphere
+    use ChiFactors
     use MolarMasses
     implicit none
     
@@ -23,14 +25,18 @@ module Spectroscopy
     real :: deltaForeign ! [cm-1/atm] (pressure shift of the line position at 296 K and 1 atm)
     
     real :: molarMass ! [g/mol] -- current species molar mass
-    integer :: molType ! to define type of the molecule : 2 -CO2, 1 -H2O, 0 -other
+    integer :: moleculeIntCode ! 1 - H2O, 2 - CO2,  ...
     real, allocatable :: TIPS(:,:) ! TIPS array
 
 contains
 
+    ! Add custom spectroscopic functions here in this module after the `contains` statement !
+
     real(kind=DP) function shiftedLinePosition(lineWVParameter, pressureParameter)
-        ! calculation of shifted position of a transition wavenumber
+        ! calculation of shifted position of a transition wavenumber of a line shape
         ! see https://hitran.org/docs/definitions-and-units/ formula (7)
+        
+        implicit none
         
         real(kind=DP), intent(in) :: lineWVParameter
         real, intent(in) :: pressureParameter
@@ -38,24 +44,23 @@ contains
         shiftedLinePosition = lineWVParameter + deltaForeign*pressureParameter
     end function shiftedLinePosition
 
+    
     real function dopplerHWHM(lineWVParameter, temperatureParameter, molarMassParameter)
-
         ! calculation of a doppler half-width
         ! see https://hitran.org/docs/definitions-and-units/ formula (5)
 
+        implicit none
+        
         real(kind=DP), intent(in) :: lineWVParameter
         real, intent(in) :: temperatureParameter
         real, intent(in) :: molarMassParameter
 
-        ! dopplerHWHM = dopplerCONST * abs(shiftedLinePosition(lineWVParameter, pressure)) * &
-        !         sqrt(temperatureParameter / molarMassParameter)
-
-        ! more correct way 
         dopplerHWHM = dopplerCONST * lineWVParameter * &
                 sqrt(temperatureParameter / molarMassParameter)
 
     end function dopplerHWHM
 
+    
     real function lorentzHWHM(pressureParameter, partialPressureParameter, temperatureParameter)
         ! calculation of a Lorentz half-width: pressure- and temperature-dependent
         ! see https://hitran.org/docs/definitions-and-units/ formula (6)
@@ -63,6 +68,8 @@ contains
         ! this function is called inside the LBL_LOOP where spectroscopic data: foreignTempCoeff,
         ! gammaForeign, gammaSelf are fixed, so that is why these parameters are not treated as
         ! as inputs for this function
+        
+        implicit none    
         
         real, intent(in) :: pressureParameter
         real, intent(in) :: partialPressureParameter
@@ -74,12 +81,18 @@ contains
 
     end function lorentzHWHM
 
+    
     real function TIPSofT(temperatureParameter)
+        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
+        ! set isotope as a parameter for clarity
+
         ! establishing a function which accepts temperature as an input
         ! and returning temperature-dependent TIPS as an output
-        real, intent(in) :: temperatureParameter
+        ! isotope -- is an external parameter from MolarMasses.f90 module
         
-        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
+        implicit none
+        
+        real, intent(in) :: temperatureParameter
         integer :: NTAB_G
         real :: C_G1, C_G2
         real :: t_G1
@@ -92,9 +105,17 @@ contains
         TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
     end function TIPSOfT
 
+    
     real function intensityOfT(temperatureParameter)
+        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
+        ! set isotope as a parameter for clarity
+    
         ! calculation of intensity as a function of temperature
         ! see: https://hitran.org/docs/definitions-and-units/, formula (4)
+
+        ! isotope -- is an external parameter from MolarMasses.f90 module
+        
+        implicit none
         
         real, intent(in) :: temperatureParameter ! [K] -- temperature at the current atmospheric level
 
@@ -118,10 +139,12 @@ contains
 
     real function parameterizedLorentzHWHM(pressureParameter, includeGammaSelf, partialPressureParameter, & 
                                 includeTemperature, temperatureParameter)
-        ! use this function for calculation of Lorentz half-width if temperature is not known (reference temperature
-        ! will be set) or self-broadening is not known
+        ! use this function for calculation Lorentz half-width if temperature is not known (reference temperature
+        ! will be set) or self-broadening is not known (partial pressure will be set to zero)
         
         ! TODO:(?) add check if includeTemperature=true but not passed as an argument
+        implicit none
+        
         real, intent(in) :: pressureParameter
         logical, optional, intent(in) :: includeGammaSelf, includeTemperature
         real, optional, intent(in) :: partialPressureParameter
@@ -159,5 +182,72 @@ contains
                             gammaSelf * partialPressureParameter)
         end if
     end function parameterizedLorentzHWHM
+
+    
+    real function lorentz(X, lorHWHM)
+        implicit none
+
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
+        real(kind=DP), intent(in) :: X
+        real, intent(in) :: lorHWHM ! doppler HWHM
+
+        lorentz = lorHWHM / (pi*(X**2 + lorHWHM**2))
+        lorentz = lorentz * intensityOfT(temperature) 
+    end function lorentz
+
+    
+    real function doppler(X, dopHWHM)
+        implicit none
+
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
+        real(kind=DP), intent(in) :: X
+        real, intent(in) :: dopHWHM ! doppler HWHM 
+
+        doppler = sqln2 / (sqrt(pi) * dopHWHM) * exp(-(X/dopHWHM)**2 * log(2.))
+        doppler = doppler * intensityOfT(temperature)
+    end function doppler
+
+    
+    real function chiCorrectedLorentz(X, lorHWHM)
+        ! Lorentz line shape with a χ-corrected wing
+        implicit none
+
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
+        real(kind=DP), intent(in) :: X
+        real, intent(in) :: lorHWHM ! Lorentz HWHM
+
+        chiCorrectedLorentz = lorentz(X, lorHWHM) * chiFactorFuncPtr(X, moleculeIntCode)
+
+    end function chiCorrectedLorentz
+
+    
+    real function voigtAsymptotic1(X, lorHWHM, VX)
+        ! Lorentz leading, Doppler-influenced asymptotic correction for the Voigt function (y<<1, x>>1)
+        implicit none
+
+        real(kind=DP), intent(in) :: X
+        real, intent(in) :: lorHWHM
+        real, intent(in) :: VX ! Voigt function K(x,y): x parameter
+        
+        voigtAsymptotic1 = chiCorrectedLorentz(X, lorHWHM) * (1 + 1.5/VX**2)
+    end function voigtAsymptotic1
+
+
+    real function voigtAsymptotic2(X, lorHWHM, VX, dopHWHM)
+        ! Voigt ≈ Doppler + Lorentz + correction (y<<1, x>1)
+        implicit none 
+
+        real(kind=DP), intent(in) :: X
+        real, intent(in) :: lorHWHM, dopHWHM
+        real, intent(in) :: VX ! Voigt function K(x,y): x parameter
+        real, parameter :: U(9) = [1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
+        real, parameter :: W(9) = [-0.688, 0.2667, 0.6338, 0.4405, 0.2529, 0.1601, 0.1131, 0.0853, 0.068]
+        real :: F
+        integer :: I
+
+        I = VX/0.5 - 1.00001
+        F = 2. * (W(I)*(U(I+1)-VX) + W(I+1)*(VX-U(I)))
+        voigtAsymptotic2 = doppler(X, dopHWHM) + (lorHWHM/(pi*X**2) * (1.+F)) * intensityOfT(temperature)
+    end function voigtAsymptotic2
 
 end module Spectroscopy

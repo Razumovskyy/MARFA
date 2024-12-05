@@ -425,14 +425,14 @@ If you want to provide your own Voigt line shape, then it is the most straightfo
 #### Example 2
 If you want to introduce non-standard (not Voigt, Loretntz, Doppler) line shapes, then you additionally need to adjust the logic in `LBL` module yourself. In the current state, line shape function for calculation is a specific spectral point depends on how far this point from the center of the spectral line. If it is far enough, the `lorentz` or `chiCorrectedLorentz`, in the middle region `voigt` is applied and in the close vicinity of the line center `doppler` is used. If you want to introduce your own line shape you need to specify where it will be estimated, so adjust this pice of code in `LBL` module:
 ```fortran
-if (shapePrevailFactor > BOUNDL) then
+if (Voigt_Y > BOUNDL) then
                 ! Region utilizing Lorentz or chiCorrectedLorentz shape
                 if (shiftedLineWV < startDeltaWV) then
                     shapeFuncPtr => Lorentz
                     call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
                 ! rest of the logic ...
 else
-                if (shapePrevailFactor > BOUNDD) then
+                if (Voigt_Y > BOUNDD) then
                 ! Region utilizing Voigt shape
                     if (shiftedLineWV < startDeltaWV) then
                         shapeFuncPtr => voigt

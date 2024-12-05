@@ -2,7 +2,6 @@ module Shapes
     use Constants
     use Atmosphere
     use Spectroscopy
-    use ChiFactors
     implicit none
 contains
 
@@ -11,51 +10,29 @@ contains
     
     ! add custom line shapes functions here !
 
-    real function lorentz(X)
-
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-        real(kind=DP) :: HWHM
-
-        HWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, & 
-                            temperatureParameter=temperature)
-        lorentz = HWHM / (pi*(X**2 + HWHM**2))
-        lorentz = lorentz * intensityOfT(temperature) 
-    end function lorentz
-
-    real function doppler(X)
-        
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-        real(kind=DP) :: HWHM ! [cm-1] -- Doppler HWHM
-
-        HWHM = dopplerHWHM(lineWV, temperature, molarMass)      
-        doppler = sqrt(log(2.) / (pi * HWHM**2)) * exp(-(X/HWHM)**2 * log(2.))
-        doppler = doppler * intensityOfT(temperature)
-    end function doppler
-
-    real function chiCorrectedLorentz(X)
-        
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-
-        chiCorrectedLorentz = lorentz(X) * chiFactorFuncPtr(X)
-
-    end function chiCorrectedLorentz
-
-    ! TODO:(!) check if the return statements in else-if blocks affect calculation speed 
-
     real function voigt(X)
+        ! Implementation is based on the Humlicek method, improved by Kuntz:
+        ! M. Kuntz. “A new implementation of the Humlicek algorithm for the calculation of the Voigt profile
+        ! function”. In: Journal of Quantitative Spectroscopy and Radiative Transfer 57.6 (1997), pp. 819–824.
+
+        ! Additional features and deviations:
+        ! - scheme is not recursive
+        ! - add region 0 where pure Lorentz is used
+        ! - the boundaries between regions 3 and 4 are deviated from Kuntz's initial study.
+        ! - in region 4 asymptotical analytical approximations are used for increasing speed
         
-        ! ADD = dopHWHM / sqrt(ln2)
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
+        implicit none
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
         ! -------------------------------------------------------- !
-        real(kind=DP) :: dopHWHM, lorHWHM
-        real(kind=DP) :: XX, YY, X2
-        real(kind=DP) :: Y1=0, Y2=0, Y3=0
-        real(kind=DP) :: Y_2
-        real(kind=DP) :: A1, B1, A2, B2, A3, B3, C3, D3, A4, B4, C4, D4, A5, B5, C5, D5, E5, &
+        real :: dopHWHM, lorHWHM ! Doppler and Lorentz half-windths
+
+        real :: VX, VY ! x and y parameters in the K(x,y) function
+        
+        real :: VXsquared ! x**2
+        real :: Y1=0, Y2=0, Y3=0
+        real :: Y_2
+        real :: A1, B1, A2, B2, A3, B3, C3, D3, A4, B4, C4, D4, A5, B5, C5, D5, E5, &
                             A6, B6, C6, D6, E6
         
         ! TODO: figure out if this save can be removed (do when applying atmospheric level parallelization)
@@ -65,22 +42,22 @@ contains
         lorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, &
                                 temperatureParameter=temperature)
         
-        XX = abs(X / (dopHWHM/sqln2))        
-        YY = lorHWHM / (dopHWHM/sqln2)
+        VX = abs(sqln2 * X / dopHWHM)
+        VY = sqln2 * lorHWHM / dopHWHM
 
-        ! REGION 0: Lorentz domination: pure Lorentz with χ-correction
-        if (XX > 15.) then
-            voigt = chiCorrectedLorentz(X)
+        ! REGION 0: Lorentz domination: pure Lorentz with χ-corrected wing (if set)
+        if (VX >= 15.) then
+            voigt = chiCorrectedLorentz(X, lorHWHM)
             return
         end if
 
-        X2 = XX ** 2
+        VXsquared = VX ** 2
 
         ! REGION 1: Voigt rational approximation 1
-        if (XX + YY >= 15.0) then 
+        if (VX + VY >= 15.0) then 
 
-            if (YY /= Y1) then
-                Y1 = YY
+            if (VY /= Y1) then
+                Y1 = VY
                 Y_2 = Y1 ** 2
                 A1 = (0.2820948 + 0.5641896*Y_2) * Y1
                 B1 = 0.5641896 * Y1
@@ -88,14 +65,13 @@ contains
                 B2 = Y_2 + Y_2 - 1.
             end if
             ! rational approximation for Voigt using A1, A2, B1, B2 coefficients
-            voigt = (A1+B1*X2) / (A2+B2*X2+X2**2) / sqrt(pi) / (dopHWHM/sqln2) * &
+            voigt = (A1+B1*VXsquared) / (A2+B2*VXsquared+VXsquared**2) / sqrt(pi) / (dopHWHM/sqln2) * &
                             intensityOfT(temperature)
-            return
         
         ! REGION 2: Voigt rational approximation 2       
-        else if (XX + YY >= 5.5) then
-            if (YY /= Y2) then
-                Y2 = YY
+        else if (VX + VY >= 5.5) then
+            if (VY /= Y2) then
+                Y2 = VY
                 Y_2 = Y2**2
                 A3 = Y2 * (((0.56419*Y_2+3.10304)*Y_2+4.65456)*Y_2+1.05786)
                 B3 = Y2 * ((1.69257*Y_2+0.56419)*Y_2+2.962)
@@ -107,14 +83,13 @@ contains
                 D4 = 4.0*Y_2-6.0
             end if 
 
-            voigt = (((D3*X2+C3)*X2+B3)*X2+A3) / ((((X2+D4)*X2+C4)*X2+B4)*X2+A4) / sqrt(pi) / (dopHWHM/sqln2) * &
+            voigt = (((D3*VXsquared+C3)*VXsquared+B3)*VXsquared+A3) / ((((VXsquared+D4)*VXsquared+C4)*VXsquared+B4)*VXsquared+A4) / sqrt(pi) / (dopHWHM/sqln2) * &
                             intensityOfT(temperature)
-            return
         
         ! REGION 3: Voigt rational approximation 3
-        else if (XX <= 1.0 .OR. YY >= 0.02) then 
-            if (YY /= Y3) then
-                Y3 = YY
+        else if (VX <= 1.0 .OR. VY >= 0.02) then 
+            if (VY /= Y3) then
+                Y3 = VY
                 A5 = ((((((((0.564224*Y3+7.55895)*Y3+49.5213)*Y3+204.510)*Y3+	&
                     581.746)*Y3+1174.8)*Y3+1678.33)*Y3+1629.76)*Y3+973.778)*Y3+272.102
                 B5 = ((((((2.25689*Y3+22.6778)*Y3+100.705)*Y3+247.198)*Y3+336.364)*	&
@@ -134,59 +109,67 @@ contains
                 E6 = (5.0*Y3+13.3988)*Y3+1.49645
             end if
             
-            voigt = ((((E5*X2+D5)*X2+C5)*X2+B5)*X2+A5)/	&
-                    (((((X2+E6)*X2+D6)*X2+C6)*X2+B6)*X2+A6) / sqrt(pi) / (dopHWHM/sqln2) * &
+            voigt = ((((E5*VXsquared+D5)*VXsquared+C5)*VXsquared+B5)*VXsquared+A5)/	&
+                    (((((VXsquared+E6)*VXsquared+D6)*VXsquared+C6)*VXsquared+B6)*VXsquared+A6) / sqrt(pi) / (dopHWHM/sqln2) * &
                             intensityOfT(temperature)
-            return
     
-        ! REGION 4: ASYMPTOTIC REGION: (1. < XX < 5.5 and y < 0.02)
-        ! where instead of estimating voigt function, 
-        ! analytical asymptotical expressions based on Lorentz and Doppler shape functions might be used
-        else					
-            voigt = asymptoticDopplerLorentz(X)
+        else	
+            ! REGION 4: ASYMPTOTIC REGION: (1. < VX < 5.5 and y < 0.02)
+            ! where instead of approximation of Voigt function, 
+            ! can be used analytical asymptotical expressions based on series expansions 
+            ! of Lorentz and Doppler shape functions	
+            if (VX > 5.) then
+                voigt = voigtAsymptotic1(X, lorHWHM, VX)
+            else if (VX > sqrt(1.4)) then
+                voigt = voigtAsymptotic2(X, lorHWHM, VX, dopHWHM)
+            else 
+                voigt = doppler(X, dopHWHM)
+            end if
+
         end if
     end function voigt
 
-    real function asymptoticDopplerLorentz(X)
-        
-        ! used only for the Voigt function estimation
-        
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point in which the total contribution from lines is calculated
-        real(kind=DP), intent(in) :: X
-        real, parameter :: U(9) = [1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
-        real, parameter :: W(9) = [-0.688, 0.2667, 0.6338, 0.4405, 0.2529, 0.1601, 0.1131, 0.0853, 0.068]
+    real function truncatedVoigt(X)
+        ! simplified Voigt shape function for speed-up, but with some fall in accuracy
+        ! truncation over parameter Voigt_Y: if Y > BOUNDL then Voigt reduces to Lorentz,
+        ! if Y < BOUNDD the Voigt reduces to Doppler, whatever the X is.
 
-        real(kind=DP) :: dopHWHM, lorHWHM
-        real(kind=DP) :: XX, X2
-        real :: XI
-        real :: F
-        integer :: I
+        implicit none
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
+        real(kind=DP), intent(in) :: X
+        real, parameter :: BOUNDL = 10.
+        real, parameter :: BOUNDD = 0.01
+
+        real :: dopHWHM, lorHWHM
+        
+        ! x and y parameters in the Voigt K(x,y) function
+        real :: VY ! legacy: ALAD !
+        real :: VX
 
         dopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
         lorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, &
                                 temperatureParameter=temperature)
-        XX = abs(X / (dopHWHM/sqln2))
-        X2 = XX ** 2
         
-        ! REGION 4a: Lorentz leading with Doppler-influenced asymptotic correction
-        if (X2 >= 25.) then
-            ! asymptotic approximation 1
-            asymptoticDopplerLorentz = chiCorrectedLorentz(X) * (1.+1.5/XX)
-            return
+        ! Definition of the VY coefficient
+        VX = abs(sqln2 * X / dopHWHM)
+        VY = sqln2 * lorHWHM / dopHWHM
         
-        ! REGION 4b: Doppler leading with Lorentz-influenced asymptotic correction
-        else if (X2 >= 1.4) then
-            ! asymptotic approximation 2
-            XI = abs(X / (dopHWHM/sqln2))
-            I = XI/0.5 - 1.00001
-            F = 2. * (W(I)*(U(I+1)-XI) + W(I+1)*(XI-U(I)))
-            asymptoticDopplerLorentz = doppler(X) + (lorHWHM/(pi*X**2) * (1.+F)) * intensityOfT(temperature)
-            return
-        
-        ! REGION 4c: Dominant Doppler, Lorentz negligible
+        if (VY > BOUNDL) then
+            truncatedVoigt = chiCorrectedLorentz(X, lorHWHM)
+        else if (VY < BOUNDD) then
+            if (VX >= 12.5) then
+                truncatedVoigt = chiCorrectedLorentz(X, lorHWHM)
+            else if (VX >= 5.) then
+                truncatedVoigt = voigtAsymptotic1(X, lorHWHM, VX)
+            else if (VX >= sqrt(1.4)) then
+                truncatedVoigt = voigtAsymptotic2(X, lorHWHM, VX, dopHWHM)
+            else
+                truncatedVoigt = doppler(X, dopHWHM)
+            end if
         else
-            asymptoticDopplerLorentz = doppler(X)
-            return
+            truncatedVoigt = voigt(X)
         end if
-    end function asymptoticDopplerLorentz
+
+    end function truncatedVoigt
+
 end module Shapes

@@ -23,10 +23,6 @@ module IO
     integer :: nIsotopes, nTemperatures ! number of different isotopes and temperatures in the TIPS file
     integer :: stSumTIdx, stSumIsoIdx  ! loop indices for partition sums: temperatures and isotopes
 
-    ! Half-widths
-    real(kind=DP) :: LorHWHM ! Lorentz HWHM -- T and P dependent ! AL (legacy)
-    real(kind=DP) :: DopHWHM ! Doppler HWHM ! ADD (legacy)
-
     real(kind=DP) :: startWV, endWV ! [cm-1] -- boundaries of an initial spectral interval [startWV; EndWV]
     real(kind=DP) :: extStartWV, extEndWV ! boundaries of an extended initial interval: [startWV-cutOff; endWV+cutOff]
     real(kind=DP) :: startDeltaWV, endDeltaWV ! boundaries of a subinterval ! VSTART, VFINISH (legacy) !
