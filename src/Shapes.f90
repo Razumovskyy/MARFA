@@ -25,7 +25,6 @@ contains
         ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
         ! -------------------------------------------------------- !
-        real :: dopHWHM, lorHWHM ! Doppler and Lorentz half-windths
 
         real :: VX, VY ! x and y parameters in the K(x,y) function
         
@@ -37,10 +36,6 @@ contains
         
         ! TODO: figure out if this save can be removed (do when applying atmospheric level parallelization)
         save A1, A2, A3, A4, A5, A6, B1, B2, B3, B4, B5, B6, C3, C4, C5, C6, D3, D4, D5, D6, E5, E6
-        
-        dopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
-        lorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, &
-                                temperatureParameter=temperature)
         
         VX = abs(sqln2 * X / dopHWHM)
         VY = sqln2 * lorHWHM / dopHWHM
@@ -65,8 +60,7 @@ contains
                 B2 = Y_2 + Y_2 - 1.
             end if
             ! rational approximation for Voigt using A1, A2, B1, B2 coefficients
-            voigt = (A1+B1*VXsquared) / (A2+B2*VXsquared+VXsquared**2) / sqrt(pi) / (dopHWHM/sqln2) * &
-                            intensityOfT(temperature)
+            voigt = (A1+B1*VXsquared) / (A2+B2*VXsquared+VXsquared**2) / sqrt(pi) / (dopHWHM/sqln2) * lineIntensity
         
         ! REGION 2: Voigt rational approximation 2       
         else if (VX + VY >= 5.5) then
@@ -83,8 +77,8 @@ contains
                 D4 = 4.0*Y_2-6.0
             end if 
 
-            voigt = (((D3*VXsquared+C3)*VXsquared+B3)*VXsquared+A3) / ((((VXsquared+D4)*VXsquared+C4)*VXsquared+B4)*VXsquared+A4) / sqrt(pi) / (dopHWHM/sqln2) * &
-                            intensityOfT(temperature)
+            voigt = (((D3*VXsquared+C3)*VXsquared+B3)*VXsquared+A3) / ((((VXsquared+D4)*VXsquared+C4)*VXsquared+B4)*VXsquared+A4) &
+                            / sqrt(pi) / (dopHWHM/sqln2) * lineIntensity
         
         ! REGION 3: Voigt rational approximation 3
         else if (VX <= 1.0 .OR. VY >= 0.02) then 
@@ -110,10 +104,10 @@ contains
             end if
             
             voigt = ((((E5*VXsquared+D5)*VXsquared+C5)*VXsquared+B5)*VXsquared+A5)/	&
-                    (((((VXsquared+E6)*VXsquared+D6)*VXsquared+C6)*VXsquared+B6)*VXsquared+A6) / sqrt(pi) / (dopHWHM/sqln2) * &
-                            intensityOfT(temperature)
+                    (((((VXsquared+E6)*VXsquared+D6)*VXsquared+C6)*VXsquared+B6)*VXsquared+A6) / sqrt(pi) &
+                            / (dopHWHM/sqln2) * lineIntensity
     
-        else	
+        else
             ! REGION 4: ASYMPTOTIC REGION: (1. < VX < 5.5 and y < 0.02)
             ! where instead of approximation of Voigt function, 
             ! can be used analytical asymptotical expressions based on series expansions 
@@ -139,16 +133,10 @@ contains
         real(kind=DP), intent(in) :: X
         real, parameter :: BOUNDL = 10.
         real, parameter :: BOUNDD = 0.01
-
-        real :: dopHWHM, lorHWHM
         
         ! x and y parameters in the Voigt K(x,y) function
         real :: VY ! legacy: ALAD !
         real :: VX
-
-        dopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
-        lorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, &
-                                temperatureParameter=temperature)
         
         ! Definition of the VY coefficient
         VX = abs(sqln2 * X / dopHWHM)

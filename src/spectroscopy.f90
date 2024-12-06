@@ -28,6 +28,9 @@ module Spectroscopy
     integer :: moleculeIntCode ! 1 - H2O, 2 - CO2,  ...
     real, allocatable :: TIPS(:,:) ! TIPS array
 
+    real :: dopHWHM, lorHWHM
+    real :: lineIntensity
+
 contains
 
     ! Add custom spectroscopic functions here in this module after the `contains` statement !
@@ -74,10 +77,18 @@ contains
         real, intent(in) :: pressureParameter
         real, intent(in) :: partialPressureParameter
         real, intent(in) :: temperatureParameter
+        real :: coeffF, coeffS
 
+        ! lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
+        !                 (gammaForeign * (pressureParameter - partialPressureParameter) + &
+        !                 gammaSelf * partialPressureParameter)
+
+        coeffF = (pressureParameter - partialPressureParameter) / pressureParameter
+        coeffS = partialPressureParameter / pressureParameter  
+        
         lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
-                        (gammaForeign * (pressureParameter - partialPressureParameter) + &
-                        gammaSelf * partialPressureParameter)
+                (gammaForeign * (pressureParameter - partialPressureParameter) * coeffF + &
+                gammaSelf * partialPressureParameter) * coeffS
 
     end function lorentzHWHM
 
@@ -191,8 +202,7 @@ contains
         real(kind=DP), intent(in) :: X
         real, intent(in) :: lorHWHM ! doppler HWHM
 
-        lorentz = lorHWHM / (pi*(X**2 + lorHWHM**2))
-        lorentz = lorentz * intensityOfT(temperature) 
+        lorentz = lorHWHM / (pi*(X**2 + lorHWHM**2)) * lineIntensity
     end function lorentz
 
     
@@ -203,8 +213,7 @@ contains
         real(kind=DP), intent(in) :: X
         real, intent(in) :: dopHWHM ! doppler HWHM 
 
-        doppler = sqln2 / (sqrt(pi) * dopHWHM) * exp(-(X/dopHWHM)**2 * log(2.))
-        doppler = doppler * intensityOfT(temperature)
+        doppler = sqln2 / (sqrt(pi) * dopHWHM) * exp(-(X/dopHWHM)**2 * log(2.)) * lineIntensity
     end function doppler
 
     
@@ -247,7 +256,7 @@ contains
 
         I = VX/0.5 - 1.00001
         F = 2. * (W(I)*(U(I+1)-VX) + W(I+1)*(VX-U(I)))
-        voigtAsymptotic2 = doppler(X, dopHWHM) + (lorHWHM/(pi*X**2) * (1.+F)) * intensityOfT(temperature)
+        voigtAsymptotic2 = doppler(X, dopHWHM) + (lorHWHM/(pi*X**2) * (1.+F)) * lineIntensity
     end function voigtAsymptotic2
 
 end module Spectroscopy

@@ -32,6 +32,11 @@ contains
             I = I + 1
             read(databaseFileUnit, rec=I, iostat=ios2) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, & 
                                                     foreignTempCoeff, jointMolIso, deltaForeign
+     
+            ! DEBUG SECTION !
+            ! print *, 'lineWV: ', lineWV
+            ! print *, 'refLineIntensity: ', refLineIntensity
+            
             if (ios2 > 0) then
                 print *, 'ERROR: when reading file with spectral data.'
                 stop 9
@@ -51,6 +56,17 @@ contains
 
             ! calculation of pressure-induced shift
             shiftedLineWV = shiftedLinePosition(lineWV, pressure)
+            dopHWHM = dopplerHWHM(shiftedLineWV, temperature, molarMass)
+            lorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, &
+                                    temperatureParameter=temperature)
+
+            lineIntensity = intensityOfT(temperature)
+
+            ! DEBUG SECTION !
+            ! print *, 'dopHWHM: ', dopHWHM
+            ! print *, 'lorHWHM: ', lorHWHM
+            ! print *, 'VY: ', lorHWHM * sqln2 /dopHWHM
+            ! pause
             
             if (shiftedLineWV < startDeltaWV) then
                 ! in this case current LBL_LOOP spectral line falls into the interval: 
