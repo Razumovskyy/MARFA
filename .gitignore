@@ -63,3 +63,5 @@ SPECTR*
 venv/
 .venv
 *.par
+app/voigtTable.f90
+data/Atmospheres/VenusCO2_1level.dat
