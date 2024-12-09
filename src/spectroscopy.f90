@@ -195,59 +195,59 @@ contains
     end function parameterizedLorentzHWHM
 
     
-    real function lorentz(X, lorHWHM)
+    real function lorentz(X, lorHWHMParameter)
         implicit none
 
         ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
-        real, intent(in) :: lorHWHM ! doppler HWHM
+        real, intent(in) :: lorHWHMParameter ! doppler HWHM
 
-        lorentz = lorHWHM / (pi*(X**2 + lorHWHM**2)) * lineIntensity
+        lorentz = lorHWHMParameter / (pi*(X**2 + lorHWHMParameter**2)) * lineIntensity
     end function lorentz
 
     
-    real function doppler(X, dopHWHM)
+    real function doppler(X, dopHWHMParameter)
         implicit none
 
         ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
-        real, intent(in) :: dopHWHM ! doppler HWHM 
+        real, intent(in) :: dopHWHMParameter ! doppler HWHM 
 
-        doppler = sqln2 / (sqrt(pi) * dopHWHM) * exp(-(X/dopHWHM)**2 * log(2.)) * lineIntensity
+        doppler = sqln2 / (sqrt(pi) * dopHWHMParameter) * exp(-(X/dopHWHMParameter)**2 * log(2.)) * lineIntensity
     end function doppler
 
     
-    real function chiCorrectedLorentz(X, lorHWHM)
+    real function chiCorrectedLorentz(X, lorHWHMParameter)
         ! Lorentz line shape with a χ-corrected wing
         implicit none
 
         ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
-        real, intent(in) :: lorHWHM ! Lorentz HWHM
+        real, intent(in) :: lorHWHMParameter ! Lorentz HWHM
 
-        chiCorrectedLorentz = lorentz(X, lorHWHM) * chiFactorFuncPtr(X, moleculeIntCode)
+        chiCorrectedLorentz = lorentz(X, lorHWHMParameter) * chiFactorFuncPtr(X, moleculeIntCode)
 
     end function chiCorrectedLorentz
 
     
-    real function voigtAsymptotic1(X, lorHWHM, VX)
+    real function voigtAsymptotic1(X, lorHWHMParameter, VX)
         ! Lorentz leading, Doppler-influenced asymptotic correction for the Voigt function (y<<1, x>>1)
         implicit none
 
         real(kind=DP), intent(in) :: X
-        real, intent(in) :: lorHWHM
+        real, intent(in) :: lorHWHMParameter
         real, intent(in) :: VX ! Voigt function K(x,y): x parameter
         
-        voigtAsymptotic1 = chiCorrectedLorentz(X, lorHWHM) * (1 + 1.5/VX**2)
+        voigtAsymptotic1 = chiCorrectedLorentz(X, lorHWHMParameter) * (1 + 1.5/VX**2)
     end function voigtAsymptotic1
 
 
-    real function voigtAsymptotic2(X, lorHWHM, VX, dopHWHM)
+    real function voigtAsymptotic2(X, lorHWHMParameter, VX, dopHWHMParameter)
         ! Voigt ≈ Doppler + Lorentz + correction (y<<1, x>1)
         implicit none 
 
         real(kind=DP), intent(in) :: X
-        real, intent(in) :: lorHWHM, dopHWHM
+        real, intent(in) :: lorHWHMParameter, dopHWHMParameter
         real, intent(in) :: VX ! Voigt function K(x,y): x parameter
         real, parameter :: U(9) = [1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
         real, parameter :: W(9) = [-0.688, 0.2667, 0.6338, 0.4405, 0.2529, 0.1601, 0.1131, 0.0853, 0.068]
@@ -256,7 +256,7 @@ contains
 
         I = VX/0.5 - 1.00001
         F = 2. * (W(I)*(U(I+1)-VX) + W(I+1)*(VX-U(I)))
-        voigtAsymptotic2 = doppler(X, dopHWHM) + (lorHWHM/(pi*X**2) * (1.+F)) * lineIntensity
+        voigtAsymptotic2 = doppler(X, dopHWHMParameter) + (lorHWHMParameter/(pi*X**2) * (1.+F)) * lineIntensity
     end function voigtAsymptotic2
 
 end module Spectroscopy
