@@ -14,11 +14,11 @@ module Mesh
     integer, parameter :: NT9 = NT8 * 2 !  = 5120
     integer, parameter :: NT = NT9 * 4 + 1 !  = 20481
     
-    ! TODO:(!): move it out from parameters, it might be an input value, or
+    ! TODO:(!!): move it out from parameters, it might be an input value, or
     ! a dictionary value based on the input
     real, parameter :: deltaWV = 10.0 ! resolution in cm-1
     
-    ! TODO: deal with it during refactor of the grid calculation
+    ! TODO:(!!) deal with it during refactor of the grid calculation
     real, parameter :: STEP = 1.0
 
     real :: cutOff ! cutOff condition in cm-1

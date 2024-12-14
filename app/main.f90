@@ -184,7 +184,7 @@ program main
 
     !------------------------------------------------------------------------------------------------------------------!
 
-    ! TODO:(!) optimization proposition. Reduce reading operations because of highly overlaping intervals: 
+    ! TODO:(!!) optimization proposition. Reduce reading operations because of highly overlaping intervals: 
     !       [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
     ! DEBUG SECTION !
@@ -197,7 +197,7 @@ program main
     ! print *, atmProfileFile
 
     ! Defining the grid constants (see the Mesh.f90 module)
-    ! TODO:(?) move out from the main.f90 file, it initialized only once
+    ! TODO:(!) move out from the main.f90 file, it initialized only once
     EPS = 0.0
     H0 = STEP
     H1 = H0/2.
@@ -252,7 +252,7 @@ program main
             ! loop over subintervals !
 
             ! Relation between record number and left boundary of a subinterval
-            ! TODO:(!) rewrite when working on introducing the dynamic resolution and fixing file sizes issue
+            ! TODO:(!!) rewrite when working on introducing the dynamic resolution and fixing file sizes issue
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
 
             ! TODO:(!) that couldn't happen -- remove
@@ -376,7 +376,7 @@ contains
 
             ! This section identifies a starting spectral line from which to proceed with line-by-line scheme
             ! based on the left boundary of the initial spectral interval [startWV, endWV]
-            ! TODO: optimize this block and startingLineIdx and startingLineWV variables
+            ! TODO:(!) optimize this block and startingLineIdx and startingLineWV variables
             read(databaseFileUnit, rec=startingLineIdx) startingLineWV
 
             
@@ -429,7 +429,7 @@ contains
         
         ! Defining capWV: wavenumber to determine from which spectral line to start calculation
         ! of the next subinterval
-        ! TODO:(?) introduce pointers logic for that
+        ! TODO:(!!) introduce pointers logic for that -- do when fixing the issue with subintervals overlap
         capWV = extStartDeltaWV + deltaWV
         ! The same is:
         ! capWV = endDeltaWV - cutOff
@@ -440,7 +440,7 @@ contains
         ! Note: Grid arrays for storing absorption values on all grids
         ! are initialized to zero at the beginning of each calculation inside subinterval.
         
-        ! TODO:(?) consider moving this section to inner subroutines
+        ! TODO:(!) consider moving this section to inner subroutines
         RK = 0.0
         RK0 = 0.0; RK0L = 0.0; RK0P = 0.0
         RK1 = 0.0; RK1L = 0.0; RK1P = 0.0
@@ -472,8 +472,8 @@ contains
         ! TODO:(!) Create subroutine to remove repetitions
         ! (be careful that last loop differs from NT0-NT8) 
         
-        ! TODO:(?) consider moving this section to inner subroutines
-        ! TODO:(?) establish block and define loop variables there
+        ! TODO:(!) consider moving this section to inner subroutines
+        ! TODO:(!) establish block and define loop variables there
         do J = 1, NT0
             I = J*2 - 1
             RK1P(I) = RK1P(I) + RK0P(J)

@@ -94,7 +94,7 @@ contains
 
     
     real function TIPSofT(temperatureParameter)
-        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
+        ! TODO:(!!) refactor when dealing with Gamache TIPS programs (python or Fortran)
         ! set isotope as a parameter for clarity
 
         ! establishing a function which accepts temperature as an input
@@ -118,7 +118,7 @@ contains
 
     
     real function intensityOfT(temperatureParameter)
-        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
+        ! TODO:(!!) refactor when dealing with Gamache TIPS programs (python or Fortran)
         ! set isotope as a parameter for clarity
     
         ! calculation of intensity as a function of temperature
@@ -153,7 +153,6 @@ contains
         ! use this function for calculation Lorentz half-width if temperature is not known (reference temperature
         ! will be set) or self-broadening is not known (partial pressure will be set to zero)
         
-        ! TODO:(?) add check if includeTemperature=true but not passed as an argument
         implicit none
         
         real, intent(in) :: pressureParameter

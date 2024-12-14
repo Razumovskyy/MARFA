@@ -26,7 +26,7 @@ module Atmosphere
     integer :: levelsIdx ! loop index
 
 contains
-    ! TODO:(?) consider moving loop over atmospheric levels here
+
     subroutine readAtmosphericParameters()
         
         fullNameAtmProfile = 'data/Atmospheres/'//atmProfileFile
