@@ -123,41 +123,4 @@ contains
         end if
     end function voigt
 
-    real function truncatedVoigt(X)
-        ! simplified Voigt shape function for speed-up, but with some fall in accuracy
-        ! truncation over parameter Voigt_Y: if Y > BOUNDL then Voigt reduces to Lorentz,
-        ! if Y < BOUNDD the Voigt reduces to Doppler, whatever the X is.
-
-        implicit none
-        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
-        real(kind=DP), intent(in) :: X
-        real, parameter :: BOUNDL = 10.
-        real, parameter :: BOUNDD = 0.01
-        
-        ! x and y parameters in the Voigt K(x,y) function
-        real :: VY ! legacy: ALAD !
-        real :: VX
-        
-        ! Definition of the VY coefficient
-        VX = abs(sqln2 * X / dopHWHM)
-        VY = sqln2 * lorHWHM / dopHWHM
-        
-        if (VY > BOUNDL) then
-            truncatedVoigt = chiCorrectedLorentz(X, lorHWHM)
-        else if (VY < BOUNDD) then
-            if (VX >= 12.5) then
-                truncatedVoigt = chiCorrectedLorentz(X, lorHWHM)
-            else if (VX >= 5.) then
-                truncatedVoigt = voigtAsymptotic1(X, lorHWHM, VX)
-            else if (VX >= sqrt(1.4)) then
-                truncatedVoigt = voigtAsymptotic2(X, lorHWHM, VX, dopHWHM)
-            else
-                truncatedVoigt = doppler(X, dopHWHM)
-            end if
-        else
-            truncatedVoigt = voigt(X)
-        end if
-
-    end function truncatedVoigt
-
 end module Shapes

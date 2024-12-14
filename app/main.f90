@@ -115,7 +115,7 @@ program main
     ! reads and initializes the TIPS array
     call readTIPS
 
-    ! setting a line shape function
+    ! setting a line shape function (choose from Shapes.f90 module)
     shapeFuncPtr => voigt
     !------------------------------------------------------------------------------------------------------------------!
 
