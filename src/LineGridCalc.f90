@@ -8,6 +8,8 @@ contains
         ! calculation contributions to the subinterval on each grid
         ! FROM the LEFT PART of the extended subinterval: [startDeltaWV-cutOff; startDeltaWV]
 
+        ! TODO:(!!) when refactoring this file, deal with EPS. In legacy it is under `save` 
+
         IMPLICIT INTEGER*4 (I-N)
         real(kind=DP) :: FREQ
         real(kind=DP) :: UL, UU
