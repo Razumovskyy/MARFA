@@ -43,7 +43,17 @@ module Mesh
 
     real :: RK(NT) ! array that holds final calculated spectral data
 
-    ! Additional variables
-    real :: H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H
-    
+    ! Grids relative resolutions
+    real, parameter :: H0 = STEP
+    real, parameter :: H1 = H0 / 2.0
+    real, parameter :: H2 = H1 / 2.0
+    real, parameter :: H3 = H2 / 2.0
+    real, parameter :: H4 = H3 / 2.0
+    real, parameter :: H5 = H4 / 2.0
+    real, parameter :: H6 = H5 / 2.0
+    real, parameter :: H7 = H6 / 2.0
+    real, parameter :: H8 = H7 / 2.0
+    real, parameter :: H9 = H8 / 2.0
+    real, parameter :: H = H9 / 4.0
+
 end module Mesh

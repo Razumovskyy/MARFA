@@ -183,9 +183,6 @@ program main
     close(latestRunUnit)
 
     !------------------------------------------------------------------------------------------------------------------!
-
-    ! TODO:(!!) optimization proposition. Reduce reading operations because of highly overlaping intervals: 
-    !       [extStartWV1, extEndWV1] and [extStartWV2, extEndWV2]
     
     ! DEBUG SECTION !
     ! print *, inputMolecule
@@ -195,21 +192,6 @@ program main
     ! print *, chiFactorFuncName
     ! print *, targetValue
     ! print *, atmProfileFile
-
-    ! Defining the grid constants (see the Mesh.f90 module)
-    ! TODO:(!) move out from the main.f90 file, it initialized only once
-    EPS = 0.0
-    H0 = STEP
-    H1 = H0/2.
-    H2 = H1/2.
-    H3 = H2/2.
-    H4 = H3/2.
-    H5 = H4/2.
-    H6 = H5/2.
-    H7 = H6/2. 
-    H8 = H7/2. 
-    H9 = H8/2. 
-    H = H9/4.
 
     ATMOSPHERIC_LEVELS_LOOP: do levelsIdx = 1, levels
         ! OUTER LOOP: over the atmospheric levels. After each iteration, PT-table file is generated for

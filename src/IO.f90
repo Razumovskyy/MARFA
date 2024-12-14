@@ -30,8 +30,6 @@ module IO
     ! boundaries of an extended subinterval (cutOffs included): [startDeltaWV-cutOff; endWV+cutOff] ! WVA, WVB (legacy) !
     real(kind=DP) :: extStartDeltaWV, extEndDeltaWV 
 
-    ! TODO:(!) deal with EPS - remove ?
-    real(kind=DP) :: EPS ! set to zero at main.f90 and used only on grid calculation
 contains
 
     subroutine readTIPS()
