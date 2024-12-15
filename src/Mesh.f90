@@ -56,4 +56,21 @@ module Mesh
     real, parameter :: H9 = H8 / 2.0
     real, parameter :: H = H9 / 4.0
 
+contains
+
+    subroutine resetAbsorptionGridValues
+        implicit none
+        RK = 0.0
+        RK0 = 0.0; RK0L = 0.0; RK0P = 0.0
+        RK1 = 0.0; RK1L = 0.0; RK1P = 0.0
+        RK2 = 0.0; RK2L = 0.0; RK2P = 0.0
+        RK3 = 0.0; RK3L = 0.0; RK3P = 0.0
+        RK4 = 0.0; RK4L = 0.0; RK4P = 0.0
+        RK5 = 0.0; RK5L = 0.0; RK5P = 0.0
+        RK6 = 0.0; RK6L = 0.0; RK6P = 0.0
+        RK7 = 0.0; RK7L = 0.0; RK7P = 0.0
+        RK8 = 0.0; RK8L = 0.0; RK8P = 0.0
+        RK9 = 0.0; RK9L = 0.0; RK9P = 0.0
+    end subroutine resetAbsorptionGridValues
+
 end module Mesh
