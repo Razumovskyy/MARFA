@@ -25,10 +25,11 @@ module IO
 
     real(kind=DP) :: startWV, endWV ! [cm-1] -- boundaries of an initial spectral interval [startWV; EndWV]
     real(kind=DP) :: extStartWV, extEndWV ! boundaries of an extended initial interval: [startWV-cutOff; endWV+cutOff]
-    real(kind=DP) :: startDeltaWV, endDeltaWV ! boundaries of a subinterval ! VSTART, VFINISH (legacy) !
+    real(kind=DP) :: startDeltaWV, endDeltaWV ! boundaries of a subinterval ! VSTART (also: VS,VR4), VFINISH (legacy) !
    
     ! boundaries of an extended subinterval (cutOffs included): [startDeltaWV-cutOff; endWV+cutOff] ! WVA, WVB (legacy) !
-    real(kind=DP) :: extStartDeltaWV, extEndDeltaWV 
+    real(kind=DP) :: extStartDeltaWV ! legacy: VA
+    real(kind=DP) :: extEndDeltaWV ! legacy: VFISH
 
 contains
 
