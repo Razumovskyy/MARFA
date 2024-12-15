@@ -12,7 +12,7 @@ module LBL
     integer, parameter :: databaseFileUnit = 7777
 contains
 
-    subroutine modernLBL(lineIdxParameter, capWVParameter)
+    subroutine lblCalculation(lineIdxParameter, capWVParameter)
         
         integer, intent(inout) :: lineIdxParameter ! integer line label used for locating record in direct access file
         real(kind=DP), intent(inout) :: capWVParameter ! inout parameter for capWV. For definition see main.f90 file
@@ -87,5 +87,5 @@ contains
                 call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
             end if
         end do LBL_LOOP
-    end subroutine modernLBL
+    end subroutine lblCalculation
 end module LBL

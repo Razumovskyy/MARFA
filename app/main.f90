@@ -231,14 +231,13 @@ program main
         startDeltaWV = startWV ! left boundary of the first subinterval
         endDeltaWV = startDeltaWV + deltaWV ! right boundary of the first subinterval
         SUBINTERVALS_LOOP: do while (startDeltaWV < endWV)
-            ! loop over subintervals !
 
             ! Relation between record number and left boundary of a subinterval
             ! TODO:(!!) rewrite when working on introducing the dynamic resolution and fixing file sizes issue
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
 
             ! Proceed to calculation inside subinterval !
-            call processSpectra(inputMolecule, databaseSlug, levelsIdx)
+            call subintervalCalculation(inputMolecule, databaseSlug, levelsIdx)
 
             ! WRITE OPERATION OF THE ABSORPTION SIGNATURES TO THE OUTPUT FILE !
             if (targetValue == 'VAC') then
@@ -270,7 +269,7 @@ program main
     print *, "Took: ", endTime - startTime, " seconds"
 contains
 
-    subroutine processSpectra(molecule, slug, atmosphericLoopLevel)
+    subroutine subintervalCalculation(molecule, slug, atmosphericLoopLevel)
         ! TODO: (!) remove `molecule` from input arguments (used only in first call) 
         implicit none
         character(len=5), intent(in) :: molecule ! inputMolecule as a string
@@ -320,12 +319,6 @@ contains
         ! TODO:(!) moving `ifFirstCall` part to the separate subroutine, because
         ! it is only for reading from the spectral file and must be done only once. Do it during
         ! implementing parallelization with OpenMP
-         
-        ! DEBUG SECTION !
-        ! real(kind=DP) :: VFISH ! *** ! extEndDeltaWV
-        ! real(kind=DP) :: VA ! *** ! extStartDeltaWV
-        ! real(kind=DP) :: VS ! the same as startDeltaWV
-        ! real(kind=DP) :: VR4 ! the same as startDeltaWV
         
         if (isFirstCall) then
             
@@ -423,8 +416,8 @@ contains
         ! print *, lineIdx
         ! print *, capWV
         
-        ! Proceed to this subroutine for reading of spctral features and line summation in the subinterval
-        call modernLBL(lineIdx, capWV)
+        ! Proceed to this subroutine for reading spectral features and line summation in the subinterval
+        call lblCalculation(lineIdx, capWV)
         
         ! DEBUG SECTION !
         ! write(*,*) 'lineIdx after moderLBL: ', lineIdx
@@ -553,7 +546,7 @@ contains
             if (RK(J) < 0.) RK(J)=0.
         end do
         !------------------------------------------------------------------------------------------------------------------!
-    end subroutine processSpectra
+    end subroutine subintervalCalculation
 
     subroutine get_species_code(species, code_int, code_str)
         ! Subroutine to map species to both integer and string codes accordnig to the HITRAN coding system
