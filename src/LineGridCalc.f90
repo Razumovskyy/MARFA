@@ -1,6 +1,6 @@
 module LineGridCalc
     use Constants
-    use Mesh
+    use Grids
     use Interfaces
     implicit none
 contains

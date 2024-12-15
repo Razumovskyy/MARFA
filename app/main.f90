@@ -4,7 +4,7 @@ program main
     use Atmosphere
     use Spectroscopy
     use LBL
-    use Mesh
+    use Grids
     implicit none
 
     !------------------------------------------------------------------------------------------------------------------!
@@ -421,131 +421,9 @@ contains
         
         ! DEBUG SECTION !
         ! write(*,*) 'lineIdx after moderLBL: ', lineIdx
-        
-        !------------------------------------------------------------------------------------------------------------------!
-        
-        ! Final interpolation scheme (?)
 
-        ! TODO:(!) Create subroutine to remove repetitions
-        ! (be careful that last loop differs from NT0-NT8) 
-        
-        ! TODO:(!) consider moving this section to inner subroutines
-        ! TODO:(!) establish block and define loop variables there
-        do J = 1, NT0
-            I = J*2 - 1
-            RK1P(I) = RK1P(I) + RK0P(J)
-            RK1(I) = RK1(I) + RK0P(J)*0.375 + RK0(J)*0.75 - RK0L(J)*0.125
-            RK1L(I) = RK1L(I) + RK0(J)
-            M = I + 1
-            RK1P(M) = RK1P(M) + RK0(J)
-            RK1(M) = RK1(M) + RK0L(J)*0.375 + RK0(J)*0.75 - RK0P(J)*0.125
-            RK1L(M) = RK1L(M) + RK0L(J)
-        end do
+        call cascadeInterpolation()
 
-        do J = 1, NT1
-            I = J*2 - 1
-            RK2P(I) = RK2P(I) + RK1P(J)
-            RK2(I) = RK2(I) + RK1P(J)*0.375 + RK1(J)*0.75 - RK1L(J)*0.125
-            RK2L(I) = RK2L(I) + RK1(J)
-            M = I + 1
-            RK2P(M) = RK2P(M) + RK1(J)
-            RK2(M) = RK2(M) + RK1L(J)*0.375 + RK1(J)*0.75 - RK1P(J)*0.125
-            RK2L(M) = RK2L(M) + RK1L(J)
-        end do
-
-        do J = 1, NT2
-            I = J*2 - 1
-            RK3P(I) = RK3P(I) + RK2P(J)
-            RK3(I) = RK3(I) + RK2P(J)*0.375 + RK2(J)*0.75 - RK2L(J)*0.125
-            RK3L(I) = RK3L(I) + RK2(J)
-            M = I + 1
-            RK3P(M) = RK3P(M) + RK2(J)
-            RK3(M) = RK3(M) + RK2L(J)*0.375 + RK2(J)*0.75 - RK2P(J)*0.125
-            RK3L(M) = RK3L(M) + RK2L(J)
-        end do
-
-        do J = 1, NT3
-            I = J*2 - 1
-            RK4P(I) = RK4P(I) + RK3P(J)
-            RK4(I) = RK4(I) + RK3P(J)*0.375 + RK3(J)*0.75 - RK3L(J)*0.125
-            RK4L(I) = RK4L(I) + RK3(J)
-            M = I + 1
-            RK4P(M) = RK4P(M) + RK3(J)
-            RK4(M) = RK4(M) + RK3L(J)*0.375 + RK3(J)*0.75 - RK3P(J)*0.125
-            RK4L(M) = RK4L(M) + RK3L(J)
-        end do
-
-        do J = 1, NT4
-            I = J*2 - 1
-            RK5P(I) = RK5P(I) + RK4P(J)
-            RK5(I) = RK5(I) + RK4P(J)*0.375 + RK4(J)*0.75 - RK4L(J)*0.125
-            RK5L(I) = RK5L(I) + RK4(J)
-            M = I + 1
-            RK5P(M) = RK5P(M) + RK4(J)
-            RK5(M) = RK5(M) + RK4L(J)*0.375 + RK4(J)*0.75 - RK4P(J)*0.125
-            RK5L(M) = RK5L(M) + RK4L(J)
-        end do
-
-        do J = 1, NT5
-            I = J*2 - 1
-            RK6P(I) = RK6P(I) + RK5P(J)
-            RK6(I) = RK6(I) + RK5P(J)*0.375 + RK5(J)*0.75 - RK5L(J)*0.125
-            RK6L(I) = RK6L(I) + RK5(J)
-            M = I + 1
-            RK6P(M) = RK6P(M) + RK5(J)
-            RK6(M) = RK6(M) + RK5L(J)*0.375 + RK5(J)*0.75 - RK5P(J)*0.125
-            RK6L(M) = RK6L(M) + RK5L(J)
-        end do
-        
-        do J = 1, NT6
-            I = J*2 - 1
-            RK7P(I) = RK7P(I) + RK6P(J)
-            RK7(I) = RK7(I) + RK6P(J)*0.375 + RK6(J)*0.75 - RK6L(J)*0.125
-            RK7L(I) = RK7L(I) + RK6(J)
-            M = I + 1
-            RK7P(M) = RK7P(M) + RK6(J)
-            RK7(M) = RK7(M) + RK6L(J)*0.375 + RK6(J)*0.75 - RK6P(J)*0.125
-            RK7L(M) = RK7L(M) + RK6L(J)
-        end do
-
-        do J = 1, NT7
-            I = J*2 - 1
-            RK8P(I) = RK8P(I) + RK7P(J)
-            RK8(I) = RK8(I) + RK7P(J)*0.375 + RK7(J)*0.75 - RK7L(J)*0.125
-            RK8L(I) = RK8L(I) + RK7(J)
-            M = I + 1
-            RK8P(M) = RK8P(M) + RK7(J)
-            RK8(M) = RK8(M) + RK7L(J)*0.375 + RK7(J)*0.75 - RK7P(J)*0.125
-            RK8L(M) = RK8L(M) + RK7L(J)
-        end do
-
-        do J = 1, NT8
-            I = J*2 - 1
-            RK9P(I) = RK9P(I) + RK8P(J)
-            RK9(I) = RK9(I) + RK8P(J)*0.375 + RK8(J)*0.75 - RK8L(J)*0.125
-            RK9L(I)= RK9L(I) + RK8(J)
-            M = I + 1
-            RK9P(M) = RK9P(M) + RK8(J)
-            RK9(M) = RK9(M) + RK8L(J)*0.375 + RK8(J)*0.75 - RK8P(J)*0.125
-            RK9L(M)= RK9L(M) + RK8L(J)
-        end do
-
-        I=1
-        do J = 1, NT9
-            I = I + 1
-            RK(I) = RK(I) + (RK9P(J)*0.375 + RK9(J)*0.75 - RK9L(J)*0.125)
-            I = I + 1
-            RK(I) = RK(I) + RK9(J)
-            I = I + 1
-            RK(I) = RK(I) + (RK9L(J)*0.375 + RK9(J)*0.75 - RK9P(J)*0.125)
-            I = I + 1
-            RK(I) = RK(I) + RK9L(J)
-        end do
-
-        do J = 1, NT
-            if (RK(J) < 0.) RK(J)=0.
-        end do
-        !------------------------------------------------------------------------------------------------------------------!
     end subroutine subintervalCalculation
 
     subroutine get_species_code(species, code_int, code_str)

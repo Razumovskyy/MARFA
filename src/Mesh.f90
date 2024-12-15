@@ -1,4 +1,4 @@
-module Mesh
+module Grids
     implicit none
     
     ! Parameters: number of grid points for each grid:
@@ -73,4 +73,66 @@ contains
         RK9 = 0.0; RK9L = 0.0; RK9P = 0.0
     end subroutine resetAbsorptionGridValues
 
-end module Mesh
+
+    subroutine cascadeInterpolation
+        implicit none
+        integer :: I, J
+    
+        ! Perform cascading interpolation steps from RK0 -> RK1, RK1 -> RK2, ... RK8 -> RK9
+        call interpolationStep(NT0, RK0P, RK0, RK0L, RK1P, RK1, RK1L)
+        call interpolationStep(NT1, RK1P, RK1, RK1L, RK2P, RK2, RK2L)
+        call interpolationStep(NT2, RK2P, RK2, RK2L, RK3P, RK3, RK3L)
+        call interpolationStep(NT3, RK3P, RK3, RK3L, RK4P, RK4, RK4L)
+        call interpolationStep(NT4, RK4P, RK4, RK4L, RK5P, RK5, RK5L)
+        call interpolationStep(NT5, RK5P, RK5, RK5L, RK6P, RK6, RK6L)
+        call interpolationStep(NT6, RK6P, RK6, RK6L, RK7P, RK7, RK7L)
+        call interpolationStep(NT7, RK7P, RK7, RK7L, RK8P, RK8, RK8L)
+        call interpolationStep(NT8, RK8P, RK8, RK8L, RK9P, RK9, RK9L)
+    
+        ! Handle final step: RK9 -> RK
+        I=1
+        do J = 1, NT9
+            I = I + 1
+            RK(I) = RK(I) + (RK9P(J)*0.375 + RK9(J)*0.75 - RK9L(J)*0.125)
+            I = I + 1
+            RK(I) = RK(I) + RK9(J)
+            I = I + 1
+            RK(I) = RK(I) + (RK9L(J)*0.375 + RK9(J)*0.75 - RK9P(J)*0.125)
+            I = I + 1
+            RK(I) = RK(I) + RK9L(J)
+        end do
+    
+        ! Remove negative outliers
+        do J = 1, NT
+            if (RK(J) < 0.0) RK(J)=0.0
+        end do
+    
+    end subroutine cascadeInterpolation
+    
+
+    subroutine interpolationStep(NTsize, prevP, prev, prevL, nextP, next, nextL)
+        !--------------------------------------------------------------------
+        ! Helper subroutine to perform a single interpolation step (simple parabolic)
+        ! It takes arrays from "previous" more coarse grid (prevP, prev, prevL) and
+        ! updates the "next" more fine grid arrays (nextP, next, nextL).
+        !--------------------------------------------------------------------
+        implicit none
+        integer, intent(in) :: NTsize
+        real, intent(in) :: prevP(:), prev(:), prevL(:)
+        real, intent(inout) :: nextP(:), next(:), nextL(:)
+    
+        integer :: J, I, M
+    
+        do J = 1, NTsize
+            I = J*2 - 1
+            nextP(I) = nextP(I) + prevP(J)
+            next(I)  = next(I)  + prevP(J)*0.375 + prev(J)*0.75 - prevL(J)*0.125
+            nextL(I) = nextL(I) + prev(J)
+            M = I + 1
+            nextP(M) = nextP(M) + prev(J)
+            next(M)  = next(M)  + prevL(J)*0.375 + prev(J)*0.75 - prevP(J)*0.125
+            nextL(M) = nextL(M) + prevL(J)
+        end do
+    
+    end subroutine interpolationStep
+end module Grids

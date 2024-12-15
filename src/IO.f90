@@ -6,7 +6,7 @@ module IO
     use Atmosphere
     use Shapes
     use Spectroscopy
-    use Mesh
+    use Grids
     use ChiFactors, only: chiFactorFuncName
     implicit none
     

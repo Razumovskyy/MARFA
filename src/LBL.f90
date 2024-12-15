@@ -2,7 +2,7 @@ module LBL
     use Constants
     use Interfaces
     use Atmosphere
-    use Mesh
+    use Grids
     use IO
     use Spectroscopy
     use MolarMasses
