@@ -125,7 +125,7 @@ program processParFile
         end select
     end do
 
-    nameSuffix = get_species_code(inputMolecule)
+    nameSuffix = getSpeciesCode(inputMolecule)
 
     if (nameSuffix == "00") then
         print *, 'ERROR: unsupported molecule: ', trim(adjustl(inputMolecule))
@@ -186,7 +186,7 @@ program processParFile
 
 contains
 
-    function get_species_code(species) result(code)
+    function getSpeciesCode(species) result(code)
         character(len=*), intent(in) :: species
         character(len=2) :: code
    
@@ -221,7 +221,7 @@ contains
             case default
                 code = "00"  ! species not found
         end select
-    end function get_species_code
+    end function getSpeciesCode
 
     function convert_ISO(ISOparameter) result(converted_ISO)
         character(len=1), intent(in) :: ISOparameter

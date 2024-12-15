@@ -327,7 +327,7 @@ contains
             lineIdx = 0
             
             ! TODO: (!) move out from this subroutine (do it when moving the first call) 
-            call get_species_code(molecule, moleculeIntCode, DBfileExtension)
+            call getSpeciesCode(molecule, moleculeIntCode, DBfileExtension)
 
             if (moleculeIntCode == 0) then
                 print *, 'ERROR: unsupported molecule: ', trim(adjustl(molecule))
@@ -442,53 +442,53 @@ contains
         close(TIPSUnit)
     end subroutine readTIPS
     
-    subroutine get_species_code(species, code_int, code_str)
+    subroutine getSpeciesCode(species, codeInt, codeStr)
         ! Subroutine to map species to both integer and string codes accordnig to the HITRAN coding system
         implicit none
         character(len=*), intent(in) :: species  ! molecule title as string
-        integer, intent(out) :: code_int ! output code as an integer
-        character(len=2), intent(out) :: code_str ! output code as a string
+        integer, intent(out) :: codeInt ! output code as an integer
+        character(len=2), intent(out) :: codeStr ! output code as a string
 
         select case (trim(adjustl(species)))
             case ("H2O")
-                code_int = 1
-                code_str = "01"
+                codeInt = 1
+                codeStr = "01"
             case ("CO2")
-                code_int = 2
-                code_str = "02"
+                codeInt = 2
+                codeStr = "02"
             case ("O3")
-                code_int = 3
-                code_str = "03"
+                codeInt = 3
+                codeStr = "03"
             case ("N2O")
-                code_int = 4
-                code_str = "04"
+                codeInt = 4
+                codeStr = "04"
             case ("CO")
-                code_int = 5
-                code_str = "05"
+                codeInt = 5
+                codeStr = "05"
             case ("CH4")
-                code_int = 6
-                code_str = "06"
+                codeInt = 6
+                codeStr = "06"
             case ("O2")
-                code_int = 7
-                code_str = "07"
+                codeInt = 7
+                codeStr = "07"
             case ("NO")
-                code_int = 8
-                code_str = "08"
+                codeInt = 8
+                codeStr = "08"
             case ("SO2")
-                code_int = 9
-                code_str = "09"
+                codeInt = 9
+                codeStr = "09"
             case ("NO2")
-                code_int = 10
-                code_str = "10"
+                codeInt = 10
+                codeStr = "10"
             case ("NH3")
-                code_int = 11
-                code_str = "11"
+                codeInt = 11
+                codeStr = "11"
             case ("HNO3")
-                code_int = 12
-                code_str = "12"
+                codeInt = 12
+                codeStr = "12"
             case default
-                code_int = 0
-                code_str = "00"  ! Species not found
+                codeInt = 0
+                codeStr = "00"  ! Species not found
         end select
-    end subroutine get_species_code
+    end subroutine getSpeciesCode
 end program main
