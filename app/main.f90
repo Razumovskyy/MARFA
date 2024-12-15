@@ -237,11 +237,6 @@ program main
             ! TODO:(!!) rewrite when working on introducing the dynamic resolution and fixing file sizes issue
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
 
-            ! TODO:(!) that couldn't happen -- remove
-            ! if ( extStartDeltaWV < startWV ) then
-            !     extStartDeltaWV = startDeltaWV
-            ! end if
-
             ! Proceed to calculation inside subinterval !
             call processSpectra(inputMolecule, databaseSlug, levelsIdx)
 
