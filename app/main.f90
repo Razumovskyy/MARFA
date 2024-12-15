@@ -232,7 +232,7 @@ program main
         SUBINTERVALS_LOOP: do while (startDeltaWV < endWV)
 
             ! Relation between record number and left boundary of a subinterval
-            ! TODO:(!!) rewrite when working on introducing the dynamic resolution and fixing file sizes issue
+            ! TODO: rewrite when working on introducing the dynamic resolution and fixing file sizes issue
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
 
             ! Proceed to calculation inside subinterval !
@@ -397,7 +397,7 @@ contains
         
         ! Defining capWV: wavenumber to determine from which spectral line to start calculation
         ! of the next subinterval
-        ! TODO:(!!) introduce pointers logic for that -- do when fixing the issue with subintervals overlap
+        ! TODO: introduce pointers logic for that -- do when fixing the issue with subintervals overlap
         capWV = extStartDeltaWV + deltaWV
         ! The same is:
         ! capWV = endDeltaWV - cutOff

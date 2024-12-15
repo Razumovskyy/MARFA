@@ -94,7 +94,7 @@ contains
 
     
     real function TIPSofT(temperatureParameter)
-        ! TODO:(!!) refactor when dealing with Gamache TIPS programs (python or Fortran)
+        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
         ! set isotope as a parameter for clarity
 
         ! establishing a function which accepts temperature as an input
@@ -118,7 +118,7 @@ contains
 
     
     real function intensityOfT(temperatureParameter)
-        ! TODO:(!!) refactor when dealing with Gamache TIPS programs (python or Fortran)
+        ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
         ! set isotope as a parameter for clarity
     
         ! calculation of intensity as a function of temperature
