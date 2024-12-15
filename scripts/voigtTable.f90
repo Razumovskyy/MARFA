@@ -6,7 +6,6 @@ program voigtTable
     use ChiFactors
     use Spectroscopy
     use Shapes
-    use IO
     implicit none
 
     integer, parameter :: voigtTableUnit = 344

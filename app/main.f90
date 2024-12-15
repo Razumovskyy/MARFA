@@ -1,6 +1,5 @@
 program main
     use Constants
-    use IO
     use Atmosphere
     use Spectroscopy
     use LBL
@@ -426,6 +425,23 @@ contains
 
     end subroutine subintervalCalculation
 
+    subroutine readTIPS()
+        implicit none
+        character(len=300), parameter :: TIPSFile = 'data/QofT_formatted.dat' ! path to the file with TIPS data
+        integer, parameter :: TIPSUnit = 5467 ! unit for file with TIPS data
+        integer :: nIsotopes, nTemperatures ! number of different isotopes and temperatures in the TIPS file
+        integer :: stSumTIdx, stSumIsoIdx  ! loop indices for partition sums: temperatures and isotopes
+        ! This subroutine opens a file containing TIPS data, allocates an array for storage, 
+        ! and populates the array with data in a loop
+        open(unit=TIPSUnit, file='data/TIPS/TIPS.dat', status='old', action='read')
+        read(TIPSUnit, *) nIsotopes, nTemperatures
+        allocate(TIPS(nIsotopes, nTemperatures))
+        do stSumIsoIdx = 1, nIsotopes
+            read(TIPSUnit, *) (TIPS(stSumIsoIdx, stSumTIdx), stSumTIdx=1, nTemperatures)
+        end do
+        close(TIPSUnit)
+    end subroutine readTIPS
+    
     subroutine get_species_code(species, code_int, code_str)
         ! Subroutine to map species to both integer and string codes accordnig to the HITRAN coding system
         implicit none
