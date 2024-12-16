@@ -22,7 +22,7 @@ module LBL
 
 contains
 
-    subroutine lblCalculation(lineIdxParameter, capWVParameter)
+    subroutine lblScheme(lineIdxParameter, capWVParameter)
         
         integer, intent(inout) :: lineIdxParameter ! integer line label used for locating record in direct access file
         real(kind=DP), intent(in) :: capWVParameter ! inout parameter for capWV. For definition see main.f90 file
@@ -97,5 +97,5 @@ contains
                 call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
             end if
         end do LBL_LOOP
-    end subroutine lblCalculation
+    end subroutine lblScheme
 end module LBL

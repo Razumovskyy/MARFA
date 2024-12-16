@@ -143,7 +143,7 @@ program main
             ! print *, capWV
             
             ! Proceed to this subroutine for reading spectral features line-by-line inside a subinterval
-            call lblCalculation(lineIdx, capWV)
+            call lblScheme(lineIdx, capWV)
             
             ! DEBUG SECTION !
             ! print *, 'lineIdx after LBL: ', lineIdx
