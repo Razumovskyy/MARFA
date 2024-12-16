@@ -35,36 +35,38 @@ contains
 
     ! Add custom spectroscopic functions here in this module after the `contains` statement !
 
-    real(kind=DP) function shiftedLinePosition(lineWVParameter, pressureParameter)
+    pure function shiftedLinePosition(lineWVParameter, pressureParameter) result (position)
         ! calculation of shifted position of a transition wavenumber of a line shape
         ! see https://hitran.org/docs/definitions-and-units/ formula (7)
         
         implicit none
         
+        real(kind=DP) :: position
         real(kind=DP), intent(in) :: lineWVParameter
         real, intent(in) :: pressureParameter
 
-        shiftedLinePosition = lineWVParameter + deltaForeign*pressureParameter
+        position = lineWVParameter + deltaForeign*pressureParameter
     end function shiftedLinePosition
 
     
-    real function dopplerHWHM(lineWVParameter, temperatureParameter, molarMassParameter)
+    pure function dopplerHWHM(lineWVParameter, temperatureParameter, molarMassParameter) result(dopplerWidth)
         ! calculation of a doppler half-width
         ! see https://hitran.org/docs/definitions-and-units/ formula (5)
 
         implicit none
         
+        real :: dopplerWidth
         real(kind=DP), intent(in) :: lineWVParameter
         real, intent(in) :: temperatureParameter
         real, intent(in) :: molarMassParameter
 
-        dopplerHWHM = dopplerCONST * lineWVParameter * &
+        dopplerWidth = dopplerCONST * lineWVParameter * &
                 sqrt(temperatureParameter / molarMassParameter)
 
     end function dopplerHWHM
 
     
-    real function lorentzHWHM(pressureParameter, partialPressureParameter, temperatureParameter)
+    pure function lorentzHWHM(pressureParameter, partialPressureParameter, temperatureParameter) result(lorentzWidth)
         ! calculation of a Lorentz half-width: pressure- and temperature-dependent
         ! see https://hitran.org/docs/definitions-and-units/ formula (6)
         
@@ -74,19 +76,20 @@ contains
         
         implicit none    
         
+        real :: lorentzWidth
         real, intent(in) :: pressureParameter
         real, intent(in) :: partialPressureParameter
         real, intent(in) :: temperatureParameter
         real :: coeffF, coeffS
 
-        ! lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
+        ! lorentzWidth = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
         !                 (gammaForeign * (pressureParameter - partialPressureParameter) + &
         !                 gammaSelf * partialPressureParameter)
 
         coeffF = (pressureParameter - partialPressureParameter) / pressureParameter
         coeffS = partialPressureParameter / pressureParameter  
         
-        lorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
+        lorentzWidth = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
                 (gammaForeign * (pressureParameter - partialPressureParameter) * coeffF + &
                 gammaSelf * partialPressureParameter) * coeffS
 
@@ -146,73 +149,74 @@ contains
         intensityOfT = refLineIntensity * TIPSFactor * boltzmannFactor * emissionFactor
     end function intensityOfT
 
-    ! ----------------------------------------------------------------------------------------------------------------!
 
-    real function parameterizedLorentzHWHM(pressureParameter, includeGammaSelf, partialPressureParameter, & 
-                                includeTemperature, temperatureParameter)
-        ! use this function for calculation Lorentz half-width if temperature is not known (reference temperature
-        ! will be set) or self-broadening is not known (partial pressure will be set to zero)
+    ! real function parameterizedLorentzHWHM(pressureParameter, includeGammaSelf, partialPressureParameter, & 
+    !                             includeTemperature, temperatureParameter)
+    !     ! use this function for calculation Lorentz half-width if temperature is not known (reference temperature
+    !     ! will be set) or self-broadening is not known (partial pressure will be set to zero)
         
-        implicit none
+    !     implicit none
         
-        real, intent(in) :: pressureParameter
-        logical, optional, intent(in) :: includeGammaSelf, includeTemperature
-        real, optional, intent(in) :: partialPressureParameter
-        real, optional, intent(in) :: temperatureParameter
+    !     real, intent(in) :: pressureParameter
+    !     logical, optional, intent(in) :: includeGammaSelf, includeTemperature
+    !     real, optional, intent(in) :: partialPressureParameter
+    !     real, optional, intent(in) :: temperatureParameter
         
-        logical :: isIncludeGammaSelf, isIncludeTemperature
+    !     logical :: isIncludeGammaSelf, isIncludeTemperature
         
-        ! defaults:
-        isIncludeGammaSelf = .false.   ! do not count p_self, and gamma_self
-        isIncludeTemperature = .false. ! no temperature dependency: temperature is set to 296 K
+    !     ! defaults:
+    !     isIncludeGammaSelf = .false.   ! do not count p_self, and gamma_self
+    !     isIncludeTemperature = .false. ! no temperature dependency: temperature is set to 296 K
         
-        if (present(includeTemperature)) isincludeTemperature = includeTemperature
-        if (present(includeGammaSelf)) isIncludeGammaSelf = includeGammaSelf
+    !     if (present(includeTemperature)) isincludeTemperature = includeTemperature
+    !     if (present(includeGammaSelf)) isIncludeGammaSelf = includeGammaSelf
 
-        if (.not. isIncludeGammaSelf .and. .not. isIncludeTemperature) then
-            ! temperature is set to 296 K and partial pressure is not counted
-            parameterizedLorentzHWHM = gammaForeign * pressureParameter
-        end if
+    !     if (.not. isIncludeGammaSelf .and. .not. isIncludeTemperature) then
+    !         ! temperature is set to 296 K and partial pressure is not counted
+    !         parameterizedLorentzHWHM = gammaForeign * pressureParameter
+    !     end if
         
-        if (isIncludeGammaSelf .and. .not. isIncludeTemperature) then
-            ! temperature is set to 296 K and partial pressure included
-            parameterizedLorentzHWHM = gammaForeign * (pressureParameter - partialPressureParameter) + &
-                            gammaSelf * partialPressureParameter
-        end if
+    !     if (isIncludeGammaSelf .and. .not. isIncludeTemperature) then
+    !         ! temperature is set to 296 K and partial pressure included
+    !         parameterizedLorentzHWHM = gammaForeign * (pressureParameter - partialPressureParameter) + &
+    !                         gammaSelf * partialPressureParameter
+    !     end if
 
-        if (.not. isIncludeGammaSelf .and. isIncludeTemperature) then
-            ! temperature dependence is present, but partial pressure not included
-            parameterizedLorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * (gammaForeign * pressureParameter)
-        end if
+    !     if (.not. isIncludeGammaSelf .and. isIncludeTemperature) then
+    !         ! temperature dependence is present, but partial pressure not included
+    !         parameterizedLorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * (gammaForeign * pressureParameter)
+    !     end if
 
-        if (isIncludeGammaSelf .and. isIncludeTemperature) then
-            ! full formula (6) from HITRAN docs 
-            parameterizedLorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
-                            (gammaForeign * (pressureParameter - partialPressureParameter) + &
-                            gammaSelf * partialPressureParameter)
-        end if
-    end function parameterizedLorentzHWHM
+    !     if (isIncludeGammaSelf .and. isIncludeTemperature) then
+    !         ! full formula (6) from HITRAN docs 
+    !         parameterizedLorentzHWHM = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
+    !                         (gammaForeign * (pressureParameter - partialPressureParameter) + &
+    !                         gammaSelf * partialPressureParameter)
+    !     end if
+    ! end function parameterizedLorentzHWHM
 
     
-    real function lorentz(X, lorHWHMParameter)
+    pure function lorentz(X, lorHWHMParameter) result(lorentzShape)
         implicit none
 
+        real :: lorentzShape
         ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
         real, intent(in) :: lorHWHMParameter ! doppler HWHM
 
-        lorentz = lorHWHMParameter / (pi*(X**2 + lorHWHMParameter**2)) * lineIntensity
+        lorentzShape = lorHWHMParameter / (pi*(X**2 + lorHWHMParameter**2)) * lineIntensity
     end function lorentz
 
     
-    real function doppler(X, dopHWHMParameter)
+    pure function doppler(X, dopHWHMParameter) result(dopplerShape)
         implicit none
 
+        real :: dopplerShape
         ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
         real(kind=DP), intent(in) :: X
         real, intent(in) :: dopHWHMParameter ! doppler HWHM 
 
-        doppler = sqln2 / (sqrt(pi) * dopHWHMParameter) * exp(-(X/dopHWHMParameter)**2 * log(2.)) * lineIntensity
+        dopplerShape = sqln2 / (sqrt(pi) * dopHWHMParameter) * exp(-(X/dopHWHMParameter)**2 * log(2.)) * lineIntensity
     end function doppler
 
     

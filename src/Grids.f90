@@ -110,7 +110,7 @@ contains
     end subroutine cascadeInterpolation
     
 
-    subroutine interpolationStep(NTsize, prevP, prev, prevL, nextP, next, nextL)
+    pure subroutine interpolationStep(NTsize, prevP, prev, prevL, nextP, next, nextL)
         !--------------------------------------------------------------------
         ! Helper subroutine to perform a single interpolation step (simple parabolic)
         ! It takes arrays from "previous" more coarse grid (prevP, prev, prevL) and

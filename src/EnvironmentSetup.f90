@@ -188,7 +188,7 @@ contains
     end subroutine readTIPS
     
     
-    subroutine getSpeciesCode(species, codeInt, codeStr)
+    pure subroutine getSpeciesCode(species, codeInt, codeStr)
         ! Subroutine to map species to both integer and string codes accordnig to the HITRAN coding system
         implicit none
         character(len=*), intent(in) :: species  ! molecule title as string
