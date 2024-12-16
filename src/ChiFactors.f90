@@ -3,11 +3,12 @@ module ChiFactors
     use Interfaces
     use Atmosphere
     implicit none
+    
     procedure(chifactor), pointer :: chiFactorFuncPtr
     character(len=30) :: chiFactorFuncName ! name of the chi-factor function
 contains
 
-    subroutine fetchChiFactorFunction()
+    subroutine setChiFactorFunction()
         select case(trim(adjustl(chiFactorFuncName)))
         case ('none')
             chiFactorFuncPtr => noneChi
@@ -21,7 +22,7 @@ contains
             print *, "unknown chi-factor function: ", trim(adjustl(chiFactorFuncName))
             stop 10
         end select
-    end subroutine fetchChiFactorFunction
+    end subroutine setChiFactorFunction
     
     real function noneChi(X, moleculeIntCode)
         

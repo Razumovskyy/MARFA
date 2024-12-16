@@ -12,9 +12,6 @@ module LBL
     
     integer, parameter :: databaseFileUnit = 7777
     
-    ! pointer to the specific line shape function which will be used in grid calculations 
-    procedure(shape), pointer :: shapeFuncPtr
-    
     real(kind=DP) :: startWV, endWV ! [cm-1] -- boundaries of an initial spectral interval [startWV; EndWV]
     real(kind=DP) :: extStartWV, extEndWV ! boundaries of an extended initial interval: [startWV-cutOff; endWV+cutOff]
     real(kind=DP) :: startDeltaWV, endDeltaWV ! boundaries of a subinterval ! VSTART (also: VS,VR4), VFINISH (legacy) !

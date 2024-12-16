@@ -3,7 +3,16 @@ module Shapes
     use Atmosphere
     use Spectroscopy
     implicit none
+    
+    ! pointer to the specific line shape function which will be used in grid calculations 
+    procedure(shape), pointer :: shapeFuncPtr
 contains
+
+    subroutine setShapeFunction()
+        implicit none
+
+        shapeFuncPtr => voigt
+    end subroutine setShapeFunction
 
     ! all the shapes here are represented as (line shape function) x (temperature-dependent intensity)
     ! all the shape functions must satisfy abstract interface presented in `Interfaces.f90`

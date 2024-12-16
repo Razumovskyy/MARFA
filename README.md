@@ -359,7 +359,7 @@ Additional room for optimization might be organized with increasing effectivenes
 To add custom χ-factor function follow the steps:
 1. Write a fortran function with χ-factor. Optionally it might be pressure or tempreature dependent. You can use `pressure` and `temperature` parameters inside a function.
 2. Put this function at the end of the `chiFactors` module
-3. Add new case to the `select-case` clause in the `fetchChiFactorFunction()` in the `ChiFactors.f90` module.
+3. Add new case to the `select-case` clause in the `setChiFactorFunction()` in the `ChiFactors.f90` module.
 4. Check that in the `LBL.f90` module `chiCorrectedLorentz` line shape function is used for the line wing description. There must be a line, like: `shapeFuncPtr => chiCorrectedLorentz`.
 
 **Note:** Your χ-factor function must match the abstract interface for the χ-factor function: `chiFactorFuncPtr` (see `Interfaces` module). Normally, it means that the function takes only one argument - distance from the line center in wavenumber in double precision and return only one value of `real` type. Check how the inputs and outputs are organized in predefined χ-factors functions and adjust accordingly.
@@ -381,7 +381,7 @@ To add custom χ-factor function follow the steps:
     end function myChiFactor
 ```
 ```fortran
-    subroutine fetchChiFactorFunction()
+    subroutine setChiFactorFunction()
         select case(trim(adjustl(chiFactorFuncName)))
         case ('none')
             chiFactorFuncPtr => noneChi
@@ -395,7 +395,7 @@ To add custom χ-factor function follow the steps:
         case ('myChiFactor')
             chiFactorFuncPtr => myChiFactor
         end select
-    end subroutine fetchChiFactorFunction
+    end subroutine setChiFactorFunction
 ```
 ### Custom line shapes (for advanced usage)
 Currently in the `Shapes` module only standard line shapes are introduced: `lorentz`, `doppler`, `voigt`, `chiCorrectedLorentz` (Lorentz shape with wings corrected with χ-factor) and `combinedDopplerLorentz` (auxillary function, used only in Voigt shape calculation). To add your own line shape, you need to:
