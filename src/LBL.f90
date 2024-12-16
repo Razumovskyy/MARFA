@@ -28,7 +28,7 @@ contains
     subroutine lblCalculation(lineIdxParameter, capWVParameter)
         
         integer, intent(inout) :: lineIdxParameter ! integer line label used for locating record in direct access file
-        real(kind=DP), intent(inout) :: capWVParameter ! inout parameter for capWV. For definition see main.f90 file
+        real(kind=DP), intent(in) :: capWVParameter ! inout parameter for capWV. For definition see main.f90 file
 
         real(kind=DP) :: shiftedLineWV ! VI ! pressure-induced shifted line transition wavenumber
 

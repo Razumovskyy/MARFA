@@ -36,11 +36,33 @@ program main
     integer :: argc ! number of the passed command line arguments
     integer :: dateTimeValues(8)
     integer :: year, month, day, hour, minute, second
-    real(kind=DP) startTime, endTime ! times for measuring a machine time of the run
+    real(kind=DP) startTime, endTime ! times for measuring a machine time
     character(len=20) :: timestamp ! 
     integer :: status
     character(len=3) :: levelLabel ! unique identifier for each atmospheric level: ('1__','2__',...,'100',...)
     integer :: l ! loop variable
+
+    ! database file extension based on the species title (input molecule), see `data/databases/` directory
+    character(len=2) :: DBfileExtension
+    
+    ! after the atmospheroc levels loop steps on the next level, LBL starts from startingLineIdx
+    ! Index (record number in database file) from which the whole calculation goes
+    ! Determined by startWV and cutOff
+    integer :: startingLineIdx
+    
+    ! Transition wavenumber of a spectral line at index `lineBegIdx ! VAA0
+    ! Mostly it is used to determine capWV
+    real(kind=DP) :: startingLineWV
+    
+    integer :: lineIdx ! record number in direct access file corresonding to specific line ! LINBEG 
+    
+    ! two extended neighbour subintervals: 
+    ! [extStartDeltaWV1; extEndDeltaWV1] and [extStartDeltaWV2, extEndDeltaWV2] are highly overlap
+    ! so when going through the first interval, it is needed to set at which lineIdx to start next subinterval.
+    ! capWV is used to determine this, see the implementation of it in the line-by-line scheme
+    real(kind=DP) :: capWV
+    
+    logical :: isFirstSubinterval
 
     !------------------------------------------------------------------------------------------------------------------!
 
@@ -112,7 +134,7 @@ program main
     end do
 
     ! reads and initializes the TIPS array
-    call readTIPS
+    call readTIPS()
 
     ! setting a line shape function (choose from Shapes.f90 module)
     shapeFuncPtr => voigt
@@ -180,8 +202,6 @@ program main
     end if
     write(latestRunUnit, '(A)') subDirName
     close(latestRunUnit)
-
-    !------------------------------------------------------------------------------------------------------------------!
     
     ! DEBUG SECTION !
     ! print *, inputMolecule
@@ -192,6 +212,14 @@ program main
     ! print *, targetValue
     ! print *, atmProfileFile
 
+    call getSpeciesCode(inputMolecule, moleculeIntCode, DBfileExtension)
+    if (moleculeIntCode == 0) then
+        print *, 'ERROR: unsupported molecule: ', trim(adjustl(inputMolecule))
+        stop 8
+    end if
+
+    call determineStartingSpectralLine(databaseSlug, startingLineIdx, startingLineWV)
+    
     ATMOSPHERIC_LEVELS_LOOP: do levelsIdx = 1, levels
         ! OUTER LOOP: over the atmospheric levels. After each iteration, PT-table file is generated for
         ! the levelsIdx level
@@ -223,20 +251,53 @@ program main
         open(outputUnit, access='DIRECT', form='UNFORMATTED', recl=NT*4, &
             file=trim(fullSubDirPath)//'/'//levelLabel//'.ptbin')
         ! RECL = NT for old Windows Fortrans !
-
         
         ! the whole interval [startWV, endWV] is separated into subintervals of the same length of deltaWV
         ! each record in the output file corresponds to the one subinterval
         startDeltaWV = startWV ! left boundary of the first subinterval
         endDeltaWV = startDeltaWV + deltaWV ! right boundary of the first subinterval
+
+        isFirstSubinterval = .true.
+
         SUBINTERVALS_LOOP: do while (startDeltaWV < endWV)
 
             ! Relation between record number and left boundary of a subinterval
-            ! TODO: rewrite when working on introducing the dynamic resolution and fixing file sizes issue
+            ! TODO: rewrite when working on introducing the dynamic resolution and fixing files sizes issue
             outputRecNum = (startDeltaWV + 1.0) / 10.0 ! *** (0.0 -> 0 , 10.0 -> 1,..., 560.0 -> 56, etc.)
 
+            ! Defining the boundaries of extended subinterval (add cutOff) 
+            extStartDeltaWV = startDeltaWV - cutOff
+            extEndDeltaWV = startDeltaWV + deltaWV + cutOff
+            
             ! Proceed to calculation inside subinterval !
-            call subintervalCalculation(inputMolecule, databaseSlug, levelsIdx)
+            if (isFirstSubinterval) then
+                lineIdx = startingLineIdx
+                isFirstSubinterval = .false.
+            end if
+
+            ! Defining capWV: wavenumber to determine from which spectral line to start calculation
+            ! of the next subinterval
+            ! TODO: introduce pointers logic for that -- do when fixing the issue with subintervals overlap
+            capWV = extStartDeltaWV + deltaWV
+            ! The same is:
+            ! capWV = endDeltaWV - cutOff
+            if (capWV <= startingLineWV) capWV = startingLineWV ! for consistency, because cutOff might be large
+            
+            ! Arrays for storing absorption values on all grids
+            ! must be initialized to zero at the beginning of each calculation inside subinterval
+            call resetAbsorptionGridValues()
+    
+            ! DEBUG SECTION !
+            ! print *, lineIdx
+            ! print *, capWV
+            
+            ! Proceed to this subroutine for reading spectral features line-by-line inside a subinterval
+            call lblCalculation(lineIdx, capWV)
+            
+            ! DEBUG SECTION !
+            ! print *, 'lineIdx after LBL: ', lineIdx
+    
+            call cascadeInterpolation()
 
             ! WRITE OPERATION OF THE ABSORPTION SIGNATURES TO THE OUTPUT FILE !
             if (targetValue == 'VAC') then
@@ -257,6 +318,7 @@ program main
         ! for real time tracking how many levels has been processed:
         print *, levelsIdx, ' of ', levels, ' atmospheric levels is being processed ...' 
     end do ATMOSPHERIC_LEVELS_LOOP
+    
     print *, ' *** Congratulations! PT-tables have been calculated! ***'
     deallocate(heightArray)
     deallocate(pressureArray)
@@ -266,165 +328,66 @@ program main
     
     call cpu_time(endTime)
     print *, "Took: ", endTime - startTime, " seconds"
+
+
 contains
 
-    subroutine subintervalCalculation(molecule, slug, atmosphericLoopLevel)
-        ! TODO: (!) remove `molecule` from input arguments (used only in first call) 
+
+    subroutine determineStartingSpectralLine(DBName, lineBegIdx, lineWVBeg)
         implicit none
-        character(len=5), intent(in) :: molecule ! inputMolecule as a string
-        integer, intent(in) :: atmosphericLoopLevel ! atmospheric level number as passed from the outer loop
-        
         ! database file basename (e.g. "HITRAN2020"), see `data/databases/` directory
-        character(len=20), intent(in) :: slug
+        character(len=20), intent(in) :: DBName
+        integer, intent(out) :: lineBegIdx
+        real(kind=DP), intent(out) :: lineWVBeg
         
-        ! ---------------------------------------------------------------------------- !
-        ! database file extension based on the species title (input molecule), see `data/databases/` directory
-        character(len=2) :: DBfileExtension
+        real(kind=DP) :: iterLineWV 
+        integer :: iterRecNum
 
-        ! this save is to decouple the logic run only for the first call
-        logical, save :: isFirstCall = .true.
+        lineBegIdx = 1
+
+        databaseFile = 'data'//'/'//'databases'//'/'//trim(adjustl(DBName))//'.'//DBfileExtension
+
+        ! Reading the direct access files (Linux, MacOS, modern Windows(?)). 
+        ! Comment out this line for old Windows
+        open(databaseFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=trim(databaseFile))
         
-        ! this save is for the keeping the current level. 
-        ! It is calculated on the first call and then updates if the level changes in the calling procedure
-        ! current atmospheric level at previous subroutine call, used to fix when the atmospheric level changes
-        integer, save :: currentLevel ! JOLD
-        
-        ! this save is for the loop over height levels
-        ! after the step into the new level, LBL starts from startingLineIdx
-        ! Index (record number in database file) from which the whole calculation goes
-        ! Determined by startWV and cutOff
-        integer, save :: startingLineIdx ! LINBEG0
-        
-        ! Transition wavenumber of a spectral line at index `startingLineIdx ! VAA0
-        ! Mostly it is used to determine capWV
-        real(kind=DP), save :: startingLineWV 
+        ! Uncomment if the direct access file was created under old Windows(?)
+        ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=databaseFile)
 
-        ! this save is for the loop over subintervals
-        ! after the step into the next delta interval, we need to keep the lineIdx from the LBL calc
-        ! `lineIdx` is used as an iterator over spectral lines in SUBINTERVALS_LOOP
-        integer, save :: lineIdx ! record number in direct access file corresonding to specific line ! LINBEG 
+        ! This section identifies a starting spectral line from which to proceed with line-by-line scheme
+        ! based on the left boundary of the initial spectral interval [startWV, endWV]
+        read(databaseFileUnit, rec=lineBegIdx) lineWVBeg
 
-        ! two extended subsequent subintervals: 
-        ! [extStartDeltaWV1; extEndDeltaWV1] and [extStartDeltaWV2, extEndDeltaWV2] are highly overlap
-        ! so when going through the first interval, it is needed to set at which lineIdx the next interval starts.
-        ! capWV is used to determine this, see the implementation of it in the modernLBL subroutine
-        real(kind=DP), save :: capWV
-
-        ! auxillary variables
-        integer :: iterRecNum ! loop variable
-        real(kind=DP) :: iterLineWV ! loop dummy variable
-        integer :: I, J, M ! loop variables mainly for grid calculations
-        
-        ! TODO:(!) moving `ifFirstCall` part to the separate subroutine, because
-        ! it is only for reading from the spectral file and must be done only once. Do it during
-        ! implementing parallelization with OpenMP
-        
-        if (isFirstCall) then
-            
-            isFirstCall = .false.
-            startingLineIdx = 1
-            currentLevel = 0
-            lineIdx = 0
-            
-            ! TODO: (!) move out from this subroutine (do it when moving the first call) 
-            call getSpeciesCode(molecule, moleculeIntCode, DBfileExtension)
-
-            if (moleculeIntCode == 0) then
-                print *, 'ERROR: unsupported molecule: ', trim(adjustl(molecule))
-                stop 8
-            end if
-
-            databaseFile = 'data'//'/'//'databases'//'/'//trim(adjustl(slug))//'.'//DBfileExtension
-
-            ! Reading the direct access files (Linux, MacOS, modern Windows(?)). 
-            ! Comment out this line for old Windows
-            open(databaseFileUnit, access='DIRECT', form='UNFORMATTED', recl=36, file=trim(databaseFile))
-            
-            ! Uncomment if the direct access file was created under old Windows(?)
-            ! open(7777, access='DIRECT', form='UNFORMATTED', recl=9, file=databaseFile)
-
-            ! This section identifies a starting spectral line from which to proceed with line-by-line scheme
-            ! based on the left boundary of the initial spectral interval [startWV, endWV]
-            ! TODO:(!) optimize this block and startingLineIdx and startingLineWV variables
-            read(databaseFileUnit, rec=startingLineIdx) startingLineWV
-
-            ! This `if` block is needed to determine from which spectral line in database to start calculation !
-            ! See the `startingLineIdx` and `startingLineWv` variables
-            if (startWV > cutOff) then
-                ! if the startWV is e.g. 300 cm-1 and the cutOff is e.g. 25 cm-1, then
-                ! the first spectral line to be counted must be the first line with transition 
-                ! wavenumber bigger than extStartWV = 300 - 25 = 275 cm-1
-                extStartWV = startWV - cutOff
-                iterRecNum = startingLineIdx
-                iterLineWV = startingLineWV
-                do while(iterLineWV <= extStartWV)
-                    iterRecNum = iterRecNum + 1
-                    read(databaseFileUnit, rec=iterRecNum) iterLineWV
-                end do
-                startingLineIdx = iterRecNum
-                startingLineWV = iterLineWV
-            else 
-                ! if the startWV is e.g. 20 cm-1, but cutOff is 125 cm-1, then
-                ! proceed calculation from the first spectral line presented in the database file
-                ! startingLineWV and startingLineIdx are set to initial values
-            end if
-
-            ! simple check for consistency of the database file
-            if ((abs(startWV - cutOff - startingLineWV) > 25.) .and. (startWV > cutOff)) then
-                print *, "ATTENTION: database file might be insufficient for input spectral interval:"
-                print *, "Your input left boundary - cutOff condition: ", startWV - cutOff, " cm-1"
-                print *, "Line-by-line scheme starts from: ", startingLineWV, " cm-1"
-            end if
+        ! This `if` block is needed to determine from which spectral line in database to start calculation !
+        ! See the `lineBegIdx` and `lineWVBeg` variables
+        if (startWV > cutOff) then
+            ! if the startWV is e.g. 300 cm-1 and the cutOff is e.g. 25 cm-1, then
+            ! the first spectral line to be counted must be the first line with transition 
+            ! wavenumber bigger than extStartWV = 300 - 25 = 275 cm-1
+            extStartWV = startWV - cutOff
+            iterRecNum = lineBegIdx
+            iterLineWV = lineWVBeg
+            do while(iterLineWV <= extStartWV)
+                iterRecNum = iterRecNum + 1
+                read(databaseFileUnit, rec=iterRecNum) iterLineWV
+            end do
+            lineBegIdx = iterRecNum
+            lineWVBeg = iterLineWV
+        else 
+            ! if the startWV is e.g. 20 cm-1, but cutOff is 125 cm-1, then
+            ! proceed calculation from the first spectral line presented in the database file
+            ! lineWVBeg and lineBegIdx are set to initial values
         end if
 
-        ! When the ATMOSPHERIC_LOOP steps onto the new atmospheric level, then the lineIdx must be reset 
-        ! to the the startingLineIdx value calculated in the firstCall section, because when it is new
-        ! atmospheric level, calculation goes again from startWV.
-        if ( currentLevel /= atmosphericLoopLevel ) then
-            ! DEBUG SECTION !
-            ! write(*,*) 'Level change !'
-            ! write(*,*) 'current Level: ', currentLevel
-            ! write(*,*) 'loop Level: ', atmosphericLoopLevel
-            currentLevel = atmosphericLoopLevel
-            lineIdx = startingLineIdx
+        ! simple check for consistency of the database file
+        if ((abs(startWV - cutOff - lineWVBeg) > 25.) .and. (startWV > cutOff)) then
+            print *, "ATTENTION: database file might be insufficient for input spectral interval:"
+            print *, "Your input left boundary - cutOff condition: ", startWV - cutOff, " cm-1"
+            print *, "Line-by-line scheme starts from: ", lineWVBeg, " cm-1"
         end if
+    end subroutine determineStartingSpectralLine
 
-        ! TODO:(?) move to the main.f90 file in the inner loop
-        
-        ! Defining the boundaries of extended subinterval (add cutOff) 
-        extStartDeltaWV = startDeltaWV - cutOff
-        extEndDeltaWV = startDeltaWV + deltaWV + cutOff
-        
-        ! Defining capWV: wavenumber to determine from which spectral line to start calculation
-        ! of the next subinterval
-        ! TODO: introduce pointers logic for that -- do when fixing the issue with subintervals overlap
-        capWV = extStartDeltaWV + deltaWV
-        ! The same is:
-        ! capWV = endDeltaWV - cutOff
-        if (capWV <= startingLineWV) capWV = startingLineWV ! for consistency, because cutOff might be large
-
-        !------------------------------------------------------------------------------------------------------------------!
-        
-        ! Arrays for storing absorption values on all grids
-        ! must be initialized to zero at the beginning of each calculation inside subinterval
-        call resetAbsorptionGridValues()
-
-        !------------------------------------------------------------------------------------------------------------------!
-
-        ! DEBUG SECTION !
-        ! print *, lineIdx
-        ! print *, capWV
-        
-        ! Proceed to this subroutine for reading spectral features and line summation in the subinterval
-        call lblCalculation(lineIdx, capWV)
-        
-        ! DEBUG SECTION !
-        ! write(*,*) 'lineIdx after moderLBL: ', lineIdx
-
-        call cascadeInterpolation()
-
-    end subroutine subintervalCalculation
-
+    
     subroutine readTIPS()
         implicit none
         character(len=300), parameter :: TIPSFile = 'data/QofT_formatted.dat' ! path to the file with TIPS data
@@ -441,6 +404,7 @@ contains
         end do
         close(TIPSUnit)
     end subroutine readTIPS
+    
     
     subroutine getSpeciesCode(species, codeInt, codeStr)
         ! Subroutine to map species to both integer and string codes accordnig to the HITRAN coding system
@@ -491,4 +455,6 @@ contains
                 codeStr = "00"  ! Species not found
         end select
     end subroutine getSpeciesCode
+
+
 end program main
