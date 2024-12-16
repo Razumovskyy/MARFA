@@ -13,9 +13,10 @@ module Interfaces
 
     
     abstract interface
-        real function chifactor(nu, moleculeIntCode)
+        pure function chifactor(nu, moleculeIntCode)
             import :: DP
             implicit none
+            real :: chiFactor
             real(kind=DP), intent(in) :: nu 
             integer, intent(in) :: moleculeIntCode
         end function chifactor

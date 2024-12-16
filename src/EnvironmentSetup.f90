@@ -39,7 +39,7 @@ contains
         argc = command_argument_count()
 
         ! Check if the number of arguments is not sufficient
-        if (argc < 8) then
+        if (argc < 7) then
             print *, 'Insufficient number of arguments.'
             print *, 'Expected at least 8 arguments, but received ', argc
             print *, 'Usage: marfa Molecule StartWV EndWV DatabaseSlug & 
@@ -49,8 +49,6 @@ contains
             print *, 'EndWV: 10 - 20000, and greater than StartWV'
             print *, 'DatabaseSlug: basefilenames from the data/databases folder'
             print *, 'CutOff: integer value of a line cutoff condition in cm-1'
-            print *, 'ChiFactorFuncName: name of the wing correction function from &
-                        the ChiFactors.f90 module'
             print *, 'TargetValue: ACS (for cross-section in cm^2/molecule) or &
                         VAC (for volume absorption coefficient in km-1)'
             stop 1
@@ -78,8 +76,6 @@ contains
                 cutOffclaTrimmed = trim(cutOffcla)
                 read(cutOffclaTrimmed, *) cutOff
             case (6)
-                call get_command_argument(l, chiFactorFuncName)
-            case (7)
                 call get_command_argument(l, targetValuecla)
                 ! Set ACS or VAC with validation
                 targetValue = trim(targetValuecla)
@@ -92,7 +88,7 @@ contains
                                 "VAC" (Volume absorption coefficient).'
                     stop 2
                 end select
-            case (8)
+            case (7)
                 call get_command_argument(l, atmProfileFile)
             end select
         end do
