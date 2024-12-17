@@ -90,25 +90,28 @@ contains
     
     real function TIPSofT(temperatureParameter)
         ! TODO: refactor when dealing with Gamache TIPS programs (python or Fortran)
-        ! set isotope as a parameter for clarity
+        ! set isotope as a parameter for clarity to achieve pure function
 
         ! establishing a function which accepts temperature as an input
         ! and returning temperature-dependent TIPS as an output
         ! isotope -- is an external parameter from MolarMasses.f90 module
+
+        ! in the TIPS array temperatures go from 20 K with 2 degrees step
+        ! to find TIPS at random temperature, simple linear interpolation is employed
         
         implicit none
         
         real, intent(in) :: temperatureParameter
-        integer :: NTAB_G
-        real :: C_G1, C_G2
-        real :: t_G1
-        
+        integer :: lowerTempIndex ! Index of the closest temperature (available in TIPS array) below the input temperature
+        real :: lowerTempValue ! Value of the closest temperature (available in TIPS array) below the input temperature
+        real :: lowerWeight, upperWeight ! linear interpolation weights
+
         isotopeNum = jointMolIso / 100
-        NTAB_G = (temperatureParameter - 20.0) / 2 + 1
-        t_G1 = NTAB_G * 2.0 + 18.
-        C_G2 = (temperatureParameter - t_G1)/2.
-        C_G1 = 1. - C_G2
-        TIPSOfT = C_G1 * TIPS(isotopeNum, NTAB_G) + C_G2 * TIPS(isotopeNum, NTAB_G+1)
+        lowerTempIndex = (temperatureParameter - 20.0) / 2 + 1
+        lowerTempValue = lowerTempIndex * 2.0 + 18.
+        upperWeight = (temperatureParameter - lowerTempValue)/2.
+        lowerWeight = 1. - upperWeight
+        TIPSOfT = lowerWeight * TIPS(isotopeNum, lowerTempIndex) + upperWeight * TIPS(isotopeNum, lowerTempIndex+1)
     end function TIPSOfT
 
     
