@@ -10,7 +10,7 @@ module Constants
     real, parameter :: PLANCK = 6.626070e-27 ! [erg*s]
     real, parameter :: SPL = 2.99792458e10 ! [cm/s] -- speed of light
     real, parameter :: BOL = 1.3806503e-16 ! [erg/K] -- Boltzmann constant
-    real, parameter :: C2 = (PLANCK * SPL / BOL) ! 1.438769 [cm * K] -- second radiation constant
+    real, parameter :: C2 = (PLANCK * SPL / BOL) ! 1.438777 [cm * K] -- second radiation constant
     real, parameter :: stPressure = 1. ! [atm]
     real, parameter :: stTemperature = 273.15 ! [K]
     real, parameter :: LOSCHMIDT = 2.6867811e25 ! [1/m^3]
