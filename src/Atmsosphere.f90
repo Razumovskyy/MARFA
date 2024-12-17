@@ -19,7 +19,6 @@ module Atmosphere
 
     real :: pSelf ! [atm] -- partial pressure of considered gaseous species
     real :: pForeign ! [atm] -- foreign pressure (p(total) - pSelf)
-    real :: unitlessT ! see the main.f90 implementation
     
     ! Technical variables
     integer :: ios

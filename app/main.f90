@@ -82,7 +82,6 @@ program main
         
         ! Calculation of the self and foreign pressures based on the Loschmidt formula
         ! Alternative -- using Dalton's law and Mendeleev equation
-        unitlessT = refTemperature / temperature
         pSelf = density * 10. / LOSCHMIDT * temperature/stTemperature
         pForeign = pressure - pSelf
 
