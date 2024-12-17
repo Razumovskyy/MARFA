@@ -80,18 +80,10 @@ contains
         real, intent(in) :: pressureParameter
         real, intent(in) :: partialPressureParameter
         real, intent(in) :: temperatureParameter
-        real :: coeffF, coeffS
 
-        ! lorentzWidth = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
-        !                 (gammaForeign * (pressureParameter - partialPressureParameter) + &
-        !                 gammaSelf * partialPressureParameter)
-
-        coeffF = (pressureParameter - partialPressureParameter) / pressureParameter
-        coeffS = partialPressureParameter / pressureParameter  
-        
         lorentzWidth = ((refTemperature / temperatureParameter)**foreignTempCoeff) * &
-                (gammaForeign * (pressureParameter - partialPressureParameter) * coeffF + &
-                gammaSelf * partialPressureParameter) * coeffS
+                        (gammaForeign * (pressureParameter - partialPressureParameter) + &
+                        gammaSelf * partialPressureParameter)
 
     end function lorentzHWHM
 
