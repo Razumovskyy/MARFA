@@ -80,9 +80,12 @@ program main
         temperature = temperatureArray(levelsIdx)
         density = densityArray(levelsIdx)
         
-        ! Calculation of the self and foreign pressures based on the Loschmidt formula
-        ! Alternative -- using Dalton's law and Mendeleev equation
-        pSelf = density * 10. / LOSCHMIDT * temperature/stTemperature
+        ! Alternative -- using Ideal gas law and normalization on 1 atm pressure
+        ! Attention: density is a number denisty in units: 1/(cm^2 * km); 1/(cm^2*km) = 10/m^3
+        pSelf = density * 10. * BOLsi * temperature / standardAtmosphericPressure
+        ! Alternative: based on the Loschmidt number, check the `LOSCHMIDT` valur for accuracy
+        ! pSelf = density * 10. / LOSCHMIDT * temperature/stTemperature
+        
         pForeign = pressure - pSelf
 
         ! Construction of the extenstion for the PT-table output file, reflecting an atmospheric level
