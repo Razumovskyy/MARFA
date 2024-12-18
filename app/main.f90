@@ -38,6 +38,8 @@ program main
     real(kind=DP) :: capWV
     logical :: isFirstSubinterval
 
+    integer :: linesNumber
+
     
     ! Start a timer to track the machine time
     call cpu_time(startTime)
@@ -70,6 +72,11 @@ program main
     end if
 
     call determineStartingSpectralLine(databaseSlug, startingLineIdx, startingLineWV)
+    
+    ! Uncomment this section, to determine number of lines (may slightly downgrade performance)
+    ! extEndWV = endWV + cutOff
+    ! call determineNumberOfLines(startingLineIdx, linesNumber)
+    ! print *, 'Number of spectral lines to be considered: ', linesNumber
     
     ATMOSPHERIC_LEVELS_LOOP: do levelsIdx = 1, levels
         ! OUTER LOOP: over the atmospheric levels. After each iteration, PT-table file is generated for
@@ -239,6 +246,26 @@ contains
             print *, "Line-by-line scheme starts from: ", lineWVBeg, " cm-1"
         end if
     end subroutine determineStartingSpectralLine
+
+    
+    subroutine determineNumberOfLines(lineBegIdx, count)
+        ! Don't call this subroutine in production environment
+        ! since it increases computational time
+        
+        implicit none
+        integer, intent(out) :: count
+        real(kind=DP) :: iterLineWV
+        integer :: i
+        integer, intent(in) :: lineBegIdx
+
+        count = 0
+        i = lineBegIdx
+        do while (iterLineWV < extEndWV)
+            read(databaseFileUnit, rec=i) iterLineWV
+            i = i + 1
+            count = count + 1
+        end do
+    end subroutine determineNumberOfLines
 
 
 end program main
