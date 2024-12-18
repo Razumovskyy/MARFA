@@ -11,7 +11,7 @@ contains
     subroutine setChiFactorFunction()
         implicit none
 
-            chiFactorFuncPtr => tonkov
+            chiFactorFuncPtr => noneChi
   
     end subroutine setChiFactorFunction
     
