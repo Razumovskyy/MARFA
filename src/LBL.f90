@@ -1,127 +1,101 @@
 module LBL
     use Constants
-    use ShapeFuncInterface
+    use Interfaces
     use Atmosphere
-    use Mesh
-    use IO
+    use Grids
     use Spectroscopy
     use MolarMasses
     use Shapes
     use LineGridCalc
+    
     implicit none
-    integer, parameter :: hitranFileUnit = 7777
+    
+    integer, parameter :: databaseFileUnit = 7777
+    
+    real(kind=DP) :: startWV, endWV ! [cm-1] -- boundaries of an initial spectral interval [startWV; EndWV]
+    real(kind=DP) :: extStartWV, extEndWV ! boundaries of an extended initial interval: [startWV-cutOff; endWV+cutOff]
+    real(kind=DP) :: startDeltaWV, endDeltaWV ! boundaries of a subinterval ! VSTART (also: VS,VR4), VFINISH (legacy) !
+    real(kind=DP) :: extStartDeltaWV ! legacy: VA
+    real(kind=DP) :: extEndDeltaWV ! legacy: VFISH
+    
+    character(len=300) :: databaseFile ! file name with line spectral data
+
 contains
 
-    subroutine modernLBL(LINBEG, capWV)
+    subroutine lblScheme(lineIdxParameter, capWVParameter)
         
-        ! integer :: molTypeArg
-        integer :: LINBEG ! integer line label used for locating record in direct access file
+        integer, intent(inout) :: lineIdxParameter ! integer line label used for locating record in direct access file
+        real(kind=DP), intent(in) :: capWVParameter ! inout parameter for capWV. For definition see main.f90 file
+
+        real(kind=DP) :: shiftedLineWV ! VI ! pressure-induced shifted line transition wavenumber
+
+        ! techincal variables
         integer :: I ! loop variable for accessing the record in direct access file
-        ! integer :: loopLevel
-        ! integer, save :: currentLevel
         integer :: ios2
 
-        ! this variable serves as a cap in the loop to stop increasing the lineIdx
-        ! it is the value as when there is the next step over the DeltaWV, hitran reading will from the correct record number
-        ! the definition and the value assignment is in K_HTRAN module
-        real(kind=DP) :: capWV
+    !------------------------------------------------------------------------------------------------------------------!
 
-        real, parameter :: BOUNDL = 10. ! some boundary parameter
-        real, parameter :: BOUNDD = 0.01 ! likely some boundary value related to Doppler broadening, given its small value
-
-        ! real, save :: unitlessT ! unitless temperature (refTemperature/T)
-
-        ! real :: lineIntensity ! SLL ! temperature and pressure dependent line intensity
-        
-        ! real, save :: pSelf ! self-broadening pressure component
-        ! real, save :: pForeign ! foreign gas broadening component
-        
-        ! Appears in the denominator of the Lorentzian line profile L(\nu)
-        real(kind=DP) :: shiftedLineWV ! VI ! shifted line position under the current atmospheric pressure
-
-        ! integer :: isotopeNum ! N_MOLIS ! for categorizing isotopolouges in more broader group
-        
-        ! real :: alphaT ! ADD ! The half-width at half-maximum (HWHM) of the Doppler-broadened component
-
-        ! it characterizes the relative contributions of Lorentzian and Doppler broadening to the overall shape of the spectral line
-        real(kind=DP) :: shapePrevailFactor ! ALAD ! ratio of is the ratio of the Lorentz HWHM (AL) to the Doppler width (ADD).
-
-        ! -------- Line-by-line loop (iteration over records in HITRAN file) ------ !
-
-        I = LINBEG - 1
+        ! line-by-line loop: reading spectral data for the subinterval and performing summation
+        I = lineIdxParameter - 1
         ios2 = 0
-        do while (.not. is_iostat_end(ios))
+        LBL_LOOP: do while (.not. is_iostat_end(ios))
             I = I + 1
-            read(hitranFileUnit, rec=I, iostat=ios2) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, & 
+            read(databaseFileUnit, rec=I, iostat=ios2) lineWV, refLineIntensity, gammaForeign, gammaSelf, lineLowerState, & 
                                                     foreignTempCoeff, jointMolIso, deltaForeign
-
+     
+            ! DEBUG SECTION !
+            ! print *, 'lineWV: ', lineWV
+            ! print *, 'refLineIntensity: ', refLineIntensity
+            
             if (ios2 > 0) then
                 print *, 'ERROR: when reading file with spectral data.'
                 stop 9
             end if
 
+            ! exit the loop when extended subinterval (endDeltaWV + cutOff) ends
+            ! extEndDeltaWV = endDeltaWV + cutOff
             if  (lineWV >= extEndDeltaWV) exit
 
-            if  (lineWV <= capWV) LINBEG = I
+            ! setting the lineIdxParameter for the next call -- for corrct switching to the next subinterval
+            ! capWVParameter = endDeltaWV - cutOff, so capWVParameter < extEndDeltaWV
+            if  (lineWV <= capWVParameter) lineIdxParameter = I
 
+            ! Setting the molar weight
             isotopeNum = jointMolIso/100
-
             molarMass = WISO(isotopeNum)
 
-            ! AL
-            LorHWHM = lorentzHWHM(pressure, includeGammaSelf=.true., partialPressureParameter=pSelf, & 
-                                includeTemperature=.true., temperatureParameter=temperature)
-    
-            ! ADD
-            DopHWHM = dopplerHWHM(lineWV, temperature, molarMass)
-
-            shapePrevailFactor = LorHWHM / (DopHWHM/sqln2) ! <----- ratio to see which effect (Doppler or Lorentz prevails)
-
+            ! calculation of pressure-induced shift
             shiftedLineWV = shiftedLinePosition(lineWV, pressure)
+            dopHWHM = dopplerHWHM(shiftedLineWV, temperature, molarMass)
+            lorHWHM = lorentzHWHM(pressureParameter=pressure, partialPressureParameter=pSelf, &
+                                    temperatureParameter=temperature)
+
+            lineIntensity = intensityOfT(temperature)
+
+            ! DEBUG SECTION !
+            ! print *, 'dopHWHM: ', dopHWHM
+            ! print *, 'lorHWHM: ', lorHWHM
+            ! print *, 'VY: ', lorHWHM * sqln2 /dopHWHM
+            ! pause
             
-            if (shapePrevailFactor > BOUNDL) then
-                if (shiftedLineWV < startDeltaWV) then
-                    shapeFuncPtr => chiCorrectedLorentz
-                    call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
-                else 
-                    if (shiftedLineWV >= endDeltaWV) then
-                        shapeFuncPtr => chiCorrectedLorentz
-                        call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                    else 
-                        shapeFuncPtr => chiCorrectedLorentz
-                        call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                    end if
-                end if
+            if (shiftedLineWV < startDeltaWV) then
+                ! in this case current LBL_LOOP spectral line falls into the interval: 
+                ! [startDeltaWV - cutOff; startDeltaWV] and to find its contribution 
+                ! on the [startDeltaWV; endDeltaWV] interval, only RIGHT WING of this line
+                ! must be accounted for. It is done in leftLBL subroutine:
+                call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
+            else if (shiftedLineWV > endDeltaWV) then
+                ! in this case current LBL_LOOP spectral line falls into the interval: 
+                ! [endDeltaWV; endDeltaWV + cutOff] and to find its contribution 
+                ! on the [startDeltaWV; endDeltaWV] interval, only LEFT WING of this line
+                ! must be accounted for. It is done in rightLBL subroutine:
+                call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
             else
-                if (shapePrevailFactor > BOUNDD) then
-                    if (shiftedLineWV < startDeltaWV) then
-                        shapeFuncPtr => voigt
-                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                    else
-                        if (shiftedLineWV >= endDeltaWV) then
-                            shapeFuncPtr => voigt
-                            call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                        else 
-                            shapeFuncPtr => voigt
-                            call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                        end if
-                    end if
-                else 
-                    if (shiftedLineWV < startDeltaWV ) then
-                        shapeFuncPtr => doppler
-                        call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                    else 
-                        if (shiftedLineWV >= endDeltaWV) then
-                            shapeFuncPtr => doppler
-                            call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                        else 
-                            shapeFuncPtr => doppler
-                            call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
-                        end if
-                    end if
-                end if
-            end if 
-        end do
-        ! -------- End of line-by-line loop (iteration over records in HITRAN file) --!
-    end subroutine modernLBL
+                ! in this case current LBL_LOOP spectral line falls into the subinterval itself
+                ! BOTH WINGS of this line must be accounted for.
+                ! It is implemented in the centerLBL subroutine:
+                call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+            end if
+        end do LBL_LOOP
+    end subroutine lblScheme
 end module LBL
