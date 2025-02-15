@@ -33,6 +33,7 @@
 
 # VSCode
 .vscode
+.idea
 
 # control data
 control
@@ -62,6 +63,7 @@ SPECTR*
 # venv
 venv/
 .venv
+.marfa-venv/
 *.par
 app/voigtTable.f90
 data/Atmospheres/VenusCO2_1level.dat
