@@ -147,7 +147,7 @@ contains
         write(infoUnit, '(A,A)') 'Start Wavenumber: ', trim(startWVclaTrimmed)
         write(infoUnit, '(A,A)') 'End Wavenumber: ', trim(endWVclaTrimmed)
         write(infoUnit, '(A,A)') 'Cut Off: ', trim(cutOffclaTrimmed)
-        write(infoUnit, '(A,A)') 'Chi Factor Function Name: ', trim(chiFactorFuncName)
+        ! write(infoUnit, '(A,A)') 'Chi Factor Function Name: ', chiFactorFuncPtr
         write(infoUnit, '(A,A)') 'Target Value: ', trim(targetValue)
         write(infoUnit, '(A,A)') 'Atmospheric Profile File: ', trim(atmProfileFile)
         close(infoUnit)
