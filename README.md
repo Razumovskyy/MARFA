@@ -124,40 +124,47 @@ Here is a breakdown of the command-line arguments (for more detailed explanation
 
 After running this command, the PT-tables for each level from the `VenusCO2.dat` file will be generated in the `output/ptTables` folder. The output files are created in a binary format (unformatted files or so called direct access files) to facilitate faster integration with radiative transfer models.
 
-### Converting to a human-readable output and plotting
-To convert a specific PT-table file to a human-readable format and plot the spectra, use the Python script located in the scripts directory. Execute the following command:
+### Converting to a human-readable format
+To convert a specific PT-table file, corresponding to a specific atmospheric level (fixed P-T-values), to a human-readable format running additional command is needed.
 ```
-python scripts/postprocess.py --v1 4000 --v2 4100 --level 40 --resolution medium --plot
+python manage.py convert
 ```
-You can find the file containing human-readable data in the `processedData` folder, named according to the corresponding format, e.g., `output/processedData/CO2_40_VAC_4000-4100.dat`. Below is an example of the file’s contents, which include log information and data: the first column represents wavenumbers [cm<sup>-1</sup>], and the second column shows the log<sub>10</sub> of the volume absorption coefficient (or cross-section if `targetValue` is set to VAC).
+The script will prompt you to enter the atmospheric level:
+```
+Enter the level number: 45
+```
+After processing the script will provide a path where the file is saved. By default, files containing human-readable data are located in the `processedData` folder, named according to the corresponding format, e.g., `output/processedData/H2O_900-1000_45level.dat`. Below is an example of the file’s contents, which include log information and data: the first column represents wavenumbers [cm<sup>-1</sup>], and the second column shows the log<sub>10</sub> of the volume absorption coefficient (`targetValue` is set to VAC) or cross-section (`targetValue` is set to ACS):
 ```ini
-# Input Molecule: CO2
-# Cut Off: 125
-# Target Value: VAC
-# Atmospheric Profile File: VenusCO2.dat
-# V1: 4000.0 cm-1
-# V2: 4100.0 cm-1
-# Resolution: medium
-# Level Number: 40
-               1       20470
-     4000.00000        -1.4572563
-     4000.00488        -1.4536923
-     4000.00977        -1.4693524
-     4000.01465        -1.4902035
+Command-Line Arguments:
+Input Molecule: H2O
+Start Wavenumber: 900
+End Wavenumber: 1000
+Cut Off: 125
+Target Value: ACS
+Atmospheric Profile File: VenusH2O.dat
+      900.00000     2.4635722e-26
+      900.00049     2.4640970e-26
       ...
-     4099.98535        -5.6071868
-     4099.99023        -5.5950541
-```
-If the `--plot` flag is enabled, a plot of the data set is generated and saved to the `plots` directory with the same name, for example: `output/plots/CO2_40_VAC_4000-4100.png`. Here’s an example:
-
-![](images/CO2_40_VAC_4000-4100.png)
-
-The `V1` and `V2` values do not necessarily need to match the initial boundaries `Vstart` and `Vend`  used to calculate the PT-table. Instead, you can examine a narrower interval with higher resolution to gain more detailed insights:
-```
-python scripts/postprocess.py --v1 4020 --v2 4022 --level 40 --resolution high --plot
+      999.99951     9.3716602e-26
+     1000.00000     9.3544303e-26
 ```
 
-![](images/CO2_40_VAC_4020-4022.png)
+### Plotting
+To visualize data from PT-table files, one must execute the following command:
+```
+python manage.py plot
+```
+Follow the interactive prompts to input the atmospheric level, left and right boundaries for plot.  For example:
+```
+Enter the level number: 65
+Enter the left boundary for plot: 924
+Enter the right boundary for plot: 930
+```
+
+Currently the narrowest interval for plot generation is 10 cm<sup>-1</sup>. So the 920-930 cm<sup>-1</sup> will be presented in this example. After the run, script will provide a path where the plot is saved (by default somewhere inside the `output/plots` directory). Example plot in svg format with a descriptive title, which is generated automatically:
+
+![Alt text](images/H2O_924-930_ACS.svg)
+
 
 ## Command line parameters
 ### Parameters for `fpm run marfa` command
@@ -179,7 +186,7 @@ fpm run marfa -- CO2 660 670 HITRAN2020 25 ACS VenusCO2.dat
 fpm run marfa -- H2O 10 3000 HITRAN2020 250 VAC VenusH2O.dat
 ```
 
-### Parameters for `python scripts/postprocess.py` command
+<!-- ### Parameters for `python scripts/postprocess.py` command
 |Argument|Description|Required|Allowed values|
 |--------|-----------|--------|--------------|
 |subdirectory| Name of the PT-table directory| No, default value is where PT-tables from the latest run are stored. See the `output/ptTables/latest_run.txt` file | Any |
@@ -194,7 +201,7 @@ Examples:
 python scripts/postprocess.py --v1 4032 --v2 4038 --level 40 --resolution high --plot
 python scripts/posprocess.py --v1 10 --v2 3000 --level 50 --resolution coarse
 python scripts/postprocess.py directory_name --v1 2500 --v2 --2550 --level 30 --resolution medium
-```
+``` -->
 
 ## Atmospheric profile file structure
 To correctly run the MARFA code, the atmospheric file must adhere to a specific format and be placed in the `data/Atmospheres/` directory. Below is an example of the required format:
