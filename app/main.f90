@@ -95,7 +95,7 @@ program main
         
         pForeign = pressure - pSelf
 
-        ! Construction of the extenstion for the PT-table output file, reflecting an atmospheric level
+        ! Construction of the extension for the PT-table output file, reflecting an atmospheric level
         levelLabel = '___'
         if ( levelsIdx < 10 ) then
             write(levelLabel(1:1), '(I1)') levelsIdx
