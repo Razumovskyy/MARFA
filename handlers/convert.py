@@ -39,10 +39,10 @@ def convert_pttable(directory: Path, level: int) -> None:
     if v1 is None or v2 is None:
         raise ValueError(f"Corrupted info file: start or end wavenumbers are not defined")
 
+    vw_data, absorption_data = base_parser(pttable_file, v1, v2)
+
     output_filename = f"{molecule.strip()}_{int(v1)}-{int(v2)}_{level}level.dat"
     output_file = shutil.copyfile(info_file, Path(HUMAN_READABLE_DIRECTORY)/output_filename)
-
-    vw_data, absorption_data = base_parser(pttable_file, v1, v2)
 
     with open(output_file, 'a') as output:
         for vw, abs_data in zip(vw_data, absorption_data):
