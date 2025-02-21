@@ -4,7 +4,7 @@ module LineGridCalc
     use Interfaces
     implicit none
 contains
-    subroutine leftLBL(FREQ, UL, FSHAPE)
+    subroutine leftLBL(FREQ, UL, FSHAPE, EPS)
         ! calculation contributions to the subinterval on each grid
         ! FROM the LEFT PART of the extended subinterval: [startDeltaWV-cutOff; startDeltaWV]
 
@@ -178,7 +178,7 @@ contains
      500		RETURN
     end subroutine leftLBL
     
-    subroutine centerLBL(FREQ, UL, FSHAPE)
+    subroutine centerLBL(FREQ, UL, FSHAPE, EPS)
         ! calculation contributions to the subinterval on each grid
         ! FROM the CENTRAL PART of the extended subinterval: [startDeltaWV; endDeltaWV]
         
@@ -493,7 +493,7 @@ contains
  11							RETURN
     end subroutine centerLBL
 
-    subroutine rightLBL(FREQ, UL, FSHAPE)
+    subroutine rightLBL(FREQ, UL, FSHAPE, EPS)
         ! calculation contributions to the subinterval on each grid
         ! FROM the RIGHT PART of the extended subinterval: [endDeltaWV; endDeltaWV+cutOff]
 

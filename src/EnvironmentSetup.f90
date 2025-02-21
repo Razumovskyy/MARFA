@@ -41,9 +41,9 @@ contains
         ! Check if the number of arguments is not sufficient
         if (argc < 7) then
             print *, 'Insufficient number of arguments.'
-            print *, 'Expected at least 8 arguments, but received ', argc
+            print *, 'Expected at least 7 arguments, but received ', argc
             print *, 'Usage: marfa Molecule StartWV EndWV DatabaseSlug & 
-                        CutOff ChiFactorFuncName TargetValue AtmProfileFile'
+                        CutOff TargetValue AtmProfileFile'
             print *, 'Molecule: CO2, H2O'
             print *, 'StartWV: 10 - 20000'
             print *, 'EndWV: 10 - 20000, and greater than StartWV'
