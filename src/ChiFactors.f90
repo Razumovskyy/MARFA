@@ -11,7 +11,7 @@ contains
     subroutine setChiFactorFunction()
         implicit none
 
-            chiFactorFuncPtr => noneChi
+            chiFactorFuncPtr => tonkov
   
     end subroutine setChiFactorFunction
     
@@ -43,8 +43,10 @@ contains
             if (abs(X) > 3.) then
                 if (abs(X) <= 150.) then
                     tonkovFactor = 1.084 * exp(-0.027*abs(X))
-                else
+                else if (abs(x) <= 300.) then
                     tonkovFactor = 0.208 * exp(-0.016*abs(X))
+                else
+                    tonkovFactor = 0.025 * exp(-0.009*abs(X))
                 end if
             end if
         end if
