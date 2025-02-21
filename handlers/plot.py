@@ -46,7 +46,7 @@ def generate_plot(x_data: list[np.float32], y_data: list[np.float32], parameters
 
     ax.plot(x_data, y_data, color='g', linestyle='-')
 
-    plt.title(f"Absorption spectra of {molecule} at {level} level of atmosphere {atm_filename}\n "
+    plt.title(f"Absorption spectrum of {molecule} at {level} level of atmosphere {atm_filename}\n "
               f"Cutoff is {cutoff} cm-1")
     ax.set_xlabel(r'Wavenumber [$\mathregular{cm^{-1}}$]')
     ax.set_ylabel(yaxis_title)
