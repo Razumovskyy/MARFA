@@ -77,24 +77,24 @@ contains
             ! print *, 'lorHWHM: ', lorHWHM
             ! print *, 'VY: ', lorHWHM * sqln2 /dopHWHM
             ! pause
-            
+
             if (shiftedLineWV < startDeltaWV) then
                 ! in this case current LBL_LOOP spectral line falls into the interval: 
                 ! [startDeltaWV - cutOff; startDeltaWV] and to find its contribution 
                 ! on the [startDeltaWV; endDeltaWV] interval, only RIGHT WING of this line
                 ! must be accounted for. It is done in leftLBL subroutine:
-                call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr) 
+                call leftLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr, EPS) 
             else if (shiftedLineWV > endDeltaWV) then
                 ! in this case current LBL_LOOP spectral line falls into the interval: 
                 ! [endDeltaWV; endDeltaWV + cutOff] and to find its contribution 
                 ! on the [startDeltaWV; endDeltaWV] interval, only LEFT WING of this line
                 ! must be accounted for. It is done in rightLBL subroutine:
-                call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                call rightLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr, EPS)
             else
                 ! in this case current LBL_LOOP spectral line falls into the subinterval itself
                 ! BOTH WINGS of this line must be accounted for.
                 ! It is implemented in the centerLBL subroutine:
-                call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr)
+                call centerLBL(startDeltaWV, shiftedLineWV, shapeFuncPtr, EPS)
             end if
         end do LBL_LOOP
     end subroutine lblScheme

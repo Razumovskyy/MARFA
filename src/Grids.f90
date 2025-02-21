@@ -1,4 +1,5 @@
 module Grids
+    use Constants
     implicit none
     
     ! Parameters: number of grid points for each grid:
@@ -56,11 +57,13 @@ module Grids
     real, parameter :: H9 = H8 / 2.0
     real, parameter :: H = H9 / 4.0
 
+    real(kind=DP) :: EPS
+
 contains
 
     subroutine resetAbsorptionGridValues
         implicit none
-        RK = 0.0;
+        RK = 0.0; EPS=0.D0
         RK0 = 0.0; RK0L = 0.0; RK0P = 0.0
         RK1 = 0.0; RK1L = 0.0; RK1P = 0.0
         RK2 = 0.0; RK2L = 0.0; RK2P = 0.0
