@@ -11,7 +11,7 @@ contains
     subroutine setChiFactorFunction()
         implicit none
 
-            chiFactorFuncPtr => tonkov
+            chiFactorFuncPtr => noneChi
   
     end subroutine setChiFactorFunction
     
@@ -95,6 +95,7 @@ contains
         perrinFactor = 1. ! default value for the chi-factor
 
         ! temperature dependence
+        ! B(T) = alpha + beta * exp(-epsilon*T)
         B1 = 0.0888 - 0.16*exp(-0.00410*temperature)
         B2 = 0.0526 * exp(-0.00152*temperature)
         B3 = 0.0232
@@ -106,15 +107,17 @@ contains
 
         if (moleculeIntCode == 2) then 
             ! CO2
-            if (abs(X) < S2) then
-                perrinFactor = exp(-B1 * (abs(X)-S1))
-            else 
-                if (abs(X) < S3) then
-                    perrinFactor = exp(-B1*(S2-S1) - B2*(abs(X)-S2))
-                else
-                    perrinFactor = exp(-B1*(S2-S1) - B2*(S3-S2) - B3*(abs(X)-S3))
-                end if
-            end if 
+            if (abs(X) > S1) then
+                if (abs(X) < S2) then
+                    perrinFactor = exp(-B1 * (abs(X)-S1))
+                else 
+                    if (abs(X) < S3) then
+                        perrinFactor = exp(-B1*(S2-S1) - B2*(abs(X)-S2))
+                    else
+                        perrinFactor = exp(-B1*(S2-S1) - B2*(S3-S2) - B3*(abs(X)-S3))
+                    end if
+                end if 
+            end if
         end if
     end function perrin
 end module ChiFactors
