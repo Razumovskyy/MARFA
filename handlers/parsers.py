@@ -96,7 +96,7 @@ def plot_parser(directory: Path, level: int, vl: float, vr: float) -> tuple[
             if line.startswith("Input Molecule"):
                 molecule = line.split(':')[1].strip()
             if line.startswith("Cut Off"):
-                cutoff = int(line.split(':')[1].strip())
+                cutoff = float(line.split(':')[1].strip())
             if line.startswith("Target Value"):
                 y_title = line.split(':')[1].strip()
             if line.startswith("Atmospheric Profile File"):
