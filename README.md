@@ -87,8 +87,8 @@ For installing the `gfortran` you can use [GNU Fortran website](https://gcc.gnu.
 Other fortran compilers were not tested and checked.
 ### fpm
 Installation instructions ara available on the [official website](https://fpm.fortran-lang.org/install/index.html) or on the [fpm github page](https://github.com/fortran-lang/fpm).
-### Python3
-Python3 is mainly needed for running the plotting scripts and converting binary files to a human readable format.
+### Python3.10 or higher
+Python3 is mainly needed for running the plotting scripts and converting binary files to human readable formats.
 
 ## Quick start instructions
 ### Clone the repository and navigate to the project directory:
@@ -101,8 +101,27 @@ cd MARFA
 ```
 fpm build
 ```
-### Install python packages
-In python virtual environment (recommended) run:
+### Install python packages in virtual environment
+Create a virtual environment:
+```
+python<version> -m venv venv
+```
+Replace version with your desired Python version (e.g., python3.10 -m venv venv) or provide path to the interpreter.
+
+Activate virtual environment:
+- **On Mac/Linux**:
+```
+source venv/bin/activate
+```
+- **On Windows (cmd)**:
+```
+venv\Scripts\activate
+```
+- **On Windows (PowerShell)**:
+```
+venv\Scripts\Activate.ps1
+```
+Install packages
 ```
 pip install -r requirements.txt
 ```
@@ -165,6 +184,13 @@ Currently the narrowest interval for plot generation is 10 cm<sup>-1</sup>. So t
 
 ![Alt text](images/H2O_924-930_ACS.svg)
 
+### Cleaning files
+To execute post-job cleaning, run the `clean.sh` interactive script:
+```
+chmod +x clean.sh
+./clean.sh
+```
+This script helps free up disk space after multiple runs, as PT-tables may consume a significant amount of storage.
 
 ## Command line parameters
 ### Parameters for `fpm run marfa` command
