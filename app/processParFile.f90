@@ -182,7 +182,7 @@ program processParFile
     close(outputFileUnit)
     close(outputHumanReadableFileUnit)
     print *, 'The file preprocession is finished !'
-    print *, 'number of lines: ', lineCounter 
+    print *, 'number of lines: ', lineCounter-1
 
 contains
 
