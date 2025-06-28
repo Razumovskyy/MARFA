@@ -70,3 +70,6 @@ data/Atmospheres/VenusCO2_1level.dat
 /scripts/__pycache__
 /handlers/__pycache__
 /legacy
+/data/hapi
+/output/hapi_marfa_compare
+hapi-test.ipynb
