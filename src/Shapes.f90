@@ -132,4 +132,12 @@ contains
         end if
     end function voigt
 
+    real function lorentzShape(X)
+        implicit none
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
+        real(kind=DP), intent(in) :: X
+
+        lorentzShape = chiCorrectedLorentz(X, lorHWHM)
+    end function lorentzShape
+
 end module Shapes
