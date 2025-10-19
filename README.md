@@ -485,7 +485,7 @@ Feedback is awaited to populate this section. Most potential issues, such as inv
 ## How to cite this work
 If you use MARFA in your research, please cite the following article:
 
-Razumovskiy, M., Fomin, B., & Astanin, D. (2025). MARFA: An effective line-by-line tool for calculating molecular absorption in planetary atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 346, 109599. https://doi.org/10.1016/j.jqsrt.2025.109599
+Razumovskiy, M., Fomin, B., & Astanin, D. (2025). _MARFA: An effective line-by-line tool for calculating molecular absorption in planetary atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 346, 109599._ https://doi.org/10.1016/j.jqsrt.2025.109599
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
