@@ -483,13 +483,15 @@ Feedback is awaited to populate this section. Most potential issues, such as inv
 
 
 ## How to cite this work
-Razumovskiy, Mikhail, Boris Fomin, and Denis Astanin. _MARFA: An Effective Line-by-line Tool for Calculating Absorption Coefficients and Cross-sections in Planetary Atmospheres._ arXiv preprint arXiv:2411.03418 (2024).
+If you use MARFA in your research, please cite the following article:
+
+Razumovskiy, M., Fomin, B., & Astanin, D. (2025). MARFA: An effective line-by-line tool for calculating molecular absorption in planetary atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 346, 109599. https://doi.org/10.1016/j.jqsrt.2025.109599
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
 
 ## References
-- Razumovskiy, Mikhail, Boris Fomin, and Denis Astanin. _MARFA: An Effective Line-by-line Tool for Calculating Absorption Coefficients and Cross-sections in Planetary Atmospheres._ arXiv preprint arXiv:2411.03418 (2024).
+- Razumovskiy, M., Fomin, B., & Astanin, D. (2025). _MARFA: An effective line-by-line tool for calculating molecular absorption in planetary atmospheres._ Journal of Quantitative Spectroscopy and Radiative Transfer, 346, 109599.
 - Fomin, B. A. _Effective interpolation technique for line-by-line calculations of radiation absorption in gases._ Journal of Quantitative Spectroscopy and Radiative Transfer 53.6 (1995): 663-669.
 - Tonkov, M. V., et al. _Measurements and empirical modeling of pure CO<sub>2</sub> absorption in the 2.3-μm region at room temperature: far wings, allowed and collision-induced bands._ Applied optics 35.24 (1996): 4863-4870.
 - Pollack, James B., et al. _Near-infrared light from Venus' nightside: A spectroscopic analysis._ Icarus 103.1 (1993): 1-42.
