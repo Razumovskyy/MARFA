@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "MARFA"
+type: software
+abstract: >
+  MARFA (Molecular atmospheric Absorption with Rapid and Flexible Analysis) calculates
+  volume absorption coefficients or monochromatic absorption cross-sections using
+  high-resolution spectral databases and atmospheric profile data. It produces PT-table
+  look-up outputs that integrate with radiative transfer models and supports custom
+  spectroscopic configurations for planetary atmosphere studies.
+authors:
+  - family-names: Razumovskiy
+    given-names: Mikhail
+    email: mrazumovskyy@gmail.com
+repository-code: https://github.com/Razumovskyy/MARFA
+version: 1.2
+date-released: 2025-02-24
+license: MIT
+keywords:
+  - molecular spectroscopy
+  - radiative transfer
+  - absorption cross-sections
+  - planetary atmospheres
+preferred-citation:
+  type: article
+  title: "MARFA: An effective line-by-line tool for calculating molecular absorption in planetary atmospheres"
+  authors:
+    - family-names: Razumovskiy
+      given-names: Mikhail
+    - family-names: Fomin
+      given-names: B.
+    - family-names: Astanin
+      given-names: Denis
+  journal: Journal of Quantitative Spectroscopy and Radiative Transfer
+  year: 2025
+  volume: "346"
+  pages: "109599"
+  doi: 10.1016/j.jqsrt.2025.109599
