@@ -140,4 +140,12 @@ contains
         lorentzShape = chiCorrectedLorentz(X, lorHWHM)
     end function lorentzShape
 
+    real function dopplerShape(X)
+        implicit none
+        ! X - [cm-1] -- distance from the shifted line center to the spectral point of function evaluation
+        real(kind=DP), intent(in) :: X
+
+        dopplerShape = doppler(X, dopHWHM)
+    end function dopplerShape
+
 end module Shapes

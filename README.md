@@ -406,6 +406,14 @@ To use a new line shape for absorption calculations, update the `setShapeFunctio
 shapeFuncPtr => myLineShapeFunction
 ```
 
+To select the pure Doppler (Gaussian) profile, set the pointer in `setShapeFunction` to:
+
+```fortran
+shapeFuncPtr => dopplerShape
+```
+
+Then rebuild MARFA. This wrapper calls the existing `doppler` function with the current line's Doppler half-width `dopHWHM` and already includes its temperature-dependent intensity `lineIntensity`. It omits Lorentz broadening and χ-factor corrections. The default selection remains `voigt` unless you change the pointer explicitly.
+
 ## χ-factors
 There is an indication that the far wings of spectral lines tend to diverge from expected Lorentzian or Voigt behavior. To address that, χ&#8204;-factor could be applied. 
 
