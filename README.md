@@ -133,7 +133,7 @@ For example, to calculate absorption coefficient of carbon dioxide in typical Ve
 fpm run marfa -- CO2 4000 4100 HITRAN2020 125 VAC VenusCO2.dat
 ```
 
-Here is a breakdown of the command-line arguments (for more detailed explanation of parameters see [this section](command-line-paramaters)):
+Here is a breakdown of the command-line arguments (for more detailed explanation of parameters see [this section](#command-line-parameters)):
 - **`CO2`**: The input molecule
 - **`4000`** and **`4100`**: The boundaries of the spectral interval of interest (in cm<sup>-1</sup>)
 - **`HITRAN2020`**: basefilename for the spectral database
@@ -461,17 +461,20 @@ Total internal partition sums (TIPS) are needed for obtaining temperature-depend
 #### Molecluar masses
 Molecular masses are used for calculation of Doppler half-widths. Data is available directly in the `MolecularMasses.f90` module. `WISO` array contains weights data for 124 isotopolouges of first 42 molecules according to HITRAN molecules numbering system.
 ## Performance benchmarks
-Execution time **at one atmospheric level** largerly depends on number of spectral lines and line cut-off condition. Here are some benchmarks for the **Apple M1 chip**:
-|species|spectral interval (cm<sup>-1</sup>)|number of lines|cut off condition (cm<sup>-1</sup>)|execution time (s)|
-|---------|-----------------|---------------|-----------------|----------------|
-| CO<sub>2</sub> | 10 - 1000 (far-IR) | 128934 | 25 | 0.3 |
-| CO<sub>2</sub> | 10 - 1000 (far-IR) | 139291 | 250 | 1.32 |
-| H<sub>2</sub>O | 1000 - 4000 (mid-IR) | 84119 | 25 | 0.29 |
-| H<sub>2</sub>O | 1000 - 4000 (mid-IR) | 92566 | 250 | 0.95 |
-|  CO<sub>2</sub> | 10 - 14000 (whole IR) | 543481  | 250 | 6 |
-| H<sub>2</sub>O | 10 - 14000 (whole IR) | 329258 | 250 | 3.8 |
+Measured on **2026-11-17, Apple M1 Pro**, at **one atmospheric level, 296 K and 1 atm**, using air broadening (`pSelf = 0`, `ACS`), HITRAN2020, the default Voigt implementation, and `noneChi`. The spectral step is 1/2048 cm<sup>-1</sup>; no line-intensity threshold is applied. Times are median **CPU seconds from seven runs after one warmup per case**, including input and output, excluding compilation. The release build uses gfortran 15.2.0 (`-O3 -funroll-loops`) and one thread.
 
-**Note**: no line intensity cut-off condition applies, so all the lines from HITRAN2020 database counted.
+|species|spectral interval (cm<sup>-1</sup>)|lines actually evaluated|cut off condition (cm<sup>-1</sup>)|CPU time (s)|
+|---------|-----------------|---------------|-----------------|----------------|
+| CO<sub>2</sub> | 10 - 1000 (far-IR) | 128933 | 25 | 0.21 |
+| CO<sub>2</sub> | 10 - 1000 (far-IR) | 139290 | 250 | 1.40 |
+| H<sub>2</sub>O | 1000 - 4000 (mid-IR) | 84117 | 25 | 0.16 |
+| H<sub>2</sub>O | 1000 - 4000 (mid-IR) | 92565 | 250 | 0.93 |
+| CO<sub>2</sub> | 10 - 14000 (whole IR) | 543480 | 250 | 6.06 |
+| H<sub>2</sub>O | 10 - 14000 (whole IR) | 329257 | 250 | 3.66 |
+
+Counts are unique database records whose line shape is evaluated, including wings outside the requested band; repeated visits across subintervals are not counted again. An independent binary-file count and a separate instrumented executable verified the counts. For H<sub>2</sub>O, 1000–4000 cm<sup>-1</sup> with a 25 cm<sup>-1</sup> cutoff, 84118 records pass initial selection, but one line moves outside the cutoff after its pressure shift, leaving 84117 evaluated lines. The previous table was one record too high even at the initial-selection stage, consistent with the unused legacy `determineNumberOfLines` routine including the first record beyond the upper boundary; that routine also reads an uninitialized loop variable and was not used here.
+
+The [measurement record](benchmarks/2026-11-17.json) contains exact CPU and elapsed-time samples, line counts, input and output hashes, and build conditions. Generated PT-tables were deleted after verification. These are new measurements under explicit conditions; the old table did not specify temperature, pressure or build settings, so its timing differences cannot be attributed solely to code performance.
 
 Loop over atmospheric levels is currently not parallelized but I plan to do it with OpenMP in near time. Thus, currently the time of processing a full atmospheric profile is linear to number of levels.
 

@@ -1,0 +1,510 @@
+{
+  "date": "2026-11-17",
+  "hardware": "Apple M1 Pro, 16 GB RAM",
+  "compiler": "GNU Fortran 15.2.0",
+  "build": "fpm 0.11.0, release, -O3 -funroll-loops",
+  "threads": 1,
+  "temperature_K": 296,
+  "pressure_atm": 1,
+  "partial_pressure_atm": 0,
+  "target": "ACS",
+  "shape": "voigt",
+  "chi_factor": "noneChi",
+  "spectral_step_cm1": 0.00048828125,
+  "timing": "Seven runs after one warmup per case. CPU time includes input and output. Audit runs excluded.",
+  "source_commit": "4079e7152270b9f7e2853714cbf5696d0d8b6c33",
+  "source_note": "Existing unused dopplerShape helper present; selected shape is voigt. No calculation code changed.",
+  "input_sha256": {
+    "marfa-local-changes.patch": "3e485584a4ff0faa4315c72a4c9883fa9976824c57731b491c2cdd12484fdf58",
+    "source/LICENSE": "2cae0919d605616167bb3a741fad3971fe3e8a3b31741f17bae63e6f45036f16",
+    "source/fpm.toml": "5811a7d81bd5257d587a3ca61e5de8e302d0767b2b1123ccea0d18f3d3be6980",
+    "data/databases/HITRAN2020.02": "f72fe507ec46117430405cbd4b40f89f40d28369b1433f7027e50d9d4b14f2ef",
+    "data/databases/HITRAN2020.01": "f4504bfe48dd9a1410d3ec30ae6cbb1196582e79269c3a84dc452c2eeaac386c",
+    "data/Atmospheres/benchmark.dat": "531b9aadfcf9c26bf41f5b0ae7f649cd614c73a1753a98e066bf47f1b8f937b5",
+    "data/TIPS/TIPS.dat": "98b76228a5dcfa07ad2ca3ab5fdc1be956e8e3006430b37265c83500b3879f9d",
+    "source/app/processParFile.f90": "a7d40dbd6927667533ab8e06f83c772d369431ad082db020bede2f6332fe0590",
+    "source/app/main.f90": "1fc79c75ba3779aafb6ddbf4b25019d6814985851bceaf72a5b8290cfdf777e4",
+    "source/src/Constants.f90": "f08c42e11b7cfa56e1a8008d97b9adba7237c355e9dbf07b3c8031443b222be8",
+    "source/src/Grids.f90": "26406bce34a579d46c9a88965ba2bd29d400b0f15888e981537b3d4f74c602ec",
+    "source/src/MolarMasses.f90": "a21f6c1b9eb54b3fbdf3bee84a6f73833b61002bfbb731743e26b0f5265a2e4b",
+    "source/src/Spectroscopy.f90": "c09e4c1c733411d5dcd4b1b153cca840ed5af3a795c9c4dfda1ba3d0e4f4207e",
+    "source/src/ChiFactors.f90": "122c1b6ab9dd6727c7e1df1493d451ba88fd95083505ac37c863fbab58016768",
+    "source/src/Interfaces.f90": "de801bba4fe43ee14f0458b90033b4c703d4d8a80d64220864c33c95e7e24c1f",
+    "source/src/EnvironmentSetup.f90": "ce69dedbe6c22ef35164de87923ad09681b0dffcf77c30fad083acabfa5e62eb",
+    "source/src/Shapes.f90": "4d507e2a1caa08a61a05c6f2bdd1f2090fa4059b00041bcb7d83a106a3014179",
+    "source/src/LBL.f90": "837ec05a99b3f3c7c84d185d73b49761b48d7403cd1ea7f49c7e6863a66750ce",
+    "source/src/LineGridCalc.f90": "2362ab7f55b7f8ee2607eff561aa87ca1971c9e4953014bf15923011c575605e",
+    "source/src/Atmsosphere.f90": "bdc6b294fc5c8c2ee926cac53472e1d5cf20753d692f74a2aca30f94f530e2f6"
+  },
+  "cases": [
+    {
+      "molecule": "CO2",
+      "start_cm1": 10,
+      "end_cm1": 1000,
+      "cutoff_cm1": 25,
+      "old_count": 128934,
+      "independent_count": 128933,
+      "database_records": 544880,
+      "first_record": 1,
+      "last_record": 128933,
+      "first_center_cm1": 10.305903,
+      "last_center_cm1": 1024.990445,
+      "next_center_cm1": 1025.008593,
+      "zero_reference_strengths": 0,
+      "warmup": {
+        "cpu_s": 0.225485,
+        "wall_s": 0.8864845829084516,
+        "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+      },
+      "samples": [
+        {
+          "cpu_s": 0.20937999999999998,
+          "wall_s": 0.22220008308067918,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        },
+        {
+          "cpu_s": 0.207832,
+          "wall_s": 0.21950654196552932,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        },
+        {
+          "cpu_s": 0.21584299999999998,
+          "wall_s": 0.2373315419536084,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        },
+        {
+          "cpu_s": 0.210663,
+          "wall_s": 0.2248859580140561,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        },
+        {
+          "cpu_s": 0.210176,
+          "wall_s": 0.22330449987202883,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        },
+        {
+          "cpu_s": 0.223734,
+          "wall_s": 0.24921637517400086,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        },
+        {
+          "cpu_s": 0.21253799999999998,
+          "wall_s": 0.23180470801889896,
+          "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5"
+        }
+      ],
+      "cpu_s": {
+        "median": 0.210663,
+        "min": 0.207832,
+        "max": 0.223734
+      },
+      "wall_s": {
+        "median": 0.2248859580140561,
+        "min": 0.21950654196552932,
+        "max": 0.24921637517400086
+      },
+      "audit": {
+        "cpu_s": 0.229815,
+        "wall_s": 0.857878833077848,
+        "output_sha256": "acc69ef91b256ef335e59833d06fa7efd84947fcc4889fcd1423007ef982ddc5",
+        "selected": 128933,
+        "evaluated": 128933,
+        "visits": 764940,
+        "shape_evaluations": 23972849
+      }
+    },
+    {
+      "molecule": "CO2",
+      "start_cm1": 10,
+      "end_cm1": 1000,
+      "cutoff_cm1": 250,
+      "old_count": 139291,
+      "independent_count": 139290,
+      "database_records": 544880,
+      "first_record": 1,
+      "last_record": 139290,
+      "first_center_cm1": 10.305903,
+      "last_center_cm1": 1249.989269,
+      "next_center_cm1": 1250.023033,
+      "zero_reference_strengths": 0,
+      "warmup": {
+        "cpu_s": 1.408309,
+        "wall_s": 1.4823147500865161,
+        "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+      },
+      "samples": [
+        {
+          "cpu_s": 1.377989,
+          "wall_s": 1.400888083036989,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        },
+        {
+          "cpu_s": 1.378221,
+          "wall_s": 1.3966647498309612,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        },
+        {
+          "cpu_s": 1.4051770000000001,
+          "wall_s": 1.4951374169904739,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        },
+        {
+          "cpu_s": 1.396714,
+          "wall_s": 1.416134166996926,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        },
+        {
+          "cpu_s": 1.39112,
+          "wall_s": 1.4096295000053942,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        },
+        {
+          "cpu_s": 1.3993639999999998,
+          "wall_s": 1.4221132919192314,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        },
+        {
+          "cpu_s": 1.40079,
+          "wall_s": 1.4221154160331935,
+          "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7"
+        }
+      ],
+      "cpu_s": {
+        "median": 1.396714,
+        "min": 1.377989,
+        "max": 1.4051770000000001
+      },
+      "wall_s": {
+        "median": 1.416134166996926,
+        "min": 1.3966647498309612,
+        "max": 1.4951374169904739
+      },
+      "audit": {
+        "cpu_s": 1.481796,
+        "wall_s": 1.516845708945766,
+        "output_sha256": "fa65200231ff39c0b9c26138aa4c7317f7492a30986a6a3cbcb897ca9ebfffa7",
+        "selected": 139290,
+        "evaluated": 139290,
+        "visits": 6424615,
+        "shape_evaluations": 142826612
+      }
+    },
+    {
+      "molecule": "H2O",
+      "start_cm1": 1000,
+      "end_cm1": 4000,
+      "cutoff_cm1": 25,
+      "old_count": 84119,
+      "independent_count": 84118,
+      "database_records": 485785,
+      "first_record": 26066,
+      "last_record": 110183,
+      "first_center_cm1": 975.000567,
+      "last_center_cm1": 4024.974822,
+      "next_center_cm1": 4025.038549,
+      "zero_reference_strengths": 0,
+      "warmup": {
+        "cpu_s": 0.159023,
+        "wall_s": 0.180590792093426,
+        "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+      },
+      "samples": [
+        {
+          "cpu_s": 0.160028,
+          "wall_s": 0.18424433306790888,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        },
+        {
+          "cpu_s": 0.158403,
+          "wall_s": 0.17766008293256164,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        },
+        {
+          "cpu_s": 0.158962,
+          "wall_s": 0.1750260409899056,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        },
+        {
+          "cpu_s": 0.168565,
+          "wall_s": 0.18912129197269678,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        },
+        {
+          "cpu_s": 0.159825,
+          "wall_s": 0.17546095792204142,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        },
+        {
+          "cpu_s": 0.165825,
+          "wall_s": 0.18753150012344122,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        },
+        {
+          "cpu_s": 0.160374,
+          "wall_s": 0.17430170811712742,
+          "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759"
+        }
+      ],
+      "cpu_s": {
+        "median": 0.160028,
+        "min": 0.158403,
+        "max": 0.168565
+      },
+      "wall_s": {
+        "median": 0.17766008293256164,
+        "min": 0.17430170811712742,
+        "max": 0.18912129197269678
+      },
+      "audit": {
+        "cpu_s": 0.16835499999999998,
+        "wall_s": 0.18257266702130437,
+        "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759",
+        "selected": 84118,
+        "evaluated": 84117,
+        "visits": 497560,
+        "shape_evaluations": 15580406
+      },
+      "audit_boundary": {
+        "cpu_s": 0.182255,
+        "wall_s": 0.779720582999289,
+        "output_sha256": "b1f85c993c8550c22560397cc86db26e13506c1aeb29dd25276bc3b92cf5e759",
+        "selected": 84118,
+        "evaluated": 84117,
+        "visits": 497560,
+        "shape_evaluations": 15580406,
+        "skipped_record": 26067,
+        "skipped_records": [
+          26067
+        ]
+      }
+    },
+    {
+      "molecule": "H2O",
+      "start_cm1": 1000,
+      "end_cm1": 4000,
+      "cutoff_cm1": 250,
+      "old_count": 92566,
+      "independent_count": 92565,
+      "database_records": 485785,
+      "first_record": 23797,
+      "last_record": 116361,
+      "first_center_cm1": 750.162332,
+      "last_center_cm1": 4249.973976,
+      "next_center_cm1": 4250.009222,
+      "zero_reference_strengths": 0,
+      "warmup": {
+        "cpu_s": 0.946232,
+        "wall_s": 1.0126794998068362,
+        "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+      },
+      "samples": [
+        {
+          "cpu_s": 0.9348069999999999,
+          "wall_s": 0.9602579588536173,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        },
+        {
+          "cpu_s": 0.919928,
+          "wall_s": 0.941068041138351,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        },
+        {
+          "cpu_s": 0.917364,
+          "wall_s": 0.9348118328489363,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        },
+        {
+          "cpu_s": 0.931199,
+          "wall_s": 0.9471806669607759,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        },
+        {
+          "cpu_s": 0.9279769999999999,
+          "wall_s": 0.9488954998087138,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        },
+        {
+          "cpu_s": 0.9381799999999999,
+          "wall_s": 0.961563125019893,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        },
+        {
+          "cpu_s": 0.931131,
+          "wall_s": 0.9498871248215437,
+          "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be"
+        }
+      ],
+      "cpu_s": {
+        "median": 0.931131,
+        "min": 0.917364,
+        "max": 0.9381799999999999
+      },
+      "wall_s": {
+        "median": 0.9488954998087138,
+        "min": 0.9348118328489363,
+        "max": 0.961563125019893
+      },
+      "audit": {
+        "cpu_s": 0.976818,
+        "wall_s": 0.9973142079543322,
+        "output_sha256": "9885bfdebf19c144b6c7a14a7516c21694bca5ac0a1f98a4f0db264338ccf0be",
+        "selected": 92565,
+        "evaluated": 92565,
+        "visits": 4171190,
+        "shape_evaluations": 92726804
+      }
+    },
+    {
+      "molecule": "CO2",
+      "start_cm1": 10,
+      "end_cm1": 14000,
+      "cutoff_cm1": 250,
+      "old_count": 543481,
+      "independent_count": 543480,
+      "database_records": 544880,
+      "first_record": 1,
+      "last_record": 543480,
+      "first_center_cm1": 10.305903,
+      "last_center_cm1": 14146.000894,
+      "next_center_cm1": 14349.929482,
+      "zero_reference_strengths": 0,
+      "warmup": {
+        "cpu_s": 6.008611,
+        "wall_s": 6.084030166035518,
+        "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+      },
+      "samples": [
+        {
+          "cpu_s": 6.096406999999999,
+          "wall_s": 6.416326415957883,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        },
+        {
+          "cpu_s": 5.994617,
+          "wall_s": 6.028790083015338,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        },
+        {
+          "cpu_s": 5.998779,
+          "wall_s": 6.037662124959752,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        },
+        {
+          "cpu_s": 6.064704,
+          "wall_s": 6.151530750095844,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        },
+        {
+          "cpu_s": 6.0609969999999995,
+          "wall_s": 6.167979000136256,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        },
+        {
+          "cpu_s": 6.083968,
+          "wall_s": 6.128863749792799,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        },
+        {
+          "cpu_s": 6.085677,
+          "wall_s": 6.141105541959405,
+          "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498"
+        }
+      ],
+      "cpu_s": {
+        "median": 6.064704,
+        "min": 5.994617,
+        "max": 6.096406999999999
+      },
+      "wall_s": {
+        "median": 6.141105541959405,
+        "min": 6.028790083015338,
+        "max": 6.416326415957883
+      },
+      "audit": {
+        "cpu_s": 6.4328389999999995,
+        "wall_s": 6.684719040989876,
+        "output_sha256": "33810bd2403ba20558b077ea65ffcdf12b9e5314e64bb72b5d3dd3e08c4c6498",
+        "selected": 543480,
+        "evaluated": 543480,
+        "visits": 27687993,
+        "shape_evaluations": 615100511
+      }
+    },
+    {
+      "molecule": "H2O",
+      "start_cm1": 10,
+      "end_cm1": 14000,
+      "cutoff_cm1": 250,
+      "old_count": 329258,
+      "independent_count": 329257,
+      "database_records": 485785,
+      "first_record": 1,
+      "last_record": 329257,
+      "first_center_cm1": 10.039253,
+      "last_center_cm1": 14249.998663,
+      "next_center_cm1": 14250.014603,
+      "zero_reference_strengths": 0,
+      "warmup": {
+        "cpu_s": 3.706371,
+        "wall_s": 3.843906917143613,
+        "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+      },
+      "samples": [
+        {
+          "cpu_s": 3.669773,
+          "wall_s": 3.779613833175972,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        },
+        {
+          "cpu_s": 3.637834,
+          "wall_s": 3.6883559580892324,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        },
+        {
+          "cpu_s": 3.637423,
+          "wall_s": 3.666733582969755,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        },
+        {
+          "cpu_s": 3.6324,
+          "wall_s": 3.667289957869798,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        },
+        {
+          "cpu_s": 3.721712,
+          "wall_s": 3.883983541978523,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        },
+        {
+          "cpu_s": 3.683853,
+          "wall_s": 3.9508245419710875,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        },
+        {
+          "cpu_s": 3.662265,
+          "wall_s": 3.6937579580117017,
+          "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4"
+        }
+      ],
+      "cpu_s": {
+        "median": 3.662265,
+        "min": 3.6324,
+        "max": 3.721712
+      },
+      "wall_s": {
+        "median": 3.6937579580117017,
+        "min": 3.666733582969755,
+        "max": 3.9508245419710875
+      },
+      "audit": {
+        "cpu_s": 3.872022,
+        "wall_s": 3.940218208124861,
+        "output_sha256": "67af8fef04ba16eb9ba2d8edf02d5e8702f138e86900a280bc7e357f2f94f0f4",
+        "selected": 329257,
+        "evaluated": 329257,
+        "visits": 16350314,
+        "shape_evaluations": 363442702
+      }
+    }
+  ]
+}
